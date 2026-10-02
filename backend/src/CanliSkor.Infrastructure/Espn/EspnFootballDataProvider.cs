@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using CanliSkor.Core.Abstractions;
 using CanliSkor.Core.Domain;
+using CanliSkor.Core.Time;
 using CanliSkor.Infrastructure.Espn.Dtos;
 
 namespace CanliSkor.Infrastructure.Espn;
@@ -15,9 +16,31 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
+    /// <summary>
+    /// ESPN files matches under their US Eastern date, so a 02:00 Istanbul kickoff (e.g. an evening game in Brazil)
+    /// is listed under the previous day. An Istanbul day always lies within the previous and the same Eastern day,
+    /// so we fetch both and keep the matches whose kickoff falls on the requested Istanbul date.
+    /// </summary>
     public async Task<LeagueScoreboard> GetScoreboardAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default)
     {
-        var url = $"{Uri.EscapeDataString(leagueCode)}/scoreboard?dates={date.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}";
+        // Sequential on purpose, like the poller: gentle on an unofficial API.
+        var previousDay = await FetchEspnDayAsync(leagueCode, date.AddDays(-1), date, cancellationToken);
+        var sameDay = await FetchEspnDayAsync(leagueCode, date, date, cancellationToken);
+
+        var matches = previousDay.Matches.Concat(sameDay.Matches)
+            .Where(m => IstanbulTime.DateOf(m.KickoffUtc) == date)
+            .DistinctBy(m => m.Id)
+            .OrderBy(m => m.KickoffUtc)
+            .ToList();
+
+        return sameDay with { Matches = matches };
+    }
+
+    /// <param name="espnDate">The date in ESPN's (US Eastern) calendar.</param>
+    /// <param name="date">The Istanbul date being assembled.</param>
+    private async Task<LeagueScoreboard> FetchEspnDayAsync(string leagueCode, DateOnly espnDate, DateOnly date, CancellationToken cancellationToken)
+    {
+        var url = $"{Uri.EscapeDataString(leagueCode)}/scoreboard?dates={espnDate.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}";
 
         EspnScoreboardResponse? response;
         try
@@ -27,12 +50,12 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         // A TaskCanceledException without our token being cancelled means the HTTP timeout fired.
         catch (Exception ex) when ((ex is HttpRequestException or JsonException or TaskCanceledException) && !cancellationToken.IsCancellationRequested)
         {
-            throw new FootballDataProviderException($"Failed to fetch ESPN scoreboard for '{leagueCode}' on {date:yyyy-MM-dd}.", ex);
+            throw new FootballDataProviderException($"Failed to fetch ESPN scoreboard for '{leagueCode}' on ESPN date {espnDate:yyyy-MM-dd}.", ex);
         }
 
         if (response is null)
         {
-            throw new FootballDataProviderException($"ESPN returned an empty scoreboard for '{leagueCode}' on {date:yyyy-MM-dd}.");
+            throw new FootballDataProviderException($"ESPN returned an empty scoreboard for '{leagueCode}' on ESPN date {espnDate:yyyy-MM-dd}.");
         }
 
         return EspnScoreboardMapper.Map(response, leagueCode, date);

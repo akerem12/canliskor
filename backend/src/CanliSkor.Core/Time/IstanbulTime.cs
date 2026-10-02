@@ -10,6 +10,8 @@ public static class IstanbulTime
 
     public static DateTimeOffset ToIstanbul(DateTimeOffset value) => TimeZoneInfo.ConvertTime(value, TimeZone);
 
-    public static DateOnly Today(TimeProvider timeProvider) =>
-        DateOnly.FromDateTime(ToIstanbul(timeProvider.GetUtcNow()).DateTime);
+    /// <summary>The Istanbul calendar date an instant falls on.</summary>
+    public static DateOnly DateOf(DateTimeOffset value) => DateOnly.FromDateTime(ToIstanbul(value).DateTime);
+
+    public static DateOnly Today(TimeProvider timeProvider) => DateOf(timeProvider.GetUtcNow());
 }

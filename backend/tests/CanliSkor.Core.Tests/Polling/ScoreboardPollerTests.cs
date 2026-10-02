@@ -30,6 +30,9 @@ public class ScoreboardPollerTests
     [Fact]
     public async Task Fetches_every_league_for_today_in_istanbul_and_stores_it()
     {
+        // Yesterday is known and over, so only today is fetched.
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("tur.1", Yesterday), Now.AddHours(-1)));
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("eng.1", Yesterday), Now.AddHours(-1)));
         _provider.Returns(Scoreboard("tur.1", Today));
         _provider.Returns(Scoreboard("eng.1", Today));
 
@@ -126,6 +129,19 @@ public class ScoreboardPollerTests
 
         Assert.Equal(TimeSpan.FromSeconds(30), delay);
         Assert.Equal(new Score(1, 0), Assert.Single((await _store.GetAsync("tur.1", Today))!.Scoreboard.Matches).Score);
+    }
+
+    [Fact]
+    public async Task After_a_restart_checks_yesterday_once_for_games_still_running()
+    {
+        // Restarted at 01:30 with nothing cached: a game from yesterday evening may still be in extra time.
+        _provider.Returns(Scoreboard("uefa.champions", Yesterday, Match(MatchStatus.Live, Now.AddMinutes(-150))));
+        _provider.Returns(Scoreboard("uefa.champions", Today));
+
+        var delay = await CreatePoller("uefa.champions").PollAsync(CancellationToken.None);
+
+        Assert.Equal([("uefa.champions", Yesterday), ("uefa.champions", Today)], _provider.Requests);
+        Assert.Equal(TimeSpan.FromSeconds(30), delay);
     }
 
     [Fact]

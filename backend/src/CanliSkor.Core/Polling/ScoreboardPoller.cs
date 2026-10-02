@@ -88,6 +88,8 @@ public sealed partial class ScoreboardPoller(
     /// <summary>
     /// Always today (Istanbul). Also yesterday while it still has active matches,
     /// so a Champions League game running past midnight keeps updating until full time.
+    /// Yesterday is also polled when we know nothing about it yet (e.g. right after a restart at 00:30),
+    /// otherwise such a game would never be noticed.
     /// </summary>
     private async Task<IReadOnlyList<DateOnly>> GetDatesToPollAsync(string leagueCode, DateOnly today, CancellationToken cancellationToken)
     {
@@ -95,7 +97,7 @@ public sealed partial class ScoreboardPoller(
         var yesterdaySnapshot = await store.GetAsync(leagueCode, yesterday, cancellationToken);
         var now = timeProvider.GetUtcNow();
 
-        return yesterdaySnapshot?.Scoreboard.Matches.Any(m => PollingIntervalCalculator.IsActive(m, now)) == true
+        return yesterdaySnapshot is null || yesterdaySnapshot.Scoreboard.Matches.Any(m => PollingIntervalCalculator.IsActive(m, now))
             ? [yesterday, today]
             : [today];
     }
