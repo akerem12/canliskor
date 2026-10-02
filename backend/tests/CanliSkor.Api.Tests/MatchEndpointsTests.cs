@@ -95,7 +95,7 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     }
 
-    public sealed class Factory : WebApplicationFactory<Program>
+    public class Factory : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder) =>
             builder.ConfigureTestServices(services =>

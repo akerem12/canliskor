@@ -3,7 +3,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 4: React frontend with live updates).
+> Status: **work in progress** (step 5: single-image production hosting with Docker).
 
 ## Architecture
 
@@ -87,6 +87,26 @@ npm run dev                                   # http://localhost:5173
 The Vite dev server proxies `/api` and `/hubs` (including WebSockets) to the backend, so the browser only talks to one
 origin and no CORS setup is needed.
 
+## Deploy (Docker)
+
+One image holds the whole app: a multi-stage build compiles the React app, publishes the backend with the UI in
+`wwwroot`, and runs it on the slim ASP.NET runtime image as a non-root user.
+
+```bash
+docker compose up --build                     # http://localhost:8080
+# or
+docker build -t canliskor . && docker run -p 8080:8080 canliskor
+```
+
+UI, REST API and SignalR hub share one origin, so production needs no CORS either. Vite's content-hashed files under
+`/assets` are cached for a year (`immutable`); `index.html` is served with `no-cache`, so a new deploy is picked up
+on the next page load. `GET /health` is available for container orchestrators and load balancers.
+Settings can be overridden with environment variables, e.g. `Polling__LiveInterval=00:00:20`.
+
+Without Docker: `npm run build` in `frontend/`, copy `frontend/dist/*` into `backend/src/CanliSkor.Api/wwwroot/`,
+then `dotnet publish backend/src/CanliSkor.Api -c Release`. Start from an empty `dist`/`wwwroot`, because stale
+assets from earlier builds would be published too.
+
 ### How the frontend stays in sync
 
 On every (re)connect it subscribes to all leagues **first** and only then loads `GET /api/matches` +
@@ -99,6 +119,7 @@ merged in from `/live`.
 
 | Endpoint | Description |
 |---|---|
+| `GET /health` | Liveness check (`Healthy`) |
 | `GET /api/leagues` | Followed league codes, in display order |
 | `GET /api/matches` | Today's matches (Istanbul date), grouped by league |
 | `GET /api/matches/live` | Matches currently in play |

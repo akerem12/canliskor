@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using CanliSkor.Api;
 using CanliSkor.Api.Endpoints;
 using CanliSkor.Api.Hubs;
 using CanliSkor.Api.Workers;
@@ -20,9 +21,13 @@ builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Ad
 builder.Services.AddSignalR()
     .AddJsonProtocol(o => o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSingleton<IMatchUpdatePublisher, SignalRMatchUpdatePublisher>();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+app.UseStaticFrontend();
+
+app.MapHealthChecks("/health");
 app.MapLeagueEndpoints();
 app.MapMatchEndpoints();
 app.MapHub<LiveScoresHub>(LiveScoresHub.Path);

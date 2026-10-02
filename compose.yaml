@@ -1,0 +1,10 @@
+services:
+  canliskor:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Any appsettings.json value can be overridden this way (":" becomes "__"), e.g.:
+      # Polling__LiveInterval: "00:00:20"
+      Logging__LogLevel__Default: Information
+    restart: unless-stopped

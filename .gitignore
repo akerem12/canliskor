@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 # Node / frontend
 node_modules/
 dist/
+
+# Built frontend copied in at publish time (see Dockerfile)
+backend/src/CanliSkor.Api/wwwroot/
