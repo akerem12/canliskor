@@ -23,6 +23,7 @@ builder.Services.AddSingleton<IMatchUpdatePublisher, SignalRMatchUpdatePublisher
 
 var app = builder.Build();
 
+app.MapLeagueEndpoints();
 app.MapMatchEndpoints();
 app.MapHub<LiveScoresHub>(LiveScoresHub.Path);
 

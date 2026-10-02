@@ -3,7 +3,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 3: real-time push with SignalR).
+> Status: **work in progress** (step 4: React frontend with live updates).
 
 ## Architecture
 
@@ -17,7 +17,9 @@ backend/
     CanliSkor.Core.Tests/             polling interval, poller and query logic
     CanliSkor.Infrastructure.Tests/   mapping tests against real, saved ESPN responses
     CanliSkor.Api.Tests/              in-memory integration tests of the HTTP contract
-frontend/                      React + TypeScript (planned)
+frontend/                      React + TypeScript (Vite): today's matches, live tab, goal highlights
+  src/api/                     REST client + types mirroring the API contracts
+  src/live/                    SignalR hook + pure state reducer (unit-tested with Vitest)
 ```
 
 Dependencies point inward: `Api → Infrastructure → Core`. ESPN's API is unofficial and undocumented, so it sits behind
@@ -63,6 +65,7 @@ ESPN's public JSON API (no key required), e.g.
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (pinned in `backend/global.json`)
+- [Node.js](https://nodejs.org/) 22+ for the frontend
 
 ## Run
 
@@ -72,10 +75,31 @@ dotnet test                                   # run all tests
 dotnet run --project src/CanliSkor.Api        # http://localhost:5272
 ```
 
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+npm test                                      # reducer unit tests
+npm run dev                                   # http://localhost:5173
+```
+
+The Vite dev server proxies `/api` and `/hubs` (including WebSockets) to the backend, so the browser only talks to one
+origin and no CORS setup is needed.
+
+### How the frontend stays in sync
+
+On every (re)connect it subscribes to all leagues **first** and only then loads `GET /api/matches` +
+`GET /api/matches/live`. Updates arriving while that load is in flight are buffered and replayed on top of it, so
+nothing is missed or overwritten by an older response. After a reconnect (groups are per connection) it resubscribes
+and reloads; at Istanbul midnight it reloads for the new day. Yesterday's games still running past midnight are
+merged in from `/live`.
+
 ## API
 
 | Endpoint | Description |
 |---|---|
+| `GET /api/leagues` | Followed league codes, in display order |
 | `GET /api/matches` | Today's matches (Istanbul date), grouped by league |
 | `GET /api/matches/live` | Matches currently in play |
 

@@ -78,6 +78,16 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         Assert.Equal("1", match.GetProperty("id").GetString());
     }
 
+    [Fact]
+    public async Task Get_leagues_returns_followed_league_codes_in_order()
+    {
+        using var json = await GetJson("/api/leagues");
+
+        Assert.Equal(
+            ["tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa"],
+            json.RootElement.EnumerateArray().Select(e => e.GetString()));
+    }
+
     private async Task<JsonDocument> GetJson(string url)
     {
         var response = await _client.GetAsync(url);
