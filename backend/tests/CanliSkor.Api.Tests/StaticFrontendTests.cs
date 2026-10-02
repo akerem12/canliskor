@@ -67,7 +67,12 @@ public class StaticFrontendTests(StaticFrontendTests.FrontendFactory factory) : 
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            Directory.Delete(_webRoot, recursive: true);
+
+            // WebApplicationFactory runs Dispose(bool) more than once during teardown.
+            if (Directory.Exists(_webRoot))
+            {
+                Directory.Delete(_webRoot, recursive: true);
+            }
         }
     }
 }
