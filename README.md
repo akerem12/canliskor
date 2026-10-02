@@ -1,5 +1,7 @@
 # CanliSkor — Live Football Scores
 
+[![CI](https://github.com/akerem12/canliskor/actions/workflows/ci.yml/badge.svg)](https://github.com/akerem12/canliskor/actions/workflows/ci.yml)
+
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
