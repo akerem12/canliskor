@@ -11,6 +11,12 @@ public static class StaticFrontend
 {
     public static WebApplication UseStaticFrontend(this WebApplication app)
     {
+        // Development: no build copied in, Vite serves the UI (and the static file middleware would only warn).
+        if (!Directory.Exists(app.Environment.WebRootPath))
+        {
+            return app;
+        }
+
         app.UseDefaultFiles();
         app.UseStaticFiles(new StaticFileOptions { OnPrepareResponse = SetCacheHeaders });
         return app;

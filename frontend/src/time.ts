@@ -12,3 +12,17 @@ export const formatTime = (iso: string) => timeFormat.format(new Date(iso))
 export const istanbulToday = (now = new Date()) => dateFormat.format(now)
 
 export const formatLongDate = (yyyyMmDd: string) => longDateFormat.format(new Date(`${yyyyMmDd}T12:00:00+03:00`))
+
+/** Calendar arithmetic on YYYY-MM-DD strings (done in UTC, so no time zone or DST can shift the day). */
+export function addDays(yyyyMmDd: string, days: number): string {
+  const date = new Date(`${yyyyMmDd}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+const relativeDays: Record<number, string> = { [-1]: 'Yesterday', 0: 'Today', 1: 'Tomorrow' }
+const shortDateFormat = new Intl.DateTimeFormat('en-GB', { timeZone: TimeZone, weekday: 'short', day: 'numeric', month: 'short' })
+
+/** "Today", "Tomorrow", or e.g. "Sat 10 Oct". */
+export const formatDayLabel = (yyyyMmDd: string, offset: number) =>
+  relativeDays[offset] ?? shortDateFormat.format(new Date(`${yyyyMmDd}T12:00:00+03:00`))

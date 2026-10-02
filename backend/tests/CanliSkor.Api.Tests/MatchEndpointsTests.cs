@@ -79,6 +79,26 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Get_matches_for_another_day_loads_it_on_demand()
+    {
+        using var json = await GetJson("/api/matches?date=2026-10-04");
+
+        Assert.Equal("2026-10-04", json.RootElement.GetProperty("date").GetString());
+        var league = Assert.Single(json.RootElement.GetProperty("leagues").EnumerateArray());
+        var match = Assert.Single(league.GetProperty("matches").EnumerateArray());
+        Assert.Equal("Finished", match.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task Get_matches_rejects_dates_more_than_a_week_away()
+    {
+        var response = await _client.GetAsync("/api/matches?date=2026-12-25");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("date", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Get_leagues_returns_followed_league_codes_in_order()
     {
         using var json = await GetJson("/api/leagues");
@@ -104,6 +124,22 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
                 var worker = services.Single(d => d.ImplementationType == typeof(ScoreboardPollingWorker));
                 services.Remove(worker);
                 services.AddSingleton<TimeProvider>(new FakeTimeProvider(Now));
+                // Browsing other days may call the provider: never let tests reach ESPN.
+                services.AddScoped<IFootballDataProvider, StubFootballDataProvider>();
             });
     }
+}
+
+/// <summary>Any day: one finished match for tur.1, nothing for the other leagues.</summary>
+internal sealed class StubFootballDataProvider : IFootballDataProvider
+{
+    public Task<LeagueScoreboard> GetScoreboardAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new LeagueScoreboard(new League(leagueCode, leagueCode), date, leagueCode != "tur.1" ? [] :
+        [
+            new Match($"stub-{date:yyyyMMdd}", leagueCode, new DateTimeOffset(date, new TimeOnly(17, 0), TimeSpan.Zero),
+                MatchStatus.Finished, "FT",
+                new Team("432", "Galatasaray", "Galatasaray", null),
+                new Team("436", "Fenerbahce", "Fenerbahce", null),
+                new Score(2, 1)),
+        ]));
 }

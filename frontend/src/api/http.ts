@@ -9,6 +9,7 @@ async function getJson<T>(url: string): Promise<T> {
 }
 
 export const getLeagues = () => getJson<string[]>('/api/leagues')
-export const getToday = () => getJson<MatchDay>('/api/matches')
+/** A date (YYYY-MM-DD, Istanbul) within a week of today; omitted means today. */
+export const getDay = (date?: string) => getJson<MatchDay>(date ? `/api/matches?date=${date}` : '/api/matches')
 /** Includes yesterday's games still running past midnight, which /api/matches doesn't. */
 export const getLive = () => getJson<LeagueMatches[]>('/api/matches/live')

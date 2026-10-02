@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 6: CI with GitHub Actions).
+> Status: **work in progress** (step 7: browse a week back and ahead).
 
 ## Architecture
 
@@ -35,7 +35,8 @@ ESPN ──► ScoreboardPollingWorker ──► IMatchStore (cache) ──► R
                                 └─► MatchChangeDetector ──► SignalR hub ──► clients (changes only)
 ```
 
-Only the backend calls ESPN. Client requests are served from the cache, so traffic never adds load on the external API.
+Only the backend calls ESPN. Today and live data are served from the cache, so that traffic never adds load on the
+external API.
 After each fetch the new scoreboard is compared with the cached one; only matches whose score, status or clock
 changed are pushed, and only to clients subscribed to that league.
 
@@ -50,6 +51,18 @@ changed are pushed, and only to clients subscribed to that league.
 
 "Today" is the current date in Europe/Istanbul. Yesterday's scoreboard keeps being polled while it still has live
 matches, so a game running past midnight updates until full time.
+
+### Browsing other days
+
+The poller only covers today (and yesterday while games run past midnight). Other days, at most a week away, are
+loaded on first request by `OnDemandScoreboardLoader` and cached in the same store:
+
+- a past day whose matches are all over is final and never fetched again;
+- fixture lists are refetched at most every 30 minutes (kickoff times and postponements can change);
+- only one on-demand fetch runs at a time across the app, so browsing can't burst requests at ESPN;
+- if ESPN fails, the last cached copy is served.
+
+The frontend keeps the selected day in the URL (`/?date=2026-10-10`), so links can be shared.
 
 ## Data source
 
@@ -137,6 +150,7 @@ merged in from `/live`.
 | `GET /health` | Liveness check (`Healthy`) |
 | `GET /api/leagues` | Followed league codes, in display order |
 | `GET /api/matches` | Today's matches (Istanbul date), grouped by league |
+| `GET /api/matches?date=2026-10-10` | Another day, up to 7 days back or ahead (else `400`) |
 | `GET /api/matches/live` | Matches currently in play |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings

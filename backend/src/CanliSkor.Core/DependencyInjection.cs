@@ -28,6 +28,8 @@ public static class DependencyInjection
         // IHttpClientFactory's handler rotation (e.g. DNS changes would never be picked up).
         services.AddScoped<ScoreboardPoller>();
         services.AddScoped<MatchQueryService>();
+        services.AddScoped<OnDemandScoreboardLoader>();
+        services.AddSingleton<OnDemandFetchGate>();
 
         return services;
     }

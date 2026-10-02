@@ -14,8 +14,12 @@ const statusLabel: Record<Match['status'], string> = {
 function TeamName({ team, align }: { team: Team; align: 'home' | 'away' }) {
   return (
     <span className={`team team--${align}`} title={team.name}>
-      {team.logoUrl && <img className="team__logo" src={team.logoUrl} alt="" width={20} height={20} loading="lazy" />}
-      <span className="team__name">{team.name}</span>
+      {/* Same space with or without a logo, so team names line up. */}
+      {team.logoUrl
+        ? <img className="team__logo" src={team.logoUrl} alt="" width={20} height={20} loading="lazy" />
+        : <span className="team__logo" aria-hidden />}
+      <span className="team__name team__name--full">{team.name}</span>
+      <span className="team__name team__name--short">{team.shortName}</span>
     </span>
   )
 }
