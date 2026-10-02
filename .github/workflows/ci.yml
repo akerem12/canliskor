@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch/PR makes the running build pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (build + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: backend/global.json
+
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release -warnaserror
+      - run: dotnet test --no-build -c Release
+
+  frontend:
+    name: Frontend (lint + tests + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    name: Docker image (build + smoke test)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: canliskor:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Proves the image actually starts and serves all three parts: health, UI and API.
+      - name: Smoke test
+        run: |
+          docker run -d --name canliskor -p 8080:8080 canliskor:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8080/health && break
+            sleep 1
+          done
+          curl -fsS http://localhost:8080/health | grep -qx Healthy
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+          curl -fsS http://localhost:8080/api/leagues | grep -q 'tur.1'
+
+      - name: Container logs
+        if: always()
+        run: docker logs canliskor || true

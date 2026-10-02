@@ -3,7 +3,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 5: single-image production hosting with Docker).
+> Status: **work in progress** (step 6: CI with GitHub Actions).
 
 ## Architecture
 
@@ -105,7 +105,20 @@ Settings can be overridden with environment variables, e.g. `Polling__LiveInterv
 
 Without Docker: `npm run build` in `frontend/`, copy `frontend/dist/*` into `backend/src/CanliSkor.Api/wwwroot/`,
 then `dotnet publish backend/src/CanliSkor.Api -c Release`. Start from an empty `dist`/`wwwroot`, because stale
-assets from earlier builds would be published too.
+assets from earlier builds would be published too. If you delete `wwwroot` afterwards, also delete
+`backend/src/CanliSkor.Api/obj/Release`: the build keeps a manifest pointing at it, and the app won't start without it.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push to `main` and on pull requests:
+
+| Job | What it checks |
+|---|---|
+| Backend | Release build with warnings as errors, all .NET tests |
+| Frontend | `oxlint`, Vitest, production build |
+| Docker | Builds the image (layer cache via GitHub Actions), starts it and checks `/health`, `/` and `/api/leagues` |
+
+The Docker job only runs once both test jobs pass. The image is built but not pushed anywhere.
 
 ### How the frontend stays in sync
 
