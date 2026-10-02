@@ -14,6 +14,7 @@ namespace CanliSkor.Core.Polling;
 public sealed partial class ScoreboardPoller(
     IFootballDataProvider provider,
     IMatchStore store,
+    IMatchUpdatePublisher publisher,
     IOptionsMonitor<FootballOptions> footballOptions,
     IOptionsMonitor<PollingOptions> pollingOptions,
     TimeProvider timeProvider,
@@ -35,8 +36,12 @@ public sealed partial class ScoreboardPoller(
                 try
                 {
                     var scoreboard = await provider.GetScoreboardAsync(leagueCode, date, cancellationToken);
+                    var previous = await store.GetAsync(leagueCode, date, cancellationToken);
                     await store.SetAsync(new ScoreboardSnapshot(scoreboard, timeProvider.GetUtcNow()), cancellationToken);
                     knownMatches.AddRange(scoreboard.Matches);
+
+                    // Store first, then push: a client that reacts by calling the REST API sees the new state.
+                    await PublishChangesAsync(MatchChangeDetector.Detect(previous?.Scoreboard, scoreboard), cancellationToken);
                 }
                 catch (FootballDataProviderException ex)
                 {
@@ -60,6 +65,27 @@ public sealed partial class ScoreboardPoller(
     }
 
     /// <summary>
+    /// Push is best effort: the store is already updated, so a failed push only delays clients
+    /// until their next refresh. It must never fail the poll or affect the polling schedule.
+    /// </summary>
+    private async Task PublishChangesAsync(IReadOnlyList<MatchChange> changes, CancellationToken cancellationToken)
+    {
+        if (changes.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await publisher.PublishAsync(changes, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogPublishFailed(ex, changes.Count);
+        }
+    }
+
+    /// <summary>
     /// Always today (Istanbul). Also yesterday while it still has active matches,
     /// so a Champions League game running past midnight keeps updating until full time.
     /// </summary>
@@ -76,6 +102,9 @@ public sealed partial class ScoreboardPoller(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Fetching {LeagueCode} for {Date} failed; serving cached data")]
     private partial void LogFetchFailed(Exception exception, string leagueCode, DateOnly date);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Publishing {ChangeCount} match changes failed")]
+    private partial void LogPublishFailed(Exception exception, int changeCount);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Poll completed: {MatchCount} matches, {LiveCount} live. Next poll in {Delay}")]
     private partial void LogPollCompleted(int matchCount, int liveCount, TimeSpan delay);

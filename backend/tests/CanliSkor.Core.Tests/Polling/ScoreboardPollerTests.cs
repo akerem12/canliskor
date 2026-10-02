@@ -15,11 +15,13 @@ public class ScoreboardPollerTests
 
     private readonly FakeFootballDataProvider _provider = new();
     private readonly FakeMatchStore _store = new();
+    private readonly FakeMatchUpdatePublisher _publisher = new();
     private readonly FakeTimeProvider _time = new(Now);
 
     private ScoreboardPoller CreatePoller(params string[] leagues) => new(
         _provider,
         _store,
+        _publisher,
         TestOptions.Leagues(leagues),
         new StaticOptionsMonitor<CanliSkor.Core.Options.PollingOptions>(TestOptions.Polling()),
         _time,
@@ -86,6 +88,44 @@ public class ScoreboardPollerTests
         Assert.Equal([("uefa.champions", Yesterday), ("uefa.champions", Today)], _provider.Requests);
         var updated = await _store.GetAsync("uefa.champions", Yesterday);
         Assert.Equal(MatchStatus.Finished, Assert.Single(updated!.Scoreboard.Matches).Status);
+    }
+
+    [Fact]
+    public async Task Publishes_changes_compared_to_the_previous_snapshot()
+    {
+        var match = Match(MatchStatus.Live, Now.AddMinutes(-20), score: new Score(0, 0));
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("tur.1", Today, match), Now.AddSeconds(-30)));
+        _provider.Returns(Scoreboard("tur.1", Today, match with { Score = new Score(1, 0) }));
+
+        await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+
+        var change = Assert.Single(_publisher.Published);
+        Assert.Equal(MatchChangeKind.Score, change.Kinds);
+        Assert.Equal(new Score(1, 0), change.Match.Score);
+    }
+
+    [Fact]
+    public async Task First_poll_publishes_nothing()
+    {
+        _provider.Returns(Scoreboard("tur.1", Today, Match(MatchStatus.Live, Now.AddMinutes(-20))));
+
+        await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+
+        Assert.Empty(_publisher.Published);
+    }
+
+    [Fact]
+    public async Task Publish_failure_does_not_fail_the_poll()
+    {
+        var match = Match(MatchStatus.Live, Now.AddMinutes(-20), score: new Score(0, 0));
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("tur.1", Today, match), Now.AddSeconds(-30)));
+        _provider.Returns(Scoreboard("tur.1", Today, match with { Score = new Score(1, 0) }));
+        _publisher.Fail = true;
+
+        var delay = await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+
+        Assert.Equal(TimeSpan.FromSeconds(30), delay);
+        Assert.Equal(new Score(1, 0), Assert.Single((await _store.GetAsync("tur.1", Today))!.Scoreboard.Matches).Score);
     }
 
     [Fact]

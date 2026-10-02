@@ -29,6 +29,10 @@ public sealed record TeamResponse(string Id, string Name, string ShortName, stri
 
 public sealed record ScoreResponse(int Home, int Away);
 
+/// <summary>SignalR "MatchUpdated" payload: the full new match state plus what changed (e.g. to animate a goal).</summary>
+/// <remarks>Both flags false means only the clock moved.</remarks>
+public sealed record MatchUpdatedMessage(MatchResponse Match, bool ScoreChanged, bool StatusChanged);
+
 public static class ContractMappings
 {
     public static LeagueMatchesResponse ToResponse(this ScoreboardSnapshot snapshot) => new(
@@ -46,6 +50,11 @@ public static class ContractMappings
         ToResponse(match.HomeTeam),
         ToResponse(match.AwayTeam),
         match.Score is { } s ? new ScoreResponse(s.Home, s.Away) : null);
+
+    public static MatchUpdatedMessage ToMessage(this MatchChange change) => new(
+        change.Match.ToResponse(),
+        change.Kinds.HasFlag(MatchChangeKind.Score),
+        change.Kinds.HasFlag(MatchChangeKind.Status));
 
     private static TeamResponse ToResponse(Team team) => new(team.Id, team.Name, team.ShortName, team.LogoUrl);
 }

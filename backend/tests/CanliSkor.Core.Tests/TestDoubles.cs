@@ -80,3 +80,21 @@ internal static class TestOptions
     public static IOptionsMonitor<FootballOptions> Leagues(params string[] codes) =>
         new StaticOptionsMonitor<FootballOptions>(new FootballOptions { Leagues = [.. codes] });
 }
+
+internal sealed class FakeMatchUpdatePublisher : IMatchUpdatePublisher
+{
+    public List<MatchChange> Published { get; } = [];
+
+    public bool Fail { get; set; }
+
+    public Task PublishAsync(IReadOnlyList<MatchChange> changes, CancellationToken cancellationToken = default)
+    {
+        if (Fail)
+        {
+            throw new InvalidOperationException("Push transport is down");
+        }
+
+        Published.AddRange(changes);
+        return Task.CompletedTask;
+    }
+}

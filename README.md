@@ -3,7 +3,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 2: background polling, cache, REST endpoints).
+> Status: **work in progress** (step 3: real-time push with SignalR).
 
 ## Architecture
 
@@ -26,11 +26,14 @@ Dependencies point inward: `Api → Infrastructure → Core`. ESPN's API is unof
 ### How data flows
 
 ```
-ESPN ──► ScoreboardPollingWorker ──► IMatchStore (cache) ──► REST API ──► clients
-         (BackgroundService)                                 (SignalR push: next step)
+ESPN ──► ScoreboardPollingWorker ──► IMatchStore (cache) ──► REST API ──────► clients (initial state)
+         (BackgroundService)    │
+                                └─► MatchChangeDetector ──► SignalR hub ──► clients (changes only)
 ```
 
 Only the backend calls ESPN. Client requests are served from the cache, so traffic never adds load on the external API.
+After each fetch the new scoreboard is compared with the cached one; only matches whose score, status or clock
+changed are pushed, and only to clients subscribed to that league.
 
 **Smart polling.** After each round the worker computes the next delay:
 
@@ -79,6 +82,17 @@ dotnet run --project src/CanliSkor.Api        # http://localhost:5272
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings
 (`Scheduled`, `Live`, `HalfTime`, `Finished`, `Postponed`, `Cancelled`), and `score` is `null` before kickoff.
 Each league includes `lastUpdatedUtc` so clients can detect stale data.
+
+### Real-time: SignalR hub `/hubs/live-scores`
+
+| Direction | Name | Payload |
+|---|---|---|
+| client → server | `SubscribeToLeague(leagueCode)` | e.g. `"tur.1"`; unknown leagues are rejected |
+| client → server | `UnsubscribeFromLeague(leagueCode)` | |
+| server → client | `MatchUpdated` | `{ match, scoreChanged, statusChanged }` |
+
+`match` has the same shape as in the REST API. Both flags `false` means only the clock moved.
+Recommended client flow: connect, subscribe, then load `GET /api/matches` and apply updates on top.
 
 ## Configuration
 
