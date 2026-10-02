@@ -1,4 +1,5 @@
 using CanliSkor.Core.Abstractions;
+using CanliSkor.Infrastructure.Caching;
 using CanliSkor.Infrastructure.Espn;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,9 @@ public static class DependencyInjection
             })
             // Retry with exponential backoff + jitter, per-attempt and total timeouts, circuit breaker.
             .AddStandardResilienceHandler();
+
+        services.AddMemoryCache();
+        services.AddSingleton<IMatchStore, InMemoryMatchStore>();
 
         return services;
     }

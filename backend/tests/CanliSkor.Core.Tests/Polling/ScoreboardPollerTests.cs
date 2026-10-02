@@ -1,0 +1,101 @@
+using CanliSkor.Core.Domain;
+using CanliSkor.Core.Polling;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
+using static CanliSkor.Core.Tests.TestData;
+
+namespace CanliSkor.Core.Tests.Polling;
+
+public class ScoreboardPollerTests
+{
+    // 22:30 UTC on 3 Oct is already 01:30 on 4 Oct in Istanbul (UTC+3).
+    private static readonly DateTimeOffset Now = new(2026, 10, 3, 22, 30, 0, TimeSpan.Zero);
+    private static readonly DateOnly Today = new(2026, 10, 4);
+    private static readonly DateOnly Yesterday = new(2026, 10, 3);
+
+    private readonly FakeFootballDataProvider _provider = new();
+    private readonly FakeMatchStore _store = new();
+    private readonly FakeTimeProvider _time = new(Now);
+
+    private ScoreboardPoller CreatePoller(params string[] leagues) => new(
+        _provider,
+        _store,
+        TestOptions.Leagues(leagues),
+        new StaticOptionsMonitor<CanliSkor.Core.Options.PollingOptions>(TestOptions.Polling()),
+        _time,
+        NullLogger<ScoreboardPoller>.Instance);
+
+    [Fact]
+    public async Task Fetches_every_league_for_today_in_istanbul_and_stores_it()
+    {
+        _provider.Returns(Scoreboard("tur.1", Today));
+        _provider.Returns(Scoreboard("eng.1", Today));
+
+        await CreatePoller("tur.1", "eng.1").PollAsync(CancellationToken.None);
+
+        Assert.Equal([("tur.1", Today), ("eng.1", Today)], _provider.Requests);
+        var stored = await _store.GetAsync("tur.1", Today);
+        Assert.NotNull(stored);
+        Assert.Equal(Now, stored.FetchedAtUtc);
+        Assert.NotNull(await _store.GetAsync("eng.1", Today));
+    }
+
+    [Fact]
+    public async Task Returns_live_interval_when_a_match_is_live()
+    {
+        _provider.Returns(Scoreboard("tur.1", Today, Match(MatchStatus.Live, Now.AddMinutes(-20))));
+
+        var delay = await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+
+        Assert.Equal(TimeSpan.FromSeconds(30), delay);
+    }
+
+    [Fact]
+    public async Task Provider_failure_keeps_last_snapshot_and_retries_sooner()
+    {
+        var previous = new ScoreboardSnapshot(Scoreboard("tur.1", Today, Match(MatchStatus.Finished, Now.AddHours(-3))), Now.AddMinutes(-15));
+        await _store.SetAsync(previous);
+        // _provider has no data configured, so every fetch fails.
+
+        var delay = await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+
+        Assert.Same(previous, await _store.GetAsync("tur.1", Today));
+        Assert.Equal(TimeSpan.FromMinutes(1), delay); // ErrorRetryInterval instead of 15 min idle
+    }
+
+    [Fact]
+    public async Task One_failing_league_does_not_block_the_others()
+    {
+        _provider.Returns(Scoreboard("eng.1", Today));
+
+        await CreatePoller("tur.1", "eng.1").PollAsync(CancellationToken.None);
+
+        Assert.NotNull(await _store.GetAsync("eng.1", Today));
+    }
+
+    [Fact]
+    public async Task Keeps_polling_yesterday_while_a_match_there_is_still_live()
+    {
+        // Kicked off 22:00 Istanbul yesterday, now 01:30 — e.g. extra time and penalties.
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("uefa.champions", Yesterday, Match(MatchStatus.Live, Now.AddMinutes(-150))), Now.AddSeconds(-30)));
+        _provider.Returns(Scoreboard("uefa.champions", Yesterday, Match(MatchStatus.Finished, Now.AddMinutes(-150))));
+        _provider.Returns(Scoreboard("uefa.champions", Today));
+
+        await CreatePoller("uefa.champions").PollAsync(CancellationToken.None);
+
+        Assert.Equal([("uefa.champions", Yesterday), ("uefa.champions", Today)], _provider.Requests);
+        var updated = await _store.GetAsync("uefa.champions", Yesterday);
+        Assert.Equal(MatchStatus.Finished, Assert.Single(updated!.Scoreboard.Matches).Status);
+    }
+
+    [Fact]
+    public async Task Stops_polling_yesterday_once_its_matches_are_finished()
+    {
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("uefa.champions", Yesterday, Match(MatchStatus.Finished, Now.AddMinutes(-150))), Now.AddMinutes(-5)));
+        _provider.Returns(Scoreboard("uefa.champions", Today));
+
+        await CreatePoller("uefa.champions").PollAsync(CancellationToken.None);
+
+        Assert.Equal([("uefa.champions", Today)], _provider.Requests);
+    }
+}

@@ -1,15 +1,25 @@
-using CanliSkor.Core.Abstractions;
+using System.Text.Json.Serialization;
+using CanliSkor.Api.Endpoints;
+using CanliSkor.Api.Workers;
+using CanliSkor.Core;
 using CanliSkor.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services
+    .AddCore(builder.Configuration)
+    .AddInfrastructure(builder.Configuration);
+
+builder.Services.AddHostedService<ScoreboardPollingWorker>();
+
+// Enums as strings ("Live", not 1): readable, and reordering the enum can't break clients.
+builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
 
-// TEMPORARY (step 1): calls ESPN directly so the provider can be tried out.
-// Replaced in step 2 by cache-backed endpoints fed by the background poller.
-app.MapGet("/debug/scoreboard/{leagueCode}", async (string leagueCode, DateOnly? date, IFootballDataProvider provider, CancellationToken ct) =>
-    await provider.GetScoreboardAsync(leagueCode, date ?? DateOnly.FromDateTime(DateTime.UtcNow), ct));
+app.MapMatchEndpoints();
 
 app.Run();
+
+// Exposes Program to WebApplicationFactory in integration tests.
+public partial class Program;
