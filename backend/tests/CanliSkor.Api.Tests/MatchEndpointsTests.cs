@@ -194,7 +194,7 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         using var json = await GetJson("/api/leagues");
 
         Assert.Equal(
-            ["tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "arg.1", "bra.1", "col.1", "chi.1"],
+            ["tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.nations", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly"],
             json.RootElement.EnumerateArray().Select(e => e.GetString()));
     }
 
