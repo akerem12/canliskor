@@ -276,6 +276,8 @@ h1, h2 { margin: 0; }
   --grass-alt: #2a7f47;
   --line: rgb(255 255 255 / 0.55);
   position: relative; overflow: hidden; border-radius: 10px;
+  /* Both halves as tall as the taller one, whatever the formations: the halfway line stays in the middle. */
+  display: grid; grid-auto-rows: 1fr;
   background: repeating-linear-gradient(to bottom, var(--grass) 0 56px, var(--grass-alt) 56px 112px);
   border: 2px solid var(--line);
 }
@@ -284,7 +286,8 @@ h1, h2 { margin: 0; }
   content: ''; position: absolute; left: 50%; top: 50%; width: 92px; height: 92px;
   transform: translate(-50%, -50%); border: 2px solid var(--line); border-radius: 50%;
 }
-.pitch__half { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 30px 6px 16px; }
+/* A team with fewer rows spreads them over the same height. */
+.pitch__half { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; padding: 30px 6px 16px; }
 .pitch__half--home { border-bottom: 2px solid var(--line); }
 .pitch__half--away { padding: 16px 6px 30px; }
 .pitch__team {
