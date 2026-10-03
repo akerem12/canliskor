@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig, major European and South American leagues, the UEFA Nations League and international friendlies.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 17: match odds, player profiles, assists on goals and a dark navy theme).
+> Status: **work in progress** (step 18: Turkish and English, dark and light themes).
 
 ## Architecture
 
@@ -179,8 +179,8 @@ Any player's name (in the squads, the line-up sheet, the match events) opens a p
 position, nationality with flag, age, height, club, and this season's numbers with one tab per competition
 (league, cups, internationals). `GET /api/leagues/{code}/players/{id}` answers from ESPN's athlete page and its
 overview, cached for 30 minutes. What ESPN doesn't have is left out rather than made up: there are no minutes
-played and no passing figures for footballers, substitute appearances are only known for the player's main league,
-and very few players have a portrait (everyone else gets a silhouette).
+played and no passing figures for footballers, and substitute appearances are only known for the player's main
+league. There are no portraits: ESPN has one for very few footballers.
 
 ### Assists
 
@@ -189,6 +189,15 @@ among them) ESPN's events name only the scorer, while the line-ups say how many 
 match. `AssistAttribution` fills the gap where that leaves no doubt: a player with one assist who could have set up
 exactly one of the team's goals (on the pitch at the time, not the scorer) set up that one. Anything ambiguous stays
 open; the line-ups still mark every player who assisted.
+
+### Languages and themes
+
+The header has two switches. **Language:** English or Turkish; a browser set to Turkish starts in Turkish. Every
+word the site itself says lives in `frontend/src/i18n` (`en.ts`, and `tr.ts` typed to have exactly the same keys),
+dates follow the language, and so do the match alerts. Names that come from ESPN (teams, leagues, players,
+countries, "2nd in Turkish Super Lig") are shown as they arrive. **Theme:** dark navy (the default) or light; the
+colours are tokens at the top of `index.css`, switched by `data-theme` on `<html>`, which a small script in
+`index.html` sets before the first paint. Both choices are remembered in localStorage.
 
 ### Team search
 
@@ -313,7 +322,7 @@ merged in from `/live`.
 | `GET /api/teams/search?q=gala` | Teams whose name contains the query (two characters or more): `[{ league: { code, name }, team }]` |
 | `GET /api/leagues/{code}/fixtures` | The league's matches still to be played, this month and next, soonest first: `{ leagueCode, leagueName, matches, lastUpdatedUtc }` (cached 30 minutes) |
 | `GET /api/leagues/{code}/teams/{teamId}` | A team: `{ team, isNationalTeam, standingSummary, stadium, stadiumCity, recentMatches, upcomingMatches, competitions, lastUpdatedUtc }`. Matches have the same shape as in `/api/matches` and cover every competition the team plays in; `competitions` names them (`[{ code, name }]`) |
-| `GET /api/leagues/{code}/players/{playerId}` | A player: `{ id, name, jersey, position, nationality, flagUrl, age, heightCm, photoUrl, team, competitions, lastUpdatedUtc }`; each competition `{ name, leagueCode, teamName, starts, substituteAppearances, goals, assists, shots, shotsOnTarget, yellowCards, redCards, foulsCommitted, foulsSuffered, offsides, cleanSheets, saves, goalsConceded }` (the last three for goalkeepers only; `404` if unknown) |
+| `GET /api/leagues/{code}/players/{playerId}` | A player: `{ id, name, jersey, position, nationality, flagUrl, age, heightCm, team, competitions, lastUpdatedUtc }`; each competition `{ name, leagueCode, teamName, starts, substituteAppearances, goals, assists, shots, shotsOnTarget, yellowCards, redCards, foulsCommitted, foulsSuffered, offsides, cleanSheets, saves, goalsConceded }` (the last three for goalkeepers only; `404` if unknown) |
 | `GET /api/leagues/{code}/teams/{teamId}/squad` | A team's squad: `{ teamId, teamName, players, lastUpdatedUtc }`, each player `{ id, name, jersey, position, age, nationality }` (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings

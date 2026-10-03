@@ -16,7 +16,7 @@ public class LeagueInfoServiceTests
         [new StandingsGroup("2026/2027", [new StandingsRow(1, Besiktas, 6, 4, 0, 2, 14, 7, 7, 12, null, null)])]);
     private static readonly TeamProfile Profile = new("tur.1", Besiktas, false, "3rd in Turkish Super Lig", "Vodafone Park", "Istanbul", [], [], []);
 
-    private static readonly PlayerProfile Striker = new("9", "Striker", "9", PlayerPosition.Forward, null, null, 28, 185, null, Besiktas, []);
+    private static readonly PlayerProfile Striker = new("9", "Striker", "9", PlayerPosition.Forward, null, null, 28, 185, Besiktas, []);
 
     private readonly FakeFootballDataProvider _provider = new();
     private readonly FakeMatchStore _store = new();

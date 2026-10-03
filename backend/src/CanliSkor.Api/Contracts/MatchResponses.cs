@@ -162,7 +162,6 @@ public sealed record TeamProfileResponse(
     DateTimeOffset LastUpdatedUtc);
 
 /// <param name="FlagUrl">Picture of the country's flag, or null.</param>
-/// <param name="PhotoUrl">Portrait, or null: most players have none.</param>
 /// <param name="Team">The player's club, or null if unknown.</param>
 /// <param name="Competitions">This season, one entry per competition, the player's main league first.</param>
 public sealed record PlayerProfileResponse(
@@ -174,7 +173,6 @@ public sealed record PlayerProfileResponse(
     string? FlagUrl,
     int? Age,
     int? HeightCm,
-    string? PhotoUrl,
     TeamResponse? Team,
     IReadOnlyList<PlayerCompetitionStatsResponse> Competitions,
     DateTimeOffset LastUpdatedUtc);
@@ -280,7 +278,6 @@ public static class ContractMappings
         entry.Value.FlagUrl,
         entry.Value.Age,
         entry.Value.HeightCm,
-        entry.Value.PhotoUrl,
         entry.Value.Team is { } team ? ToResponse(team) : null,
         entry.Value.Competitions.Select(c => new PlayerCompetitionStatsResponse(
             c.Name, c.LeagueCode, c.TeamName, c.Starts, c.SubstituteAppearances, c.Goals, c.Assists, c.Shots, c.ShotsOnTarget,

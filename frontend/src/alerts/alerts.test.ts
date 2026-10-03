@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Match, MatchStatus, MatchUpdatedMessage } from '../api/types'
+import { tr } from '../i18n/tr'
 import { describeUpdate, isMatchWatched, noAlerts, parseAlertSettings, toggleMatch, wantsAlert } from './alerts'
 
 const match = (status: MatchStatus, score: [number, number] | null, clock: string | null = null): Match => ({
@@ -65,6 +66,14 @@ describe('describeUpdate', () => {
   it('announces a match called off', () => {
     expect(describeUpdate(match('Scheduled', null), update(match('Postponed', null), 'status'))?.title).toBe('Match postponed')
     expect(describeUpdate(match('Scheduled', null), update(match('Cancelled', null), 'status'))?.title).toBe('Match cancelled')
+  })
+
+  it('speaks the language it is given', () => {
+    const goal = describeUpdate(match('Live', [0, 0], "66'"), update(match('Live', [1, 0], "67'"), 'score'), tr)
+    const fullTime = describeUpdate(match('Live', [2, 1], "90'"), update(match('Finished', [2, 1]), 'status'), tr)
+
+    expect(goal?.title).toBe('⚽ Galatasaray gol attı!')
+    expect(fullTime?.title).toBe('Maç sonu')
   })
 
   it('stays quiet when only the clock moved', () => {

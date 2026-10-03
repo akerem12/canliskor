@@ -7,7 +7,7 @@ namespace CanliSkor.Infrastructure.Espn;
 
 /// <summary>
 /// Pure translation of ESPN's athlete page to <see cref="PlayerProfile"/>. ESPN has no minutes played and no
-/// passing figures for footballers, and a portrait for very few of them.
+/// passing figures for footballers. It has a portrait for very few of them, so portraits are left out altogether.
 /// </summary>
 internal static partial class EspnAthleteMapper
 {
@@ -36,7 +36,6 @@ internal static partial class EspnAthleteMapper
             NullIfEmpty(athlete.Flag?.Href),
             athlete.Age,
             ParseHeight(athlete.DisplayHeight),
-            NullIfEmpty(athlete.Headshot?.Href),
             team,
             MapCompetitions(overview?.Statistics, athlete.StatsSummary));
     }

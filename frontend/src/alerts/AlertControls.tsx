@@ -1,35 +1,33 @@
 import type { Match } from '../api/types'
+import type { Dictionary } from '../i18n/en'
+import { useI18n } from '../i18n/useI18n'
 import type { AlertPermission } from './useAlerts'
 import { useAlerts } from './useAlerts'
 
 /** Why alerts can't be switched on, in words; null if they can. */
-function blockedReason(permission: AlertPermission): string | null {
-  if (permission === 'unsupported') return "This browser doesn't support notifications."
-  if (permission === 'denied') return 'Notifications are blocked for this site. Allow them in the browser\'s site settings (the icon left of the address) to use alerts.'
+function blockedReason(permission: AlertPermission, t: Dictionary): string | null {
+  if (permission === 'unsupported') return t.alerts.unsupported
+  if (permission === 'denied') return t.alerts.denied
   return null
 }
 
 /** The switch for alerts on every match of a favourite team. Shown on the Favourites page. */
 export function TeamAlertsSwitch({ teamCount }: { teamCount: number }) {
+  const { t } = useI18n()
   const { permission, teamAlerts, setTeamAlerts } = useAlerts()
-  const blocked = blockedReason(permission)
+  const blocked = blockedReason(permission, t)
 
   return (
     <div className="alerts">
       <div className="alerts__text">
-        <strong>🔔 Match alerts for your teams</strong>
-        <span>
-          {blocked
-            ?? (teamCount === 0
-              ? 'Star a team first: alerts are sent for favourite teams, not for whole leagues.'
-              : 'Goals, kick-off, half time and full time of your favourite teams, while this site is open in a tab.')}
-        </span>
+        <strong>{t.alerts.heading}</strong>
+        <span>{blocked ?? (teamCount === 0 ? t.alerts.starFirst : t.alerts.description)}</span>
       </div>
       <button
         className={teamAlerts ? 'switch switch--on' : 'switch'}
         role="switch"
         aria-checked={teamAlerts}
-        aria-label="Match alerts for favourite teams"
+        aria-label={t.alerts.switchLabel}
         disabled={blocked !== null}
         onClick={() => void setTeamAlerts(!teamAlerts)}
       >
@@ -41,10 +39,11 @@ export function TeamAlertsSwitch({ teamCount }: { teamCount: number }) {
 
 /** A bell that switches alerts on for one match only. Shown on the match's page until it is over. */
 export function MatchAlertButton({ match }: { match: Match }) {
+  const { t } = useI18n()
   const { permission, isWatched, toggleMatch } = useAlerts()
   if (match.status === 'Finished' || match.status === 'Cancelled' || match.status === 'Postponed') return null
 
-  const blocked = blockedReason(permission)
+  const blocked = blockedReason(permission, t)
   const watched = isWatched(match.id)
 
   return (
@@ -52,10 +51,10 @@ export function MatchAlertButton({ match }: { match: Match }) {
       className={watched ? 'bell bell--on' : 'bell'}
       aria-pressed={watched}
       disabled={blocked !== null}
-      title={blocked ?? (watched ? 'Stop alerts for this match' : 'Get goals, kick-off and full time of this match as notifications')}
+      title={blocked ?? (watched ? t.alerts.stop : t.alerts.start)}
       onClick={() => void toggleMatch(match)}
     >
-      {watched ? '🔔 Alerts on' : '🔕 Notify me'}
+      {watched ? t.alerts.on : t.alerts.off}
     </button>
   )
 }

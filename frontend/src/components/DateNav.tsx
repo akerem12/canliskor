@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/useI18n'
 import { addDays, formatDayLabel, istanbulToday } from '../time'
 
 /** Mirrors MatchQueryService.MaxDaysAway on the backend. */
@@ -10,12 +11,13 @@ interface Props {
 
 /** ‹ Yesterday · Today · Tomorrow › — one tap per day, up to a week either way. */
 export function DateNav({ offset, onChange }: Props) {
+  const { t } = useI18n()
   const today = istanbulToday()
   const visible = [offset - 1, offset, offset + 1].filter(o => Math.abs(o) <= MaxDaysAway)
 
   return (
-    <nav className="date-nav" aria-label="Choose day">
-      <button className="date-nav__arrow" onClick={() => onChange(offset - 1)} disabled={offset <= -MaxDaysAway} aria-label="Previous day">
+    <nav className="date-nav" aria-label={t.days.choose}>
+      <button className="date-nav__arrow" onClick={() => onChange(offset - 1)} disabled={offset <= -MaxDaysAway} aria-label={t.days.previous}>
         ‹
       </button>
       {visible.map(o => (
@@ -25,15 +27,15 @@ export function DateNav({ offset, onChange }: Props) {
           aria-current={o === offset ? 'date' : undefined}
           onClick={() => onChange(o)}
         >
-          {formatDayLabel(addDays(today, o), o)}
+          {formatDayLabel(addDays(today, o), o, t)}
         </button>
       ))}
-      <button className="date-nav__arrow" onClick={() => onChange(offset + 1)} disabled={offset >= MaxDaysAway} aria-label="Next day">
+      <button className="date-nav__arrow" onClick={() => onChange(offset + 1)} disabled={offset >= MaxDaysAway} aria-label={t.days.next}>
         ›
       </button>
       {offset !== 0 && (
         <button className="date-nav__today" onClick={() => onChange(0)}>
-          Back to today
+          {t.days.backToToday}
         </button>
       )}
     </nav>

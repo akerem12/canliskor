@@ -3,6 +3,7 @@ import { isInPlay } from './api/types'
 import { Skeleton, EmptyState } from './components/common'
 import { ConnectionBadge } from './components/ConnectionBadge'
 import { DateNav, MaxDaysAway } from './components/DateNav'
+import { HeaderTools } from './components/HeaderTools'
 import { LeaguePage, LeaguesPage } from './components/LeaguePages'
 import { LeagueSection } from './components/LeagueSection'
 import { MatchPage } from './components/MatchPage'
@@ -12,6 +13,7 @@ import { AlertsContext, useAlertsController } from './alerts/useAlerts'
 import { FavoritesPage } from './favorites/FavoritesPage'
 import { pinFavorites } from './favorites/pinned'
 import { useFavorites } from './favorites/useFavorites'
+import { useI18n } from './i18n/useI18n'
 import { useLiveScores } from './live/useLiveScores'
 import type { Route } from './route'
 import { routeFromSearch, routeToSearch, sameRoute } from './route'
@@ -79,13 +81,14 @@ export default function App() {
   }
   const [filter, setFilter] = useState<Filter>('all')
   const { route, navigate, back } = useRoute()
+  const { t } = useI18n()
 
   const { favorites } = useFavorites()
   const favoriteCount = favorites.teams.length + favorites.leagues.length
   const favoriteTeamIds = useMemo(() => new Set(favorites.teams.map(t => t.teamId)), [favorites.teams])
 
   // Alerts listen to every live update; a click on one opens the match.
-  const alerts = useAlertsController(favoriteTeamIds, match => navigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id }))
+  const alerts = useAlertsController(favoriteTeamIds, match => navigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id }), t)
   const { leagues, loaded, status, date, recentGoals, error, watchMatch } = useLiveScores(dayOffset, alerts.handleUpdate)
 
   const leagueOf = (code: string) => leagues.find(l => l.code === code)
@@ -99,29 +102,32 @@ export default function App() {
           <h1>
             <button className="topbar__home" onClick={() => navigate({ view: 'matches' })}>CanlıSkor</button>
           </h1>
-          <span className="topbar__date">{formatLongDate(date)}</span>
+          <span className="topbar__date">{formatLongDate(date, t)}</span>
         </div>
-        <ConnectionBadge status={status} />
+        <div className="topbar__side">
+          <ConnectionBadge status={status} />
+          <HeaderTools />
+        </div>
       </header>
 
-      <nav className="mainnav" aria-label="Sections">
+      <nav className="mainnav" aria-label={t.nav.sections}>
         <button
           className={route.view === 'matches' || route.view === 'match' ? 'mainnav__item mainnav__item--active' : 'mainnav__item'}
           onClick={() => navigate({ view: 'matches' })}
         >
-          Matches
+          {t.nav.matches}
         </button>
         <button
           className={route.view === 'leagues' || route.view === 'league' || route.view === 'team' ? 'mainnav__item mainnav__item--active' : 'mainnav__item'}
           onClick={() => navigate({ view: 'leagues' })}
         >
-          Leagues &amp; teams
+          {t.nav.leagues}
         </button>
         <button
           className={route.view === 'favorites' ? 'mainnav__item mainnav__item--active' : 'mainnav__item'}
           onClick={() => navigate({ view: 'favorites' })}
         >
-          ★ Favourites{favoriteCount > 0 && <span className="mainnav__count">{favoriteCount}</span>}
+          ★ {t.nav.favourites}{favoriteCount > 0 && <span className="mainnav__count">{favoriteCount}</span>}
         </button>
       </nav>
       </div>
@@ -170,11 +176,8 @@ export default function App() {
       </div>
 
       <footer className="footer">
-        Times in Istanbul time · Data: ESPN
-        <span className="footer__note">
-          An unofficial, non-commercial hobby project. Not affiliated with ESPN or with any club, league or federation;
-          names and crests belong to their owners.
-        </span>
+        {t.footer.line}
+        <span className="footer__note">{t.footer.note}</span>
       </footer>
     </div>
     </AlertsContext.Provider>
@@ -196,6 +199,7 @@ interface MatchListProps {
 
 /** The matches of one day, grouped by league. Leagues without a match that day aren't listed here. */
 function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, loaded, offline, error, recentGoals, onNavigate }: MatchListProps) {
+  const { t } = useI18n()
   // The Live tab only means something today; other days always show everything.
   const isToday = dayOffset === 0
   const effectiveFilter: Filter = isToday ? filter : 'all'
@@ -210,27 +214,27 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
   const shown = pinned.leagues
 
   const emptyTitle = effectiveFilter === 'live'
-    ? 'No matches in play right now.'
-    : isToday ? 'No matches today.' : 'No matches on this day.'
+    ? t.matchList.noneLive
+    : isToday ? t.matchList.noneToday : t.matchList.noneThatDay
 
   return (
     <>
       <DateNav offset={dayOffset} onChange={onDayChange} />
 
       {isToday && (
-        <nav className="tabs" aria-label="Filter matches">
+        <nav className="tabs" aria-label={t.matchList.filter}>
           <button className={filter === 'all' ? 'tab tab--active' : 'tab'} onClick={() => onFilterChange('all')}>
-            All matches
+            {t.matchList.all}
           </button>
           <button className={filter === 'live' ? 'tab tab--active' : 'tab'} onClick={() => onFilterChange('live')}>
-            Live <span className="tab__count">{liveCount}</span>
+            {t.matchList.live} <span className="tab__count">{liveCount}</span>
           </button>
         </nav>
       )}
 
       {/* While another day loads, the previous one stays visible but dimmed. */}
       <main className={loaded ? undefined : 'is-loading'} aria-busy={!loaded}>
-        {error && offline && <p className="notice notice--error">Can't reach the server ({error}).</p>}
+        {error && offline && <p className="notice notice--error">{t.matchList.cantReach(error)}</p>}
         {!loaded && leagues.length === 0 ? (
           <MatchListSkeleton />
         ) : shown.length === 0 ? (
@@ -238,17 +242,15 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
             <EmptyState
               icon="📅"
               title={emptyTitle}
-              hint={effectiveFilter === 'live'
-                ? 'Live matches show up here as soon as they kick off.'
-                : 'Try another day, or open Leagues & teams for tables and fixtures.'}
+              hint={effectiveFilter === 'live' ? t.matchList.hintLive : t.matchList.hintOther}
             />
           </div>
         ) : (
           <>
             {pinned.teamMatches.length > 0 && (
-              <section className="league league--pinned" aria-label="Your teams">
+              <section className="league league--pinned" aria-label={t.matchList.yourTeams}>
                 <header className="league__header">
-                  <h2>★ Your teams</h2>
+                  <h2>★ {t.matchList.yourTeams}</h2>
                 </header>
                 <ul className="league__matches">
                   {pinned.teamMatches.map(match => (
@@ -273,8 +275,10 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
 }
 
 function MatchListSkeleton() {
+  const { t } = useI18n()
+
   return (
-    <div aria-label="Loading matches">
+    <div aria-label={t.matchList.loading}>
       {[5, 3].map(rows => (
         <section key={rows} className="league league--skeleton">
           <Skeleton rows={rows} height={22} />

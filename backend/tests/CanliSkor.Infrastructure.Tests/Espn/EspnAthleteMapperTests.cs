@@ -29,22 +29,15 @@ public class EspnAthleteMapperTests
     }
 
     [Fact]
-    public void Player_without_a_portrait_has_no_photo()
-    {
-        Assert.Null(Map("sane").PhotoUrl);
-    }
-
-    [Fact]
-    public void Portrait_is_taken_when_espn_has_one()
+    public void Player_without_a_club_or_statistics_is_still_a_player()
     {
         var response = new EspnAthleteResponse(new EspnAthleteProfile(
-            "45843", "Lionel Messi", "10", new EspnPosition("F"), null, "5' 7\"", 39, "Argentina", null,
-            new EspnLogo("https://a.espncdn.com/i/headshots/soccer/players/full/45843.png"), null));
+            "45843", "Lionel Messi", "10", new EspnPosition("F"), null, "5' 7\"", 39, "Argentina", null, null));
 
         var player = EspnAthleteMapper.Map(response, null)!;
 
-        Assert.Equal("https://a.espncdn.com/i/headshots/soccer/players/full/45843.png", player.PhotoUrl);
         Assert.Equal(170, player.HeightCm);
+        Assert.Null(player.FlagUrl);
         Assert.Null(player.Team);
         Assert.Empty(player.Competitions);
     }

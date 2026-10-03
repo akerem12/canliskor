@@ -1,5 +1,6 @@
 import type { Standings, StandingsGroup } from '../api/types'
 import { FavoriteButton } from '../favorites/FavoriteButton'
+import { useI18n } from '../i18n/useI18n'
 import type { Route } from '../route'
 import { TeamLogo } from './common'
 
@@ -41,6 +42,8 @@ function GroupTable({ group, title, leagueCode, teamId, onNavigate }: {
   teamId: string | undefined
   onNavigate: (route: Route) => void
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="table-wrap">
       <table className="table">
@@ -48,15 +51,15 @@ function GroupTable({ group, title, leagueCode, teamId, onNavigate }: {
         <thead>
           <tr>
             <th className="table__rank" scope="col">#</th>
-            <th className="table__team" scope="col">Team</th>
-            <th scope="col" title="Played">P</th>
-            <th scope="col" title="Won">W</th>
-            <th scope="col" title="Drawn">D</th>
-            <th scope="col" title="Lost">L</th>
-            <th className="table__wide" scope="col" title="Goals for and against">Goals</th>
-            <th scope="col" title="Goal difference">GD</th>
-            <th scope="col" title="Points">Pts</th>
-            <th scope="col"><span className="visually-hidden">Favourite</span></th>
+            <th className="table__team" scope="col">{t.table.team}</th>
+            <th scope="col" title={t.table.playedTitle}>{t.table.played}</th>
+            <th scope="col" title={t.table.wonTitle}>{t.table.won}</th>
+            <th scope="col" title={t.table.drawnTitle}>{t.table.drawn}</th>
+            <th scope="col" title={t.table.lostTitle}>{t.table.lost}</th>
+            <th className="table__wide" scope="col" title={t.table.goalsTitle}>{t.table.goals}</th>
+            <th scope="col" title={t.table.differenceTitle}>{t.table.difference}</th>
+            <th scope="col" title={t.table.pointsTitle}>{t.table.points}</th>
+            <th scope="col"><span className="visually-hidden">{t.table.favourite}</span></th>
           </tr>
         </thead>
         <tbody>

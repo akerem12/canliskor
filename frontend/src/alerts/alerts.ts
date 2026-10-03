@@ -2,6 +2,8 @@
 // Pure and free of the browser's Notification API and storage, so it can be unit-tested; useAlertsController adds both.
 
 import type { Match, MatchUpdatedMessage } from '../api/types'
+import type { Dictionary } from '../i18n/en'
+import { en } from '../i18n/en'
 
 /** What a notification shows. */
 export interface Alert {
@@ -84,10 +86,11 @@ const minuteOf = (clock: string | null) => {
  * match called off. Null for updates that are no news (the clock moving).
  * @param previous The match as it was before the update, if known. Without it a "now live" update can't be told
  *   apart from the second half starting, so it only counts as kick-off in the first minutes.
+ * @param t The words of the language to say it in.
  */
-export function describeUpdate(previous: Match | undefined, message: MatchUpdatedMessage): Alert | null {
+export function describeUpdate(previous: Match | undefined, message: MatchUpdatedMessage, t: Dictionary = en): Alert | null {
   const { match } = message
-  const teams = `${match.homeTeam.shortName} v ${match.awayTeam.shortName}`
+  const teams = t.match.versus(match.homeTeam.shortName, match.awayTeam.shortName)
   const score = match.score ? `${match.homeTeam.shortName} ${match.score.home} - ${match.score.away} ${match.awayTeam.shortName}` : teams
   const minute = match.clock ? `${match.clock} · ` : ''
 
@@ -97,13 +100,13 @@ export function describeUpdate(previous: Match | undefined, message: MatchUpdate
     const goalsNow = match.score.home + match.score.away
     // A goal taken back (VAR) lowers the total.
     if (goalsBefore !== null && goalsNow < goalsBefore) {
-      return { title: 'Goal ruled out', body: score, tag: `${match.id}:score:${goalsNow}:out` }
+      return { title: t.alerts.goalRuledOut, body: score, tag: `${match.id}:score:${goalsNow}:out` }
     }
 
     const scorer = before && match.score.home > before.home ? match.homeTeam.shortName
       : before && match.score.away > before.away ? match.awayTeam.shortName
       : null
-    return { title: scorer ? `⚽ Goal for ${scorer}!` : '⚽ Goal!', body: `${minute}${score}`, tag: `${match.id}:score:${goalsNow}` }
+    return { title: scorer ? t.alerts.goalFor(scorer) : t.alerts.goal, body: `${minute}${score}`, tag: `${match.id}:score:${goalsNow}` }
   }
 
   if (!message.statusChanged) return null
@@ -111,19 +114,19 @@ export function describeUpdate(previous: Match | undefined, message: MatchUpdate
   switch (match.status) {
     case 'Live': {
       const secondHalf = previous ? previous.status === 'HalfTime' : (minuteOf(match.clock) ?? 0) >= 45
-      if (secondHalf) return { title: 'Second half under way', body: score, tag: `${match.id}:second-half` }
+      if (secondHalf) return { title: t.alerts.secondHalf, body: score, tag: `${match.id}:second-half` }
       // Without the previous state, a match well into the first half is no longer "just kicked off".
       if (!previous && (minuteOf(match.clock) ?? 0) > 5) return null
-      return { title: 'Kick-off', body: teams, tag: `${match.id}:kickoff` }
+      return { title: t.alerts.kickOff, body: teams, tag: `${match.id}:kickoff` }
     }
     case 'HalfTime':
-      return { title: 'Half time', body: score, tag: `${match.id}:half-time` }
+      return { title: t.alerts.halfTime, body: score, tag: `${match.id}:half-time` }
     case 'Finished':
-      return { title: 'Full time', body: score, tag: `${match.id}:full-time` }
+      return { title: t.alerts.fullTime, body: score, tag: `${match.id}:full-time` }
     case 'Postponed':
-      return { title: 'Match postponed', body: teams, tag: `${match.id}:postponed` }
+      return { title: t.alerts.postponed, body: teams, tag: `${match.id}:postponed` }
     case 'Cancelled':
-      return { title: 'Match cancelled', body: teams, tag: `${match.id}:cancelled` }
+      return { title: t.alerts.cancelled, body: teams, tag: `${match.id}:cancelled` }
     default:
       return null
   }

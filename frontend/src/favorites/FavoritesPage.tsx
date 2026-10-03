@@ -6,6 +6,7 @@ import { isInPlay } from '../api/types'
 import { useFetch } from '../api/useFetch'
 import { OddsStrip } from '../components/Odds'
 import { EmptyState, Skeleton, TeamLogo } from '../components/common'
+import { useI18n } from '../i18n/useI18n'
 import type { Route } from '../route'
 import { formatMatchDate, formatTime } from '../time'
 import type { Favorites, FavoriteTeam } from './favorites'
@@ -77,6 +78,7 @@ function useFavoriteMatches(favorites: Favorites) {
  * matches those teams and leagues are about to play, soonest first.
  */
 export function FavoritesPage({ onNavigate }: { onNavigate: (route: Route) => void }) {
+  const { t } = useI18n()
   const { favorites } = useFavorites()
   const [filter, setFilter] = useState<FeedFilter>(null)
   const [shownCount, setShownCount] = useState(PageSize)
@@ -85,15 +87,15 @@ export function FavoritesPage({ onNavigate }: { onNavigate: (route: Route) => vo
 
   if (favorites.teams.length === 0 && favorites.leagues.length === 0) {
     return (
-      <main className="page" aria-label="Favourites">
-        <h2 className="page__title">Favourites</h2>
+      <main className="page" aria-label={t.favourites.title}>
+        <h2 className="page__title">{t.favourites.title}</h2>
         <div className="panel">
           <EmptyState
             icon="⭐"
-            title="You haven't picked a favourite team or league yet."
-            hint="Tap the star next to a team or a league and its upcoming matches will be collected here."
+            title={t.favourites.emptyTitle}
+            hint={t.favourites.emptyHint}
           />
-          <button className="cta" onClick={() => onNavigate({ view: 'leagues' })}>Browse leagues &amp; teams</button>
+          <button className="cta" onClick={() => onNavigate({ view: 'leagues' })}>{t.favourites.browse}</button>
         </div>
       </main>
     )
@@ -113,20 +115,20 @@ export function FavoritesPage({ onNavigate }: { onNavigate: (route: Route) => vo
   const favoriteLeagueOf = new Map(favorites.teams.map(t => [t.teamId, t.leagueCode]))
 
   return (
-    <main className="page" aria-label="Favourites">
-      <h2 className="page__title">Favourites</h2>
+    <main className="page" aria-label={t.favourites.title}>
+      <h2 className="page__title">{t.favourites.title}</h2>
 
       <TeamAlertsSwitch teamCount={favorites.teams.length} />
 
       <QuickBar favorites={favorites} filter={activeFilter} onPick={pick} onNavigate={onNavigate} />
 
-      <section className="panel" aria-label="Upcoming matches" aria-busy={loading}>
-        <h3 className="panel__title">Upcoming matches</h3>
+      <section className="panel" aria-label={t.favourites.upcoming} aria-busy={loading}>
+        <h3 className="panel__title">{t.favourites.upcoming}</h3>
 
         {failed.length > 0 && (
           <p className="notice notice--error" role="alert">
-            Couldn't load the matches of {failed.join(', ')}. The connection or the data source may be down.{' '}
-            <button className="notice__retry" onClick={retry}>Try again</button>
+            {t.favourites.failed(failed.join(', '))}{' '}
+            <button className="notice__retry" onClick={retry}>{t.common.tryAgain}</button>
           </p>
         )}
 
@@ -136,8 +138,8 @@ export function FavoritesPage({ onNavigate }: { onNavigate: (route: Route) => vo
           failed.length === 0 && (
             <EmptyState
               icon="📅"
-              title="No matches planned in the near future."
-              hint={activeFilter ? 'Nothing is scheduled for this favourite yet.' : 'Your favourites have nothing scheduled yet.'}
+              title={t.favourites.nothingPlanned}
+              hint={activeFilter ? t.favourites.nothingForThis : t.favourites.nothingForAny}
             />
           )
         ) : (
@@ -156,7 +158,7 @@ export function FavoritesPage({ onNavigate }: { onNavigate: (route: Route) => vo
             </ul>
             {matches.length > shownCount && (
               <button className="more" onClick={() => setShownCount(shownCount + PageSize)}>
-                Show more ({matches.length - shownCount} left)
+                {t.favourites.showMore(matches.length - shownCount)}
               </button>
             )}
           </>
@@ -173,14 +175,15 @@ function QuickBar({ favorites, filter, onPick, onNavigate }: {
   onPick: (filter: FeedFilter) => void
   onNavigate: (route: Route) => void
 }) {
+  const { t } = useI18n()
   const selectedTeam = filter?.kind === 'team' ? favorites.teams.find(t => t.teamId === filter.teamId) : undefined
   const selectedLeague = filter?.kind === 'league' ? favorites.leagues.find(l => l.code === filter.code) : undefined
 
   return (
     <>
-      <div className="quickbar" role="toolbar" aria-label="Filter by favourite">
+      <div className="quickbar" role="toolbar" aria-label={t.favourites.filterBy}>
         <button className={filter === null ? 'chip chip--active' : 'chip'} aria-pressed={filter === null} onClick={() => onPick(null)}>
-          All
+          {t.favourites.all}
         </button>
         {favorites.teams.map(team => {
           const active = filter?.kind === 'team' && filter.teamId === team.teamId
@@ -215,12 +218,12 @@ function QuickBar({ favorites, filter, onPick, onNavigate }: {
 
       {selectedTeam && (
         <button className="quickbar__open" onClick={() => onNavigate({ view: 'team', leagueCode: selectedTeam.leagueCode, teamId: selectedTeam.teamId })}>
-          Open {selectedTeam.name}'s page ›
+          {t.favourites.openTeam(selectedTeam.name)}
         </button>
       )}
       {selectedLeague && (
         <button className="quickbar__open" onClick={() => onNavigate({ view: 'league', leagueCode: selectedLeague.code })}>
-          Open the {selectedLeague.name} table ›
+          {t.favourites.openLeague(selectedLeague.name)}
         </button>
       )}
     </>
@@ -238,6 +241,7 @@ function FeedCard({ item, teamLeague, canOpenMatch, onNavigate }: {
   canOpenMatch: boolean
   onNavigate: (route: Route) => void
 }) {
+  const { t } = useI18n()
   const { match, leagueName } = item
   const live = isInPlay(match.status)
 
@@ -250,7 +254,7 @@ function FeedCard({ item, teamLeague, canOpenMatch, onNavigate }: {
       </>
     )
     return leagueCode ? (
-      <button className={`feed__team feed__team--${align}`} onClick={() => onNavigate({ view: 'team', leagueCode, teamId: team.id })} title={`${team.name}: team page`}>
+      <button className={`feed__team feed__team--${align}`} onClick={() => onNavigate({ view: 'team', leagueCode, teamId: team.id })} title={t.favourites.teamPage(team.name)}>
         {content}
       </button>
     ) : (
@@ -262,13 +266,13 @@ function FeedCard({ item, teamLeague, canOpenMatch, onNavigate }: {
     <li className={live ? 'feed__card feed__card--live' : 'feed__card'}>
       <div className="feed__meta">
         <span className="feed__league">{leagueName}</span>
-        <span>{formatMatchDate(match.kickoff)}</span>
+        <span>{formatMatchDate(match.kickoff, t)}</span>
       </div>
       <div className="feed__teams">
         {side(match.homeTeam, 'home')}
         <span className="feed__time">
           {match.score ? `${match.score.home} - ${match.score.away}` : formatTime(match.kickoff)}
-          {live && <span className="feed__live">{match.clock ?? 'Live'}</span>}
+          {live && <span className="feed__live">{match.clock ?? t.status.live}</span>}
         </span>
         {side(match.awayTeam, 'away')}
       </div>
@@ -277,7 +281,7 @@ function FeedCard({ item, teamLeague, canOpenMatch, onNavigate }: {
         <span className="feed__venue">{match.venue ? `📍 ${match.venue}` : ''}</span>
         {canOpenMatch && (
           <button className="feed__open" onClick={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}>
-            Match page ›
+            {t.favourites.matchPage}
           </button>
         )}
       </div>

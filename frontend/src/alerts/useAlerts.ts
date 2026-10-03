@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { Match, MatchUpdatedMessage } from '../api/types'
+import type { Dictionary } from '../i18n/en'
 import type { AlertSettings } from './alerts'
 import { AlertsStorageKey, describeUpdate, isMatchWatched, noAlerts, parseAlertSettings, toggleMatch, wantsAlert } from './alerts'
 
@@ -53,9 +54,10 @@ function writeStored(settings: AlertSettings) {
  *
  * @param favoriteTeamIds Ids of the favourite teams. Favourite leagues don't alert.
  * @param onOpenMatch Called when a notification is clicked.
+ * @param dictionary The words of the current language, for the notifications' text.
  * @returns The context value for the pages, and `handleUpdate` to feed every live update into.
  */
-export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpenMatch: (match: Match) => void) {
+export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpenMatch: (match: Match) => void, dictionary: Dictionary) {
   const [settings, setSettings] = useState(readStored)
   const [permission, setPermission] = useState<AlertPermission>(() => (supported() ? Notification.permission : 'unsupported'))
 
@@ -63,10 +65,12 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
   const settingsRef = useRef(settings)
   const favoritesRef = useRef(favoriteTeamIds)
   const openRef = useRef(onOpenMatch)
+  const dictionaryRef = useRef(dictionary)
   useEffect(() => {
     settingsRef.current = settings
     favoritesRef.current = favoriteTeamIds
     openRef.current = onOpenMatch
+    dictionaryRef.current = dictionary
   })
 
   const update = useCallback((change: (current: AlertSettings) => AlertSettings) => {
@@ -100,7 +104,7 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
     if (!supported() || Notification.permission !== 'granted') return
     if (!wantsAlert(message.match, settingsRef.current, favoritesRef.current)) return
 
-    const alert = describeUpdate(previous, message)
+    const alert = describeUpdate(previous, message, dictionaryRef.current)
     if (!alert) return
 
     const notification = new Notification(alert.title, { body: alert.body, tag: alert.tag, icon: '/favicon.svg' })

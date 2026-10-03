@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import type { Match, MatchEvent, MatchStat, MatchStatType, Score, Team } from '../api/types'
+import type { Match, MatchEvent, MatchStat, Score, Team } from '../api/types'
 import { isInPlay } from '../api/types'
 import { MatchAlertButton } from '../alerts/AlertControls'
+import type { Dictionary } from '../i18n/en'
+import { useI18n } from '../i18n/useI18n'
 import type { WatchMatch } from '../live/useLiveScores'
 import { useMatchDetail } from '../live/useMatchDetail'
 import { assistOf, isGoal, withRunningScore } from '../matchEvents'
@@ -24,35 +26,28 @@ interface Props {
   onClose: () => void
 }
 
-const statusText: Record<Match['status'], string> = {
-  Scheduled: '',
-  Live: 'Live',
-  HalfTime: 'Half time',
-  Finished: 'Full time',
-  Postponed: 'Postponed',
-  Cancelled: 'Cancelled',
+/** "Half time", "Full time" and the like; nothing before kickoff. */
+function statusText(status: Match['status'], t: Dictionary): string {
+  switch (status) {
+    case 'Live': return t.status.live
+    case 'HalfTime': return t.status.halfTime
+    case 'Finished': return t.status.fullTime
+    case 'Postponed': return t.status.postponed
+    case 'Cancelled': return t.status.cancelled
+    default: return ''
+  }
 }
 
-const statLabels: Record<MatchStatType, string> = {
-  Possession: 'Possession',
-  Shots: 'Shots',
-  ShotsOnTarget: 'Shots on target',
-  Corners: 'Corners',
-  Fouls: 'Fouls',
-  Offsides: 'Offsides',
-  YellowCards: 'Yellow cards',
-  RedCards: 'Red cards',
-  Saves: 'Saves',
-}
+const tabs = ['lineups', 'events', 'stats', 'squads'] as const
+type Tab = typeof tabs[number]
 
-type Tab = 'lineups' | 'events' | 'stats' | 'squads'
-
-const tabLabels: Record<Tab, string> = { lineups: 'Line-ups', events: 'Events', stats: 'Statistics', squads: 'Squads' }
+const tabLabel = (tab: Tab, t: Dictionary) =>
+  ({ lineups: t.match.lineups, events: t.match.events, stats: t.match.statistics, squads: t.match.squads })[tab]
 
 /** ?tab=squads → the tab to open, so a link leads to the same view. */
 function tabFromUrl(): Tab | null {
   const tab = new URLSearchParams(window.location.search).get('tab')
-  return tab !== null && tab in tabLabels ? (tab as Tab) : null
+  return tabs.find(known => known === tab) ?? null
 }
 
 function writeTabToUrl(tab: Tab) {
@@ -63,6 +58,7 @@ function writeTabToUrl(tab: Tab) {
 
 /** One match on a page of its own: the scoreline, then line-ups, events, statistics and squads as tabs. */
 export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch, onNavigate, onClose }: Props) {
+  const { t } = useI18n()
   const { detail, error } = useMatchDetail(leagueCode, matchId, pushed, watchMatch)
   // Until a tab is picked: line-ups once they are announced, otherwise events.
   const [pickedTab, setPickedTab] = useState(tabFromUrl)
@@ -76,9 +72,9 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
   const match = pushed ?? detail?.match
 
   return (
-    <main className="detail" aria-label={match ? `${match.homeTeam.name} vs ${match.awayTeam.name}` : 'Match details'}>
+    <main className="detail" aria-label={match ? t.match.versus(match.homeTeam.name, match.awayTeam.name) : t.match.details}>
       <header className="detail__top">
-        <button className="page__back" onClick={onClose}>← Back</button>
+        <button className="page__back" onClick={onClose}>{t.common.back}</button>
         <span className="detail__actions">
           {match && <MatchAlertButton match={match} />}
           <button className="page__crumb" onClick={() => onNavigate({ view: 'league', leagueCode })}>{leagueName ?? leagueCode}</button>
@@ -90,16 +86,14 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
         : !error && <Skeleton rows={4} height={22} />}
       {match?.odds && <OddsBoard odds={match.odds} match={match} />}
       {match && !detail && !error && <Skeleton rows={6} />}
-      {error && !detail && (
-        <EmptyState icon="⚠️" title="This match can't be loaded right now." hint="The data source may be busy, or the link is wrong." />
-      )}
+      {error && !detail && <EmptyState icon="⚠️" title={t.match.cantLoad} hint={t.match.cantLoadHint} />}
 
       {detail && match && (
         <>
-          <nav className="tabs detail__tabs" aria-label="Match sections">
-            {(Object.keys(tabLabels) as Tab[]).map(t => (
-              <button key={t} className={t === tab ? 'tab tab--active' : 'tab'} onClick={() => pickTab(t)}>
-                {tabLabels[t]}
+          <nav className="tabs detail__tabs" aria-label={t.match.sections}>
+            {tabs.map(known => (
+              <button key={known} className={known === tab ? 'tab tab--active' : 'tab'} onClick={() => pickTab(known)}>
+                {tabLabel(known, t)}
               </button>
             ))}
           </nav>
@@ -108,9 +102,9 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
           {tab === 'events' && <Events events={detail.events} match={match} />}
           {tab === 'stats' && (detail.stats.length > 0
             ? <Stats stats={detail.stats} />
-            : <p className="detail__empty">Statistics appear once the match has kicked off.</p>)}
+            : <p className="detail__empty">{t.match.statsLater}</p>)}
           {tab === 'squads' && <Squads match={match} />}
-          {tab !== 'squads' && <p className="detail__updated">updated {formatTime(detail.lastUpdatedUtc)}</p>}
+          {tab !== 'squads' && <p className="detail__updated">{t.common.updated(formatTime(detail.lastUpdatedUtc))}</p>}
         </>
       )}
     </main>
@@ -118,8 +112,9 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
 }
 
 function Scoreline({ match, onOpenTeam }: { match: Match; onOpenTeam: (teamId: string) => void }) {
+  const { t } = useI18n()
   const live = isInPlay(match.status)
-  const status = match.status === 'Live' ? (match.clock ?? 'Live') : statusText[match.status]
+  const status = match.status === 'Live' ? (match.clock ?? t.status.live) : statusText(match.status, t)
 
   return (
     <div className={live ? 'scoreline scoreline--live' : 'scoreline'}>
@@ -139,8 +134,10 @@ function Scoreline({ match, onOpenTeam }: { match: Match; onOpenTeam: (teamId: s
 }
 
 function TeamBadge({ team, onOpen }: { team: Team; onOpen: (teamId: string) => void }) {
+  const { t } = useI18n()
+
   return (
-    <button className="scoreline__team" onClick={() => onOpen(team.id)} title={`${team.name}: form, table and fixtures`}>
+    <button className="scoreline__team" onClick={() => onOpen(team.id)} title={t.match.teamTitle(team.name)}>
       <TeamLogo team={team} size={48} />
       <span>{team.name}</span>
     </button>
@@ -148,18 +145,18 @@ function TeamBadge({ team, onOpen }: { team: Team; onOpen: (teamId: string) => v
 }
 
 function Events({ events, match }: { events: MatchEvent[]; match: Match }) {
+  const { t } = useI18n()
+
   if (events.length === 0) {
     return (
       <p className="detail__empty">
-        {match.status === 'Scheduled'
-          ? `Kick-off at ${formatTime(match.kickoff)}. Goals, cards and substitutions will appear here.`
-          : 'No goals, cards or substitutions yet.'}
+        {match.status === 'Scheduled' ? t.match.eventsLater(formatTime(match.kickoff)) : t.match.noEvents}
       </p>
     )
   }
 
   return (
-    <section aria-label="Match events">
+    <section aria-label={t.match.eventsLabel}>
       <ol className="events">
         {withRunningScore(events).map(({ event, score }, i) => (
           <EventRow key={i} event={event} score={score} leagueCode={match.leagueCode} />
@@ -186,20 +183,23 @@ function EventRow({ event, score, leagueCode }: { event: MatchEvent; score: Scor
 }
 
 function EventIcon({ type }: { type: MatchEvent['type'] }) {
+  const { t } = useI18n()
+
   switch (type) {
     case 'YellowCard':
-      return <span className="card card--yellow" role="img" aria-label="Yellow card" />
+      return <span className="card card--yellow" role="img" aria-label={t.match.yellowCard} />
     case 'RedCard':
-      return <span className="card card--red" role="img" aria-label="Red card" />
+      return <span className="card card--red" role="img" aria-label={t.match.redCard} />
     case 'Substitution':
-      return <span className="event__icon" role="img" aria-label="Substitution">⇄</span>
+      return <span className="event__icon" role="img" aria-label={t.match.substitution}>⇄</span>
     default:
-      return <span className="event__icon" role="img" aria-label="Goal">⚽</span>
+      return <span className="event__icon" role="img" aria-label={t.match.goal}>⚽</span>
   }
 }
 
 function EventText({ event, leagueCode }: { event: MatchEvent; leagueCode: string }) {
-  const player = <PlayerName leagueCode={leagueCode} playerId={event.playerId} name={event.player ?? 'Unknown player'} />
+  const { t } = useI18n()
+  const player = <PlayerName leagueCode={leagueCode} playerId={event.playerId} name={event.player ?? t.match.unknownPlayer} />
   const assist = assistOf(event)
 
   switch (event.type) {
@@ -215,16 +215,16 @@ function EventText({ event, leagueCode }: { event: MatchEvent; leagueCode: strin
         </>
       )
     case 'PenaltyGoal':
-      return <span className="event__player">{player} <span className="event__note">(pen.)</span></span>
+      return <span className="event__player">{player} <span className="event__note">{t.match.penalty}</span></span>
     case 'OwnGoal':
-      return <span className="event__player">{player} <span className="event__note">(o.g.)</span></span>
+      return <span className="event__player">{player} <span className="event__note">{t.match.ownGoal}</span></span>
     case 'Goal':
       return (
         <>
           <span className="event__player">{player}</span>
           {assist && (
             <span className="event__assist">
-              <span className="assist-badge" role="img" aria-label="Assist" title="Assist">A</span>
+              <span className="assist-badge" role="img" aria-label={t.match.assist} title={t.match.assist}>A</span>
               <PlayerName leagueCode={leagueCode} playerId={assist.playerId} name={assist.name} />
             </span>
           )}
@@ -236,8 +236,10 @@ function EventText({ event, leagueCode }: { event: MatchEvent; leagueCode: strin
 }
 
 function Stats({ stats }: { stats: MatchStat[] }) {
+  const { t } = useI18n()
+
   return (
-    <section aria-label="Statistics">
+    <section aria-label={t.match.statistics}>
       <dl className="stats">
         {stats.map(stat => {
           const total = stat.home + stat.away
@@ -245,7 +247,7 @@ function Stats({ stats }: { stats: MatchStat[] }) {
           const format = (value: number) => (stat.type === 'Possession' ? `${Math.round(value)}%` : String(value))
           return (
             <div key={stat.type} className="stat">
-              <dt className="stat__label">{statLabels[stat.type]}</dt>
+              <dt className="stat__label">{t.match.stats[stat.type]}</dt>
               <dd className="stat__values">
                 <span>{format(stat.home)}</span>
                 <span className="stat__bar" aria-hidden>

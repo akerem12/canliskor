@@ -1,15 +1,19 @@
 import type { Match, Team } from '../api/types'
 import { isInPlay } from '../api/types'
+import type { Dictionary } from '../i18n/en'
+import { useI18n } from '../i18n/useI18n'
 import { formatTime } from '../time'
 import { OddsStrip } from './Odds'
 
-const statusLabel: Record<Match['status'], string> = {
-  Scheduled: '',
-  Live: '',
-  HalfTime: 'HT',
-  Finished: 'FT',
-  Postponed: 'PP',
-  Cancelled: 'CANC',
+/** "HT", "FT" and the like; nothing before kickoff, and a live match shows its minute instead. */
+function statusLabel(status: Match['status'], t: Dictionary): string {
+  switch (status) {
+    case 'HalfTime': return t.status.halfTimeShort
+    case 'Finished': return t.status.fullTimeShort
+    case 'Postponed': return t.status.postponedShort
+    case 'Cancelled': return t.status.cancelledShort
+    default: return ''
+  }
 }
 
 function TeamName({ team, align }: { team: Team; align: 'home' | 'away' }) {
@@ -32,8 +36,9 @@ interface Props {
 }
 
 export function MatchRow({ match, justScored, onOpen }: Props) {
+  const { t } = useI18n()
   const live = isInPlay(match.status)
-  const minute = match.status === 'Live' ? (match.clock ?? 'LIVE') : statusLabel[match.status]
+  const minute = match.status === 'Live' ? (match.clock ?? t.status.liveShort) : statusLabel(match.status, t)
 
   return (
     <li>
@@ -47,13 +52,13 @@ export function MatchRow({ match, justScored, onOpen }: Props) {
           {minute}
         </span>
         <TeamName team={match.homeTeam} align="home" />
-        <span className="match__score" aria-label={match.score ? `${match.score.home} to ${match.score.away}` : 'not started'}>
+        <span className="match__score" aria-label={match.score ? t.matchList.score(match.score.home, match.score.away) : t.matchList.notStarted}>
           {match.score ? `${match.score.home} - ${match.score.away}` : '-'}
         </span>
         <TeamName team={match.awayTeam} align="away" />
         {/* Prices are for what is still to come: once the match has kicked off they are history. */}
         {match.status === 'Scheduled' && match.odds && <OddsStrip odds={match.odds} className="match__odds" />}
-        {justScored && <span className="match__goal-badge">GOAL</span>}
+        {justScored && <span className="match__goal-badge">{t.matchList.goal}</span>}
       </button>
     </li>
   )

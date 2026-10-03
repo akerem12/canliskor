@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Team } from '../api/types'
+import { useI18n } from '../i18n/useI18n'
 
 /** A team's crest. A missing or broken image leaves an empty slot of the same size, so rows stay aligned. */
 export function TeamLogo({ team, size }: { team: Team; size: number }) {
@@ -24,12 +25,14 @@ export function Skeleton({ rows, height = 18 }: { rows: number; height?: number 
 
 /** Shown where there is nothing to show: no data yet, none at all, or a failed load (then with a retry). */
 export function EmptyState({ icon, title, hint, onRetry }: { icon: string; title: string; hint?: string; onRetry?: () => void }) {
+  const { t } = useI18n()
+
   return (
     <div className="empty">
       <span className="empty__icon" aria-hidden>{icon}</span>
       <p className="empty__title">{title}</p>
       {hint && <p className="empty__hint">{hint}</p>}
-      {onRetry && <button className="empty__retry" onClick={onRetry}>Try again</button>}
+      {onRetry && <button className="empty__retry" onClick={onRetry}>{t.common.tryAgain}</button>}
     </div>
   )
 }

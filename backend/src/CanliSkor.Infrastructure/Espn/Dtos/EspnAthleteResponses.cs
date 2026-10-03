@@ -6,7 +6,6 @@ internal sealed record EspnAthleteResponse(EspnAthleteProfile? Athlete);
 
 /// <param name="Position">Abbreviation is "G", "D", "M" or "F".</param>
 /// <param name="DisplayHeight">Feet and inches, e.g. "6' 0\"".</param>
-/// <param name="Headshot">Missing for most footballers.</param>
 /// <param name="StatsSummary">The season in the player's main league.</param>
 internal sealed record EspnAthleteProfile(
     string? Id,
@@ -18,7 +17,6 @@ internal sealed record EspnAthleteProfile(
     int? Age,
     string? Citizenship,
     EspnLogo? Flag,
-    EspnLogo? Headshot,
     EspnStatsSummary? StatsSummary);
 
 /// <param name="DisplayName">The competition's name followed by " Stats", e.g. "2026-27 Turkish Super Lig Stats".</param>

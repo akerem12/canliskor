@@ -9,39 +9,39 @@ const outfield: PlayerCompetitionStats = {
   cleanSheets: null, saves: null, goalsConceded: null,
 }
 
-const labels = (stats: PlayerCompetitionStats) => statLines(stats).map(line => line.label)
-const valueOf = (stats: PlayerCompetitionStats, label: string) => statLines(stats).find(line => line.label === label)?.value
+const labels = (stats: PlayerCompetitionStats) => statLines(stats).map(line => line.key)
+const valueOf = (stats: PlayerCompetitionStats, key: string) => statLines(stats).find(line => line.key === key)?.value
 
 describe('statLines', () => {
   it('adds starts and substitute appearances up to matches played', () => {
-    expect(valueOf(outfield, 'Matches played')).toBe(6)
-    expect(valueOf(outfield, 'Starts')).toBe(3)
-    expect(valueOf(outfield, 'Substitute appearances')).toBe(3)
+    expect(valueOf(outfield, 'played')).toBe(6)
+    expect(valueOf(outfield, 'starts')).toBe(3)
+    expect(valueOf(outfield, 'substituteAppearances')).toBe(3)
   })
 
   it('leaves matches played out where substitute appearances are unknown', () => {
     const cup = { ...outfield, substituteAppearances: null }
 
-    expect(labels(cup)).not.toContain('Matches played')
-    expect(labels(cup)[0]).toBe('Starts')
+    expect(labels(cup)).not.toContain('played')
+    expect(labels(cup)[0]).toBe('starts')
   })
 
   it('shows an outfield player no goalkeeping numbers, and zeros of the rest', () => {
-    expect(labels(outfield)).not.toContain('Saves')
-    expect(valueOf(outfield, 'Offsides')).toBe(0)
+    expect(labels(outfield)).not.toContain('saves')
+    expect(valueOf(outfield, 'offsides')).toBe(0)
   })
 
   it('shows a goalkeeper clean sheets, saves and goals conceded instead of empty attacking numbers', () => {
     const keeper = { ...outfield, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, cleanSheets: 2, saves: 8, goalsConceded: 8 }
 
-    expect(valueOf(keeper, 'Clean sheets')).toBe(2)
-    expect(valueOf(keeper, 'Saves')).toBe(8)
-    expect(labels(keeper)).not.toContain('Goals')
-    expect(labels(keeper)).not.toContain('Shots')
+    expect(valueOf(keeper, 'cleanSheets')).toBe(2)
+    expect(valueOf(keeper, 'saves')).toBe(8)
+    expect(labels(keeper)).not.toContain('goals')
+    expect(labels(keeper)).not.toContain('shots')
   })
 
   it('keeps the goal of a goalkeeper who scored', () => {
-    expect(valueOf({ ...outfield, saves: 4, goals: 1 }, 'Goals')).toBe(1)
+    expect(valueOf({ ...outfield, saves: 4, goals: 1 }, 'goals')).toBe(1)
   })
 })
 

@@ -1,4 +1,5 @@
 import type { Match, Odds } from '../api/types'
+import { useI18n } from '../i18n/useI18n'
 
 /** 1.5 → "1.50": bookmakers always quote two decimals. */
 const formatOdds = (value: number) => value.toFixed(2)
@@ -11,15 +12,17 @@ const outcomes = [
 
 /** The three prices in a row, the favourite's highlighted. Small enough for a match card. */
 export function OddsStrip({ odds, className }: { odds: Odds; className?: string }) {
+  const { t } = useI18n()
+
   return (
     <span
       className={className ? `odds-strip ${className}` : 'odds-strip'}
-      aria-label={`Odds: home win ${formatOdds(odds.home)}, draw ${formatOdds(odds.draw)}, away win ${formatOdds(odds.away)}`}
+      aria-label={t.odds.label(formatOdds(odds.home), formatOdds(odds.draw), formatOdds(odds.away))}
     >
       {outcomes.map(({ key, label, side }) => {
         const favorite = side !== null && side === odds.favorite
         return (
-          <span key={key} className={favorite ? 'odd odd--favorite' : 'odd'} title={favorite ? 'Favourite' : undefined} aria-hidden>
+          <span key={key} className={favorite ? 'odd odd--favorite' : 'odd'} title={favorite ? t.odds.favourite : undefined} aria-hidden>
             <span className="odd__label">{label}</span>
             {formatOdds(odds[key])}
           </span>
@@ -31,12 +34,14 @@ export function OddsStrip({ odds, className }: { odds: Odds; className?: string 
 
 /** The prices with the teams' names and a "Favourite" badge, for the match page. */
 export function OddsBoard({ odds, match }: { odds: Odds; match: Match }) {
-  const names = { home: match.homeTeam.shortName, draw: 'Draw', away: match.awayTeam.shortName }
+  const { t } = useI18n()
+  const names = { home: match.homeTeam.shortName, draw: t.odds.draw, away: match.awayTeam.shortName }
+  const title = match.status === 'Scheduled' ? t.odds.title : t.odds.closing
 
   return (
-    <section className="odds-board" aria-label="Match odds">
+    <section className="odds-board" aria-label={title}>
       <header className="odds-board__head">
-        <h3>{match.status === 'Scheduled' ? 'Match odds' : 'Closing odds'} · 1X2</h3>
+        <h3>{title} · 1X2</h3>
         {odds.provider && <span>{odds.provider}</span>}
       </header>
       <div className="odds-board__cells">
@@ -49,12 +54,12 @@ export function OddsBoard({ odds, match }: { odds: Odds; match: Match }) {
                 <span className="odds-cell__name">{names[key]}</span>
               </span>
               <strong className="odds-cell__price">{formatOdds(odds[key])}</strong>
-              {favorite && <span className="odds-cell__badge">Favourite</span>}
+              {favorite && <span className="odds-cell__badge">{t.odds.favourite}</span>}
             </div>
           )
         })}
       </div>
-      <p className="odds-board__note">Decimal odds, for information only.</p>
+      <p className="odds-board__note">{t.odds.note}</p>
     </section>
   )
 }

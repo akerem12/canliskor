@@ -303,7 +303,6 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         Assert.Equal("Icardi", root.GetProperty("name").GetString());
         Assert.Equal("Forward", root.GetProperty("position").GetString());
         Assert.Equal(181, root.GetProperty("heightCm").GetInt32());
-        Assert.Equal(JsonValueKind.Null, root.GetProperty("photoUrl").ValueKind);
         Assert.Equal("Galatasaray", root.GetProperty("team").GetProperty("name").GetString());
         Assert.Equal(Now, root.GetProperty("lastUpdatedUtc").GetDateTimeOffset());
 
@@ -421,7 +420,7 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
 
     public Task<PlayerProfile?> GetPlayerProfileAsync(string leagueCode, string playerId, CancellationToken cancellationToken = default) =>
         Task.FromResult(playerId != "9" ? null : new PlayerProfile(
-            "9", "Icardi", "9", PlayerPosition.Forward, "Argentina", "https://flag.test/arg.png", 33, 181, PhotoUrl: null, Galatasaray,
+            "9", "Icardi", "9", PlayerPosition.Forward, "Argentina", "https://flag.test/arg.png", 33, 181, Galatasaray,
             [new PlayerCompetitionStats("2026-27 Turkish Super Lig", "tur.1", "Galatasaray", 5, 1, 4, 1, 14, 8, 1, 0, 3, 6, 2, null, null, null)]));
 
     public Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>

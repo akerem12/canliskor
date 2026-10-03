@@ -5,7 +5,6 @@ namespace CanliSkor.Core.Domain;
 /// <param name="Nationality">Country name, e.g. "Germany". Null if unknown.</param>
 /// <param name="FlagUrl">Picture of that country's flag. Null if unknown.</param>
 /// <param name="HeightCm">Null if unknown.</param>
-/// <param name="PhotoUrl">Portrait. Null if the provider has none, which is the case for most players.</param>
 /// <param name="Team">The club the player is registered with. Null if unknown.</param>
 /// <param name="Competitions">This season's competitions with at least one statistic, the player's main league first.</param>
 public sealed record PlayerProfile(
@@ -17,7 +16,6 @@ public sealed record PlayerProfile(
     string? FlagUrl,
     int? Age,
     int? HeightCm,
-    string? PhotoUrl,
     Team? Team,
     IReadOnlyList<PlayerCompetitionStats> Competitions);
 

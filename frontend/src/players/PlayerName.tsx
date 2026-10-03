@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/useI18n'
 import { usePlayerProfile } from './usePlayerProfile'
 
 /**
@@ -6,6 +7,7 @@ import { usePlayerProfile } from './usePlayerProfile'
  */
 export function PlayerName({ leagueCode, playerId, name }: { leagueCode: string; playerId: string | null; name: string }) {
   const openPlayer = usePlayerProfile()
+  const { t } = useI18n()
   if (!playerId) return <>{name}</>
 
   const open = () => openPlayer({ leagueCode, playerId, name })
@@ -14,7 +16,7 @@ export function PlayerName({ leagueCode, playerId, name }: { leagueCode: string;
       className="player-link"
       role="button"
       tabIndex={0}
-      title={`${name}: profile and season statistics`}
+      title={t.player.open(name)}
       onClick={open}
       onKeyDown={e => {
         if (e.key === 'Enter' || e.key === ' ') {

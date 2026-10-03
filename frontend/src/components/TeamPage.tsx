@@ -4,8 +4,8 @@ import type { Match, TeamProfile } from '../api/types'
 import { isInPlay } from '../api/types'
 import { useFetch } from '../api/useFetch'
 import { FavoriteButton } from '../favorites/FavoriteButton'
+import { useI18n } from '../i18n/useI18n'
 import type { Route } from '../route'
-import type { Result } from '../teamForm'
 import { formGuide, resultFor } from '../teamForm'
 import { formatMatchDate, formatTime } from '../time'
 import { EmptyState, Skeleton, TeamLogo } from './common'
@@ -22,7 +22,6 @@ interface Props {
 
 /** How many fixtures and results show before "Show all". */
 const CollapsedCount = 5
-const resultNames: Record<Result, string> = { W: 'Won', D: 'Drawn', L: 'Lost' }
 
 /** What a fixture row needs to know about the competitions around it. */
 interface Competitions {
@@ -37,6 +36,7 @@ interface Competitions {
  * and the squad.
  */
 export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }: Props) {
+  const { t } = useI18n()
   const team = useFetch(`team/${leagueCode}/${teamId}`, () => getTeam(leagueCode, teamId))
   const standings = useFetch(`standings/${leagueCode}`, () => getStandings(leagueCode))
   const followed = useFetch('competitions', getCompetitions)
@@ -48,30 +48,30 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
   }
 
   return (
-    <main className="page" aria-label={team.data?.team.name ?? 'Team'}>
+    <main className="page" aria-label={team.data?.team.name ?? t.team.team}>
       <header className="page__top">
-        <button className="page__back" onClick={onBack}>← Back</button>
+        <button className="page__back" onClick={onBack}>{t.common.back}</button>
         <button className="page__crumb" onClick={() => onNavigate({ view: 'league', leagueCode })}>{league}</button>
       </header>
 
       {team.loading && <TeamSkeleton />}
       {team.error && (
-        <EmptyState icon="🛡️" title="This team isn't available right now." hint="The data source may be busy, or the link is wrong." onRetry={team.retry} />
+        <EmptyState icon="🛡️" title={t.team.unavailable} hint={t.team.unavailableHint} onRetry={team.retry} />
       )}
 
       {team.data && (
         <>
           <Hero profile={team.data} league={league} />
 
-          <section className="panel" aria-label="Form">
-            <h3 className="panel__title">Last 5 matches</h3>
+          <section className="panel" aria-label={t.team.form}>
+            <h3 className="panel__title">{t.team.lastFive}</h3>
             <Form profile={team.data} competitions={competitions} onNavigate={onNavigate} />
           </section>
 
-          <section className="panel" aria-label="Fixtures">
-            <h3 className="panel__title">Fixtures · {team.data.upcomingMatches.length} to play</h3>
+          <section className="panel" aria-label={t.team.fixtures}>
+            <h3 className="panel__title">{t.team.fixturesTitle(team.data.upcomingMatches.length)}</h3>
             {team.data.upcomingMatches.length === 0 ? (
-              <EmptyState icon="📅" title="No fixtures scheduled." hint="Nothing is planned for this team yet." />
+              <EmptyState icon="📅" title={t.team.noFixtures} hint={t.team.noFixturesHint} />
             ) : (
               <MatchList matches={team.data.upcomingMatches} what="fixtures" teamId={teamId} competitions={competitions} onNavigate={onNavigate} />
             )}
@@ -80,19 +80,19 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
       )}
 
       {!team.error && (
-        <section className="panel" aria-label="Standings">
-          <h3 className="panel__title">Standings · {league}</h3>
+        <section className="panel" aria-label={t.leagues.standings}>
+          <h3 className="panel__title">{t.team.standingsOf(league)}</h3>
           {standings.loading && <Skeleton rows={8} />}
-          {standings.error && <EmptyState icon="📊" title="The table isn't available right now." onRetry={standings.retry} />}
+          {standings.error && <EmptyState icon="📊" title={t.leagues.tableUnavailable} onRetry={standings.retry} />}
           {standings.data && (standings.data.groups.length === 0
-            ? <EmptyState icon="📊" title="This competition has no table." hint="Friendlies and knockout rounds aren't ranked." />
+            ? <EmptyState icon="📊" title={t.leagues.noTable} hint={t.leagues.noTableHintTeam} />
             : <StandingsTable standings={standings.data} teamId={teamId} onNavigate={onNavigate} />)}
         </section>
       )}
 
       {team.data && (
-        <section className="panel" aria-label="Squad">
-          <h3 className="panel__title">Squad</h3>
+        <section className="panel" aria-label={t.team.squad}>
+          <h3 className="panel__title">{t.team.squad}</h3>
           <TeamSquad leagueCode={leagueCode} team={team.data.team} showName={false} />
         </section>
       )}
@@ -101,6 +101,7 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
 }
 
 function Hero({ profile, league }: { profile: TeamProfile; league: string }) {
+  const { t } = useI18n()
   const stadium = [profile.stadium, profile.stadiumCity].filter(Boolean).join(', ')
   const others = profile.competitions.map(c => c.name).filter(name => name !== league)
 
@@ -118,25 +119,25 @@ function Hero({ profile, league }: { profile: TeamProfile; league: string }) {
         <p className="hero__line">{profile.standingSummary ?? league}</p>
         <dl className="hero__facts">
           <div>
-            <dt>Competition</dt>
+            <dt>{t.team.competition}</dt>
             <dd>{league}</dd>
           </div>
           {others.length > 0 && (
             <div>
-              <dt>Also in</dt>
+              <dt>{t.team.alsoIn}</dt>
               <dd>{others.join(', ')}</dd>
             </div>
           )}
           {stadium && (
             <div>
-              <dt>Stadium</dt>
+              <dt>{t.team.stadium}</dt>
               <dd>{stadium}</dd>
             </div>
           )}
           {profile.isNationalTeam && (
             <div>
-              <dt>Type</dt>
-              <dd>National team</dd>
+              <dt>{t.team.type}</dt>
+              <dd>{t.team.nationalTeam}</dd>
             </div>
           )}
         </dl>
@@ -146,16 +147,17 @@ function Hero({ profile, league }: { profile: TeamProfile; league: string }) {
 }
 
 function Form({ profile, competitions, onNavigate }: { profile: TeamProfile; competitions: Competitions; onNavigate: (route: Route) => void }) {
+  const { t } = useI18n()
   const guide = formGuide(profile.recentMatches, profile.team.id)
   if (guide.length === 0) {
-    return <EmptyState icon="⚽" title="No matches played yet." hint="Results will appear here." />
+    return <EmptyState icon="⚽" title={t.team.nothingPlayed} hint={t.team.nothingPlayedHint} />
   }
 
   return (
     <>
-      <ol className="form" aria-label="Form, oldest first">
+      <ol className="form" aria-label={t.team.formLabel}>
         {guide.map(({ match, result }) => (
-          <li key={match.id} className={`form__chip form__chip--${result}`} title={resultNames[result]}>{result}</li>
+          <li key={match.id} className={`form__chip form__chip--${result}`} title={t.team.resultName[result]}>{t.team.resultLetter[result]}</li>
         ))}
       </ol>
       {/* Newest first here: the list is read top down, the chips left to right. */}
@@ -172,6 +174,7 @@ function MatchList({ matches, what, teamId, competitions, onNavigate }: {
   competitions: Competitions
   onNavigate: (route: Route) => void
 }) {
+  const { t } = useI18n()
   const [showAll, setShowAll] = useState(false)
   const shown = showAll ? matches : matches.slice(0, CollapsedCount)
 
@@ -184,7 +187,7 @@ function MatchList({ matches, what, teamId, competitions, onNavigate }: {
       </ul>
       {matches.length > CollapsedCount && (
         <button className="more" onClick={() => setShowAll(!showAll)} aria-expanded={showAll}>
-          {showAll ? 'Show fewer' : `Show all ${matches.length} ${what}`}
+          {showAll ? t.team.showFewer : what === 'fixtures' ? t.team.showAllFixtures(matches.length) : t.team.showAllResults(matches.length)}
         </button>
       )}
     </>
@@ -198,16 +201,19 @@ function FixtureRow({ match, teamId, competitions, onNavigate }: {
   competitions: Competitions
   onNavigate: (route: Route) => void
 }) {
+  const { t } = useI18n()
   const result = match.status === 'Finished' ? resultFor(match, teamId) : null
   const middle = match.score
     ? `${match.score.home} - ${match.score.away}`
-    : match.status === 'Postponed' ? 'PP' : match.status === 'Cancelled' ? 'CANC' : formatTime(match.kickoff)
+    : match.status === 'Postponed' ? t.status.postponedShort
+    : match.status === 'Cancelled' ? t.status.cancelledShort
+    : formatTime(match.kickoff)
   const canOpen = competitions.followed?.has(match.leagueCode) ?? true
 
   const content = (
     <>
       <span className="fixture__when">
-        <span className="fixture__date">{formatMatchDate(match.kickoff)}</span>
+        <span className="fixture__date">{formatMatchDate(match.kickoff, t)}</span>
         <span className="fixture__league">{competitions.names.get(match.leagueCode) ?? match.leagueCode}</span>
       </span>
       <span className={match.homeTeam.id === teamId ? 'fixture__team fixture__team--home fixture__team--own' : 'fixture__team fixture__team--home'}>
@@ -218,7 +224,7 @@ function FixtureRow({ match, teamId, competitions, onNavigate }: {
         {match.awayTeam.shortName}
       </span>
       {result
-        ? <span className={`form__chip form__chip--small form__chip--${result}`} title={resultNames[result]}>{result}</span>
+        ? <span className={`form__chip form__chip--small form__chip--${result}`} title={t.team.resultName[result]}>{t.team.resultLetter[result]}</span>
         : <span className="fixture__spacer" aria-hidden />}
     </>
   )
@@ -231,7 +237,7 @@ function FixtureRow({ match, teamId, competitions, onNavigate }: {
           {content}
         </button>
       ) : (
-        <div className={`${className} fixture--static`} title="This competition isn't followed, so the match can't be opened.">
+        <div className={`${className} fixture--static`} title={t.team.notFollowed}>
           {content}
         </div>
       )}
@@ -240,8 +246,10 @@ function FixtureRow({ match, teamId, competitions, onNavigate }: {
 }
 
 function TeamSkeleton() {
+  const { t } = useI18n()
+
   return (
-    <div aria-busy aria-label="Loading team">
+    <div aria-busy aria-label={t.team.loading}>
       <div className="hero">
         <span className="skeleton skeleton--circle" style={{ width: 72, height: 72 }} />
         <div className="hero__text"><Skeleton rows={3} /></div>

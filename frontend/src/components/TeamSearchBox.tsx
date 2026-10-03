@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { searchTeams } from '../api/http'
 import type { TeamSearchResult } from '../api/types'
 import { FavoriteButton } from '../favorites/FavoriteButton'
+import { useI18n } from '../i18n/useI18n'
 import type { Route } from '../route'
 import { EmptyState, Skeleton, TeamLogo } from './common'
 
@@ -18,6 +19,7 @@ interface Found {
 
 /** Finds any team of the followed leagues by name; a result opens the team's page. */
 export function TeamSearchBox({ onNavigate }: { onNavigate: (route: Route) => void }) {
+  const { t } = useI18n()
   const [text, setText] = useState('')
   const [found, setFound] = useState<Found | null>(null)
   const query = text.trim()
@@ -52,17 +54,17 @@ export function TeamSearchBox({ onNavigate }: { onNavigate: (route: Route) => vo
         type="search"
         value={text}
         onChange={e => setText(e.target.value)}
-        placeholder="Search for a team, e.g. Galatasaray"
-        aria-label="Search for a team"
+        placeholder={t.search.placeholder}
+        aria-label={t.search.label}
         autoComplete="off"
       />
 
       {searching && (
         <div className="search__results" aria-live="polite" aria-busy={current === null}>
           {current === null && <Skeleton rows={3} height={30} />}
-          {current?.error && <EmptyState icon="⚠️" title="The search isn't available right now." hint="Check the connection and try again." />}
+          {current?.error && <EmptyState icon="⚠️" title={t.search.unavailable} hint={t.search.unavailableHint} />}
           {current?.results?.length === 0 && (
-            <EmptyState icon="🔍" title={`No team found for "${query}".`} hint="Only teams of the followed leagues can be found." />
+            <EmptyState icon="🔍" title={t.search.none(query)} hint={t.search.noneHint} />
           )}
           {current?.results && current.results.length > 0 && (
             <ul className="search__list">

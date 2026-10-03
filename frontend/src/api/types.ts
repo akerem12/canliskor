@@ -243,8 +243,6 @@ export interface PlayerProfile {
   flagUrl: string | null
   age: number | null
   heightCm: number | null
-  /** Portrait; null for most players. */
-  photoUrl: string | null
   /** The player's club. */
   team: Team | null
   /** This season, one entry per competition, the player's main league first. */

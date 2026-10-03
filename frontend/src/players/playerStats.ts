@@ -1,7 +1,9 @@
 import type { PlayerCompetitionStats } from '../api/types'
+import type { Dictionary } from '../i18n/en'
 
 export interface StatLine {
-  label: string
+  /** Which number this is; the words for it are in the dictionary. */
+  key: keyof Dictionary['player']['stats']
   value: number
 }
 
@@ -12,21 +14,21 @@ export interface StatLine {
 export function statLines(stats: PlayerCompetitionStats): StatLine[] {
   const isGoalkeeper = stats.saves !== null || stats.cleanSheets !== null || stats.goalsConceded !== null
   const lines: (StatLine | false)[] = [
-    stats.substituteAppearances !== null && { label: 'Matches played', value: stats.starts + stats.substituteAppearances },
-    { label: 'Starts', value: stats.starts },
-    stats.substituteAppearances !== null && { label: 'Substitute appearances', value: stats.substituteAppearances },
-    stats.cleanSheets !== null && { label: 'Clean sheets', value: stats.cleanSheets },
-    stats.saves !== null && { label: 'Saves', value: stats.saves },
-    stats.goalsConceded !== null && { label: 'Goals conceded', value: stats.goalsConceded },
-    (!isGoalkeeper || stats.goals > 0) && { label: 'Goals', value: stats.goals },
-    (!isGoalkeeper || stats.assists > 0) && { label: 'Assists', value: stats.assists },
-    (!isGoalkeeper || stats.shots > 0) && { label: 'Shots', value: stats.shots },
-    (!isGoalkeeper || stats.shotsOnTarget > 0) && { label: 'Shots on target', value: stats.shotsOnTarget },
-    { label: 'Yellow cards', value: stats.yellowCards },
-    { label: 'Red cards', value: stats.redCards },
-    { label: 'Fouls committed', value: stats.foulsCommitted },
-    { label: 'Fouls suffered', value: stats.foulsSuffered },
-    (!isGoalkeeper || stats.offsides > 0) && { label: 'Offsides', value: stats.offsides },
+    stats.substituteAppearances !== null && { key: 'played', value: stats.starts + stats.substituteAppearances },
+    { key: 'starts', value: stats.starts },
+    stats.substituteAppearances !== null && { key: 'substituteAppearances', value: stats.substituteAppearances },
+    stats.cleanSheets !== null && { key: 'cleanSheets', value: stats.cleanSheets },
+    stats.saves !== null && { key: 'saves', value: stats.saves },
+    stats.goalsConceded !== null && { key: 'goalsConceded', value: stats.goalsConceded },
+    (!isGoalkeeper || stats.goals > 0) && { key: 'goals', value: stats.goals },
+    (!isGoalkeeper || stats.assists > 0) && { key: 'assists', value: stats.assists },
+    (!isGoalkeeper || stats.shots > 0) && { key: 'shots', value: stats.shots },
+    (!isGoalkeeper || stats.shotsOnTarget > 0) && { key: 'shotsOnTarget', value: stats.shotsOnTarget },
+    { key: 'yellowCards', value: stats.yellowCards },
+    { key: 'redCards', value: stats.redCards },
+    { key: 'foulsCommitted', value: stats.foulsCommitted },
+    { key: 'foulsSuffered', value: stats.foulsSuffered },
+    (!isGoalkeeper || stats.offsides > 0) && { key: 'offsides', value: stats.offsides },
   ]
 
   return lines.filter((line): line is StatLine => line !== false)
