@@ -20,6 +20,9 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
     // Standings live in another branch of ESPN's API than everything under the base address ("/apis/site/v2/...").
     private const string StandingsPath = "/apis/v2/sports/soccer/";
 
+    // So do players' pages.
+    private const string AthletesPath = "/apis/common/v3/sports/soccer/";
+
     private const string AllCompetitions = "all";
 
     /// <summary>More than any league plays in a month; ESPN's default would cut a busy month short.</summary>
@@ -129,6 +132,21 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         var fixtures = await GetOrNullAsync<EspnScheduleResponse>(url + "?fixture=true", what, cancellationToken);
 
         return EspnTeamMapper.MapProfile(results, fixtures ?? new EspnScheduleResponse(results.Team, []), leagueCode);
+    }
+
+    public async Task<PlayerProfile?> GetPlayerProfileAsync(string leagueCode, string playerId, CancellationToken cancellationToken = default)
+    {
+        var url = AthletesPath + $"{Uri.EscapeDataString(leagueCode)}/athletes/{Uri.EscapeDataString(playerId)}";
+        var athlete = await GetOrNullAsync<EspnAthleteResponse>(url, $"player '{playerId}'", cancellationToken);
+        if (athlete is null)
+        {
+            return null;
+        }
+
+        // The season's numbers per competition are a page of their own; a player ESPN has none for is still a player.
+        var overview = await GetOrNullAsync<EspnAthleteOverviewResponse>(url + "/overview", $"statistics of player '{playerId}'", cancellationToken);
+
+        return EspnAthleteMapper.Map(athlete, overview);
     }
 
     /// <returns>Null if ESPN doesn't know the resource: it answers an unknown id with 404 (and some malformed ids with 400).</returns>

@@ -19,7 +19,28 @@ internal sealed record EspnStatus(string? DisplayClock, EspnStatusType? Type);
 
 internal sealed record EspnStatusType(string? Name, string? State);
 
-internal sealed record EspnCompetition(IReadOnlyList<EspnCompetitor>? Competitors, EspnVenue? Venue = null);
+internal sealed record EspnCompetition(IReadOnlyList<EspnCompetitor>? Competitors, EspnVenue? Venue = null, IReadOnlyList<EspnOdds?>? Odds = null);
+
+/// <summary>One bookmaker's lines. The same shape on scoreboards ("odds") and in match summaries ("pickcenter").</summary>
+/// <param name="Moneyline">The result prices as American odds, opening and closing (= current).</param>
+/// <param name="HomeTeamOdds">Summaries only: the same prices as numbers. Used when <paramref name="Moneyline"/> is missing.</param>
+internal sealed record EspnOdds(
+    EspnOddsProvider? Provider,
+    EspnMoneyline? Moneyline,
+    EspnTeamOdds? HomeTeamOdds = null,
+    EspnTeamOdds? AwayTeamOdds = null,
+    EspnTeamOdds? DrawOdds = null);
+
+internal sealed record EspnOddsProvider(string? Name);
+
+internal sealed record EspnMoneyline(EspnMoneylinePrices? Home, EspnMoneylinePrices? Away, EspnMoneylinePrices? Draw);
+
+internal sealed record EspnMoneylinePrices(EspnMoneylinePrice? Open, EspnMoneylinePrice? Close);
+
+/// <param name="Odds">American odds as text: "-450", "+950", or "EVEN".</param>
+internal sealed record EspnMoneylinePrice(string? Odds);
+
+internal sealed record EspnTeamOdds(double? MoneyLine);
 
 internal sealed record EspnCompetitor(string? HomeAway, string? Score, EspnTeam? Team);
 

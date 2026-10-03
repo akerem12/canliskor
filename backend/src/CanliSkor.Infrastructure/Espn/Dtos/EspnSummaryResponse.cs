@@ -7,7 +7,8 @@ internal sealed record EspnSummaryResponse(
     EspnSummaryHeader? Header,
     EspnBoxscore? Boxscore,
     IReadOnlyList<EspnKeyEvent>? KeyEvents,
-    IReadOnlyList<EspnRoster>? Rosters = null);
+    IReadOnlyList<EspnRoster>? Rosters = null,
+    IReadOnlyList<EspnOdds?>? Pickcenter = null);
 
 internal sealed record EspnSummaryHeader(string? Id, EspnLeague? League, IReadOnlyList<EspnSummaryCompetition>? Competitions);
 

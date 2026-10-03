@@ -1,5 +1,6 @@
 using CanliSkor.Core.Domain;
 using CanliSkor.Infrastructure.Espn;
+using CanliSkor.Infrastructure.Espn.Dtos;
 
 namespace CanliSkor.Infrastructure.Tests.Espn;
 
@@ -32,12 +33,12 @@ public class EspnSummaryMapperTests
 
         // Kickoff, half time, delays etc. are left out: 5 goals, 4 yellows, 1 red, 10 substitutions.
         Assert.Equal(20, events.Count);
-        Assert.Equal(new MatchEvent(MatchEventType.YellowCard, "11'", TeamSide.Home, "Justin de Haas", null), events[0]);
-        Assert.Equal(new MatchEvent(MatchEventType.RedCard, "90'+6'", TeamSide.Away, "Orri Óskarsson", null), events[^1]);
+        Assert.Equal(new MatchEvent(MatchEventType.YellowCard, "11'", TeamSide.Home, "Justin de Haas", null, "282086"), events[0]);
+        Assert.Equal(new MatchEvent(MatchEventType.RedCard, "90'+6'", TeamSide.Away, "Orri Óskarsson", null, "341367"), events[^1]);
     }
 
     [Fact]
-    public void Goals_carry_scorer_assist_and_kind()
+    public void Goals_carry_scorer_assist_kind_and_player_ids()
     {
         var goals = MapFinished().Events
             .Where(e => e.Type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal)
@@ -45,12 +46,13 @@ public class EspnSummaryMapperTests
 
         Assert.Equal(
         [
-            new MatchEvent(MatchEventType.Goal, "26'", TeamSide.Away, "Luka Sucic", "Job Ochieng"),
-            new MatchEvent(MatchEventType.Goal, "57'", TeamSide.Home, "Aaron Mayol", "Hugo Duro"),
-            new MatchEvent(MatchEventType.PenaltyGoal, "75'", TeamSide.Away, "Carlos Soler", null),
+            new MatchEvent(MatchEventType.Goal, "26'", TeamSide.Away, "Luka Sucic", "Job Ochieng", "306263", "406379"),
+            new MatchEvent(MatchEventType.Goal, "57'", TeamSide.Home, "Aaron Mayol", "Hugo Duro", "419048", "267477"),
+            // A penalty and an own goal have nobody assisting.
+            new MatchEvent(MatchEventType.PenaltyGoal, "75'", TeamSide.Away, "Carlos Soler", null, "235072"),
             // Scored by a Real Sociedad player, so it counts for Valencia.
-            new MatchEvent(MatchEventType.OwnGoal, "84'", TeamSide.Home, "Luken Beitia", null),
-            new MatchEvent(MatchEventType.Goal, "90'+1'", TeamSide.Away, "Ander Barrenetxea", "Carlos Soler"),
+            new MatchEvent(MatchEventType.OwnGoal, "84'", TeamSide.Home, "Luken Beitia", null, "396607"),
+            new MatchEvent(MatchEventType.Goal, "90'+1'", TeamSide.Away, "Ander Barrenetxea", "Carlos Soler", "283941", "235072"),
         ], goals);
 
         // Every goal accounted for: the events add up to the final score.
@@ -63,7 +65,7 @@ public class EspnSummaryMapperTests
     {
         var sub = MapFinished().Events.First(e => e.Type == MatchEventType.Substitution);
 
-        Assert.Equal(new MatchEvent(MatchEventType.Substitution, "45'", TeamSide.Home, "David Otorbi", "Filip Ugrinic"), sub);
+        Assert.Equal(new MatchEvent(MatchEventType.Substitution, "45'", TeamSide.Home, "David Otorbi", "Filip Ugrinic", "377768", "248681"), sub);
     }
 
     [Fact]
@@ -92,6 +94,23 @@ public class EspnSummaryMapperTests
         Assert.Null(detail.Match.Score);
         Assert.Empty(detail.Events);
         Assert.Empty(detail.Stats);
+    }
+
+    [Fact]
+    public void Odds_come_from_the_pickcenter_section()
+    {
+        var summary = FixtureLoader.LoadSummary("summary-tur1-scheduled.json") with
+        {
+            Pickcenter = [new EspnOdds(new EspnOddsProvider("DraftKings"), null, new EspnTeamOdds(-450), new EspnTeamOdds(950), new EspnTeamOdds(500))],
+        };
+
+        Assert.Equal(new MatchOdds(1.22m, 6.00m, 10.50m, "DraftKings"), EspnSummaryMapper.Map(summary, "tur.1")!.Match.Odds);
+    }
+
+    [Fact]
+    public void Summary_without_odds_has_none()
+    {
+        Assert.Null(MapFinished().Match.Odds);
     }
 
     [Fact]

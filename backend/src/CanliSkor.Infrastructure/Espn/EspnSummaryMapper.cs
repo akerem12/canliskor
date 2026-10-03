@@ -44,6 +44,9 @@ internal static class EspnSummaryMapper
             return null;
         }
 
+        // The header carries no odds; the summary has them in a section of its own.
+        match = match with { Odds = EspnOddsMapper.Map(response.Pickcenter) };
+
         var events = (response.KeyEvents ?? [])
             .Select(e => MapEvent(e, match))
             .OfType<MatchEvent>()
@@ -81,12 +84,17 @@ internal static class EspnSummaryMapper
             return null;
         }
 
+        var player = e.Participants?.ElementAtOrDefault(0)?.Athlete;
+        var related = e.Participants?.ElementAtOrDefault(1)?.Athlete;
+
         return new MatchEvent(
             type.Value,
             e.Clock.DisplayValue,
             side.Value,
-            Player: e.Participants?.ElementAtOrDefault(0)?.Athlete?.DisplayName,
-            RelatedPlayer: e.Participants?.ElementAtOrDefault(1)?.Athlete?.DisplayName);
+            Player: player?.DisplayName,
+            RelatedPlayer: related?.DisplayName,
+            PlayerId: string.IsNullOrEmpty(player?.Id) ? null : player.Id,
+            RelatedPlayerId: string.IsNullOrEmpty(related?.Id) ? null : related.Id);
     }
 
     private static List<MatchStat> MapStats(EspnBoxscore? boxscore)

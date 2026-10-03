@@ -112,7 +112,11 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         Assert.Equal("Home", goal.GetProperty("side").GetString());
         Assert.Equal("12'", goal.GetProperty("clock").GetString());
         Assert.Equal("Icardi", goal.GetProperty("player").GetString());
+        Assert.Equal("9", goal.GetProperty("playerId").GetString());
         Assert.Equal(JsonValueKind.Null, goal.GetProperty("relatedPlayer").ValueKind);
+        Assert.Equal(JsonValueKind.Null, goal.GetProperty("relatedPlayerId").ValueKind);
+        // No odds posted for this match.
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("match").GetProperty("odds").ValueKind);
 
         var stat = Assert.Single(root.GetProperty("stats").EnumerateArray());
         Assert.Equal("Possession", stat.GetProperty("type").GetString());
@@ -204,6 +208,13 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         var fixture = Assert.Single(root.GetProperty("matches").EnumerateArray());
         Assert.Equal("81", fixture.GetProperty("id").GetString());
         Assert.Equal("RAMS Park", fixture.GetProperty("venue").GetString());
+
+        var odds = fixture.GetProperty("odds");
+        Assert.Equal(1.45m, odds.GetProperty("home").GetDecimal());
+        Assert.Equal(4.20m, odds.GetProperty("draw").GetDecimal());
+        Assert.Equal(6.50m, odds.GetProperty("away").GetDecimal());
+        Assert.Equal("Home", odds.GetProperty("favorite").GetString());
+        Assert.Equal("DraftKings", odds.GetProperty("provider").GetString());
         Assert.Equal("2026-10-16T20:00:00+03:00", fixture.GetProperty("kickoff").GetString());
     }
 
@@ -284,6 +295,39 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Get_player_returns_the_profile_and_season_statistics()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/players/9");
+        var root = json.RootElement;
+
+        Assert.Equal("Icardi", root.GetProperty("name").GetString());
+        Assert.Equal("Forward", root.GetProperty("position").GetString());
+        Assert.Equal(181, root.GetProperty("heightCm").GetInt32());
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("photoUrl").ValueKind);
+        Assert.Equal("Galatasaray", root.GetProperty("team").GetProperty("name").GetString());
+        Assert.Equal(Now, root.GetProperty("lastUpdatedUtc").GetDateTimeOffset());
+
+        var league = Assert.Single(root.GetProperty("competitions").EnumerateArray());
+        Assert.Equal("2026-27 Turkish Super Lig", league.GetProperty("name").GetString());
+        Assert.Equal(5, league.GetProperty("starts").GetInt32());
+        Assert.Equal(1, league.GetProperty("substituteAppearances").GetInt32());
+        Assert.Equal(4, league.GetProperty("goals").GetInt32());
+        // Not a goalkeeper.
+        Assert.Equal(JsonValueKind.Null, league.GetProperty("saves").ValueKind);
+    }
+
+    [Theory]
+    [InlineData("/api/leagues/ger.1/players/9")]     // league not followed
+    [InlineData("/api/leagues/tur.1/players/404")]   // unknown player
+    [InlineData("/api/leagues/tur.1/players/abc")]   // not an ESPN id
+    public async Task Get_player_returns_404_for_unknown_players(string url)
+    {
+        var response = await _client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Get_leagues_returns_followed_league_codes_in_order()
     {
         using var json = await GetJson("/api/leagues");
@@ -317,7 +361,7 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
 
 /// <summary>
 /// Any day: one finished match for tur.1, nothing for the other leagues. Details: only match 77 of tur.1.
-/// Squads: only team 432 of tur.1.
+/// Squads: only team 432 of tur.1. Players: only 9.
 /// </summary>
 internal sealed class StubFootballDataProvider : IFootballDataProvider
 {
@@ -327,7 +371,7 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
                 new Team("432", "Galatasaray", "Galatasaray", null),
                 new Team("436", "Fenerbahce", "Fenerbahce", null),
                 new Score(1, 0)),
-            [new MatchEvent(MatchEventType.PenaltyGoal, "12'", TeamSide.Home, "Icardi", null)],
+            [new MatchEvent(MatchEventType.PenaltyGoal, "12'", TeamSide.Home, "Icardi", null, PlayerId: "9")],
             [new MatchStat(MatchStatType.Possession, 61.5, 38.5)],
             new MatchLineups(Lineup("Icardi", "#fdb912"), Lineup("Dzeko", null))));
 
@@ -358,7 +402,8 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
             new Match("80", leagueCode, new DateTimeOffset(2026, 10, 2, 17, 0, 0, TimeSpan.Zero), MatchStatus.Finished, "90'",
                 Galatasaray, new Team("436", "Fenerbahce", "Fenerbahce", null), new Score(2, 1)),
             new Match("81", leagueCode, new DateTimeOffset(2026, 10, 16, 17, 0, 0, TimeSpan.Zero), MatchStatus.Scheduled, null,
-                Galatasaray, new Team("1895", "Besiktas", "Besiktas", null), null, Venue: "RAMS Park"),
+                Galatasaray, new Team("1895", "Besiktas", "Besiktas", null), null, Venue: "RAMS Park",
+                Odds: new MatchOdds(1.45m, 4.20m, 6.50m, "DraftKings")),
         ]));
 
     public Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
@@ -373,6 +418,11 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
                     new Team("83", "Barcelona", "Barcelona", null), Galatasaray, null),
             ],
             [new League("tur.1", "Turkish Super Lig"), new League("uefa.champions", "UEFA Champions League")]));
+
+    public Task<PlayerProfile?> GetPlayerProfileAsync(string leagueCode, string playerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(playerId != "9" ? null : new PlayerProfile(
+            "9", "Icardi", "9", PlayerPosition.Forward, "Argentina", "https://flag.test/arg.png", 33, 181, PhotoUrl: null, Galatasaray,
+            [new PlayerCompetitionStats("2026-27 Turkish Super Lig", "tur.1", "Galatasaray", 5, 1, 4, 1, 14, 8, 1, 0, 3, 6, 2, null, null, null)]));
 
     public Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
         Task.FromResult(leagueCode != "tur.1" || teamId != "432" ? null : new Squad(leagueCode, teamId, "Galatasaray",

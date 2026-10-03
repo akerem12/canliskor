@@ -152,6 +152,18 @@ internal sealed class FakeFootballDataProvider : IFootballDataProvider
             : Task.FromResult(_teams.GetValueOrDefault((leagueCode, teamId)));
     }
 
+    private readonly Dictionary<string, PlayerProfile> _players = new();
+
+    public void Returns(PlayerProfile player) => _players[player.Id] = player;
+
+    public Task<PlayerProfile?> GetPlayerProfileAsync(string leagueCode, string playerId, CancellationToken cancellationToken = default)
+    {
+        InfoRequests.Add($"player:{leagueCode}:{playerId}");
+        return FailInfo
+            ? throw new FootballDataProviderException($"Player {playerId} unavailable")
+            : Task.FromResult(_players.GetValueOrDefault(playerId));
+    }
+
     public Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
     {
         SquadRequests.Add((leagueCode, teamId));

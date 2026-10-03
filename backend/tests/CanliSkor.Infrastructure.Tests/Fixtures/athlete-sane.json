@@ -1,0 +1,50 @@
+{
+  "athlete": {
+    "id": "202641",
+    "displayName": "Leroy Sané",
+    "jersey": "10",
+    "position": {
+      "abbreviation": "F"
+    },
+    "team": {
+      "id": "432",
+      "displayName": "Galatasaray",
+      "shortDisplayName": "Galatasaray",
+      "logos": [
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/432.png"
+        },
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500-dark/432.png"
+        }
+      ]
+    },
+    "displayHeight": "6' 0\"",
+    "age": 30,
+    "citizenship": "Germany",
+    "flag": {
+      "href": "https://a.espncdn.com/i/teamlogos/countries/500/ger.png"
+    },
+    "statsSummary": {
+      "displayName": "2026-27 Turkish Super Lig Stats",
+      "statistics": [
+        {
+          "name": "starts-subIns",
+          "displayValue": "3 (3)"
+        },
+        {
+          "name": "totalGoals",
+          "displayValue": "0"
+        },
+        {
+          "name": "goalAssists",
+          "displayValue": "0"
+        },
+        {
+          "name": "totalShots",
+          "displayValue": "8"
+        }
+      ]
+    }
+  }
+}

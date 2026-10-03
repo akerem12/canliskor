@@ -55,6 +55,26 @@ public class EspnScoreboardMapperTests
     }
 
     [Fact]
+    public void Scheduled_match_carries_decimal_odds_and_the_favourite()
+    {
+        // Galatasaray v Kasimpasa: ESPN quotes -450 / +500 / +950.
+        var response = FixtureLoader.LoadScoreboard("scoreboard-tur1-scheduled.json");
+
+        var match = Assert.Single(EspnScoreboardMapper.Map(response, "tur.1", Date).Matches);
+
+        Assert.Equal(new MatchOdds(1.22m, 6.00m, 10.50m, "DraftKings"), match.Odds);
+        Assert.Equal(TeamSide.Home, match.Odds!.Favorite);
+    }
+
+    [Fact]
+    public void Match_without_posted_odds_has_none()
+    {
+        var response = FixtureLoader.LoadScoreboard("scoreboard-tur1-finished.json");
+
+        Assert.All(EspnScoreboardMapper.Map(response, "tur.1", Date).Matches, m => Assert.Null(m.Odds));
+    }
+
+    [Fact]
     public void Empty_logo_is_mapped_to_null()
     {
         var response = FixtureLoader.LoadScoreboard("scoreboard-tur1-finished.json");

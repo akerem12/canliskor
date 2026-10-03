@@ -1,0 +1,101 @@
+{
+  "statistics": {
+    "names": [
+      "starts",
+      "foulsCommitted",
+      "foulsSuffered",
+      "yellowCards",
+      "redCards",
+      "totalGoals",
+      "goalAssists",
+      "totalShots",
+      "shotsOnTarget",
+      "offsides"
+    ],
+    "filters": [
+      {
+        "name": "team",
+        "options": [
+          {
+            "value": "432",
+            "displayValue": "Galatasaray"
+          },
+          {
+            "value": "481",
+            "displayValue": "Germany"
+          }
+        ]
+      }
+    ],
+    "splits": [
+      {
+        "displayName": "2026-27 Champions League",
+        "teamId": "432",
+        "leagueSlug": "uefa.champions",
+        "stats": [
+          "1",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "2",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "displayName": "2026-27 Turkish Super Lig",
+        "teamId": "432",
+        "leagueSlug": "tur.1",
+        "stats": [
+          "3",
+          "2",
+          "6",
+          "1",
+          "0",
+          "0",
+          "0",
+          "8",
+          "3",
+          "0"
+        ]
+      },
+      {
+        "displayName": "2026 International Friendly",
+        "teamId": "481",
+        "leagueSlug": "fifa.friendly",
+        "stats": [
+          "2",
+          "1",
+          "0",
+          "0",
+          "0",
+          "1",
+          "1",
+          "6",
+          "1",
+          "1"
+        ]
+      },
+      {
+        "displayName": "2026 FIFA World Cup",
+        "teamId": "481",
+        "leagueSlug": "fifa.world",
+        "stats": [
+          "4",
+          "3",
+          "2",
+          "0",
+          "0",
+          "1",
+          "0",
+          "6",
+          "2",
+          "1"
+        ]
+      }
+    ]
+  }
+}

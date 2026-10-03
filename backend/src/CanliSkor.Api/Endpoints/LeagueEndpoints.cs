@@ -111,6 +111,23 @@ public static class LeagueEndpoints
         })
             .WithTags("Teams");
 
+        // A player: who they are and their season in every competition. Numeric ids, followed leagues only.
+        app.MapGet("/api/leagues/{code}/players/{playerId:regex(^[0-9]{{1,15}}$)}", async Task<Results<Ok<PlayerProfileResponse>, NotFound, ProblemHttpResult>> (
+            string code, string playerId, LeagueInfoService leagues, CancellationToken ct) =>
+        {
+            try
+            {
+                return await leagues.GetPlayerAsync(code, playerId, ct) is { } player
+                    ? TypedResults.Ok(player.ToResponse())
+                    : TypedResults.NotFound();
+            }
+            catch (FootballDataProviderException)
+            {
+                return TypedResults.Problem("The player is temporarily unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        })
+            .WithTags("Players");
+
         return app;
     }
 }

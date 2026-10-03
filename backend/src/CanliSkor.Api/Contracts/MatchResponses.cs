@@ -17,6 +17,7 @@ public sealed record LeagueMatchesResponse(
 
 /// <param name="Venue">The stadium, or null if unknown.</param>
 /// <param name="Kickoff">Kickoff in Istanbul time, e.g. "2026-10-09T20:00:00+03:00" — an exact instant, ready to display.</param>
+/// <param name="Odds">Null if no odds are posted for the match.</param>
 public sealed record MatchResponse(
     string Id,
     string LeagueCode,
@@ -26,7 +27,13 @@ public sealed record MatchResponse(
     TeamResponse HomeTeam,
     TeamResponse AwayTeam,
     ScoreResponse? Score,
-    string? Venue);
+    string? Venue,
+    OddsResponse? Odds);
+
+/// <summary>Decimal 1X2 odds, e.g. 1.22 / 6.00 / 10.50.</summary>
+/// <param name="Favorite">"Home" or "Away": the team the market favours; null if both are priced the same.</param>
+/// <param name="Provider">The bookmaker, or null if unknown.</param>
+public sealed record OddsResponse(decimal Home, decimal Draw, decimal Away, TeamSide? Favorite, string? Provider);
 
 public sealed record TeamResponse(string Id, string Name, string ShortName, string? LogoUrl);
 
@@ -45,7 +52,15 @@ public sealed record MatchDetailResponse(
 /// <param name="Side">"Home" or "Away": the team the event counts for (an own goal counts for the team that benefits).</param>
 /// <param name="Player">Scorer, booked player, or the player coming on.</param>
 /// <param name="RelatedPlayer">Assist provider, or the player going off.</param>
-public sealed record MatchEventResponse(MatchEventType Type, string Clock, TeamSide Side, string? Player, string? RelatedPlayer);
+/// <param name="PlayerId">Id for the player's profile, or null if unknown; likewise <paramref name="RelatedPlayerId"/>.</param>
+public sealed record MatchEventResponse(
+    MatchEventType Type,
+    string Clock,
+    TeamSide Side,
+    string? Player,
+    string? RelatedPlayer,
+    string? PlayerId,
+    string? RelatedPlayerId);
 
 public sealed record MatchStatResponse(MatchStatType Type, double Home, double Away);
 
@@ -146,6 +161,47 @@ public sealed record TeamProfileResponse(
     IReadOnlyList<LeagueResponse> Competitions,
     DateTimeOffset LastUpdatedUtc);
 
+/// <param name="FlagUrl">Picture of the country's flag, or null.</param>
+/// <param name="PhotoUrl">Portrait, or null: most players have none.</param>
+/// <param name="Team">The player's club, or null if unknown.</param>
+/// <param name="Competitions">This season, one entry per competition, the player's main league first.</param>
+public sealed record PlayerProfileResponse(
+    string Id,
+    string Name,
+    string? Jersey,
+    PlayerPosition? Position,
+    string? Nationality,
+    string? FlagUrl,
+    int? Age,
+    int? HeightCm,
+    string? PhotoUrl,
+    TeamResponse? Team,
+    IReadOnlyList<PlayerCompetitionStatsResponse> Competitions,
+    DateTimeOffset LastUpdatedUtc);
+
+/// <param name="LeagueCode">E.g. "tur.1", or null if unknown; not necessarily a followed league.</param>
+/// <param name="TeamName">The team played for there: the club, or the national team.</param>
+/// <param name="SubstituteAppearances">Known for the player's main league only; null elsewhere.</param>
+/// <param name="CleanSheets">Goalkeepers only, like Saves and GoalsConceded; null for everyone else.</param>
+public sealed record PlayerCompetitionStatsResponse(
+    string Name,
+    string? LeagueCode,
+    string? TeamName,
+    int Starts,
+    int? SubstituteAppearances,
+    int Goals,
+    int Assists,
+    int Shots,
+    int ShotsOnTarget,
+    int YellowCards,
+    int RedCards,
+    int FoulsCommitted,
+    int FoulsSuffered,
+    int Offsides,
+    int? CleanSheets,
+    int? Saves,
+    int? GoalsConceded);
+
 /// <summary>SignalR "MatchUpdated" payload: the full new match state plus what changed (e.g. to animate a goal).</summary>
 /// <remarks>Both flags false means only the clock moved.</remarks>
 public sealed record MatchUpdatedMessage(MatchResponse Match, bool ScoreChanged, bool StatusChanged);
@@ -167,11 +223,12 @@ public static class ContractMappings
         ToResponse(match.HomeTeam),
         ToResponse(match.AwayTeam),
         match.Score is { } s ? new ScoreResponse(s.Home, s.Away) : null,
-        match.Venue);
+        match.Venue,
+        match.Odds is { } o ? new OddsResponse(o.Home, o.Draw, o.Away, o.Favorite, o.Provider) : null);
 
     public static MatchDetailResponse ToResponse(this MatchDetailSnapshot snapshot) => new(
         snapshot.Detail.Match.ToResponse(),
-        snapshot.Detail.Events.Select(e => new MatchEventResponse(e.Type, e.Clock, e.Side, e.Player, e.RelatedPlayer)).ToList(),
+        snapshot.Detail.Events.Select(e => new MatchEventResponse(e.Type, e.Clock, e.Side, e.Player, e.RelatedPlayer, e.PlayerId, e.RelatedPlayerId)).ToList(),
         snapshot.Detail.Stats.Select(s => new MatchStatResponse(s.Type, s.Home, s.Away)).ToList(),
         snapshot.Detail.Lineups is { } lineups ? new MatchLineupsResponse(ToResponse(lineups.Home), ToResponse(lineups.Away)) : null,
         snapshot.FetchedAtUtc);
@@ -212,6 +269,22 @@ public static class ContractMappings
         entry.Value.RecentMatches.Select(ToResponse).ToList(),
         entry.Value.UpcomingMatches.Select(ToResponse).ToList(),
         entry.Value.Competitions.Select(l => new LeagueResponse(l.Code, l.Name)).ToList(),
+        entry.FetchedAtUtc);
+
+    public static PlayerProfileResponse ToResponse(this Timestamped<PlayerProfile> entry) => new(
+        entry.Value.Id,
+        entry.Value.Name,
+        entry.Value.Jersey,
+        entry.Value.Position,
+        entry.Value.Nationality,
+        entry.Value.FlagUrl,
+        entry.Value.Age,
+        entry.Value.HeightCm,
+        entry.Value.PhotoUrl,
+        entry.Value.Team is { } team ? ToResponse(team) : null,
+        entry.Value.Competitions.Select(c => new PlayerCompetitionStatsResponse(
+            c.Name, c.LeagueCode, c.TeamName, c.Starts, c.SubstituteAppearances, c.Goals, c.Assists, c.Shots, c.ShotsOnTarget,
+            c.YellowCards, c.RedCards, c.FoulsCommitted, c.FoulsSuffered, c.Offsides, c.CleanSheets, c.Saves, c.GoalsConceded)).ToList(),
         entry.FetchedAtUtc);
 
     public static MatchUpdatedMessage ToMessage(this MatchChange change) => new(

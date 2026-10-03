@@ -83,7 +83,7 @@ public sealed partial class MatchDetailService(
                     return null;
                 }
 
-                var snapshot = new MatchDetailSnapshot(PlayingTime.Apply(detail), timeProvider.GetUtcNow());
+                var snapshot = new MatchDetailSnapshot(AssistAttribution.Apply(PlayingTime.Apply(detail)), timeProvider.GetUtcNow());
                 await store.SetDetailAsync(snapshot, cancellationToken);
                 return snapshot;
             }

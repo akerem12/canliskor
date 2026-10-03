@@ -1,0 +1,50 @@
+{
+  "athlete": {
+    "id": "222922",
+    "displayName": "Ugurcan Çakir",
+    "jersey": "1",
+    "position": {
+      "abbreviation": "G"
+    },
+    "team": {
+      "id": "432",
+      "displayName": "Galatasaray",
+      "shortDisplayName": "Galatasaray",
+      "logos": [
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/432.png"
+        },
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500-dark/432.png"
+        }
+      ]
+    },
+    "displayHeight": "6' 3\"",
+    "age": 30,
+    "citizenship": "Türkiye",
+    "flag": {
+      "href": "https://a.espncdn.com/i/teamlogos/countries/500/tur.png"
+    },
+    "statsSummary": {
+      "displayName": "2026-27 Turkish Super Lig Stats",
+      "statistics": [
+        {
+          "name": "starts-subIns",
+          "displayValue": "5 (0)"
+        },
+        {
+          "name": "saves",
+          "displayValue": "8"
+        },
+        {
+          "name": "cleanSheet",
+          "displayValue": "2"
+        },
+        {
+          "name": "goalsConceded",
+          "displayValue": "8"
+        }
+      ]
+    }
+  }
+}

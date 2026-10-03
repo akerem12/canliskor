@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace CanliSkor.Core.Services;
 
 /// <summary>
-/// League tables and team profiles, loaded on request and cached in the store. Same rules as the other
+/// League tables, team profiles and player profiles, loaded on request and cached in the store. Same rules as the other
 /// request-driven loads: followed leagues only, one provider call at a time across the app
 /// (<see cref="OnDemandFetchGate"/>), and the last good copy is served if the provider fails.
 /// </summary>
@@ -31,6 +31,9 @@ public sealed partial class LeagueInfoService(
 
     /// <summary>A match that kicked off this long ago still counts as coming up, so one in play doesn't vanish from the list.</summary>
     public static readonly TimeSpan UpcomingGrace = TimeSpan.FromHours(3);
+
+    /// <summary>A player's season totals move when they play: a couple of times a week.</summary>
+    public static readonly TimeSpan PlayerRefreshAfter = TimeSpan.FromMinutes(30);
 
     /// <summary>Who plays in a league changes once a season.</summary>
     public static readonly TimeSpan TeamsRefreshAfter = TimeSpan.FromHours(24);
@@ -120,6 +123,12 @@ public sealed partial class LeagueInfoService(
     /// <exception cref="FootballDataProviderException">Loading failed and nothing is cached.</exception>
     public Task<Timestamped<TeamProfile>?> GetTeamAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
         GetAsync($"team:{leagueCode}:{teamId}", leagueCode, TeamRefreshAfter, ct => provider.GetTeamProfileAsync(leagueCode, teamId, ct), cancellationToken);
+
+    /// <param name="leagueCode">The league the player was found in. A player is the same in every league; it only has to be a followed one.</param>
+    /// <returns>Null if the league isn't followed or the provider doesn't know the player.</returns>
+    /// <exception cref="FootballDataProviderException">Loading failed and nothing is cached.</exception>
+    public Task<Timestamped<PlayerProfile>?> GetPlayerAsync(string leagueCode, string playerId, CancellationToken cancellationToken = default) =>
+        GetAsync($"player:{playerId}", leagueCode, PlayerRefreshAfter, ct => provider.GetPlayerProfileAsync(leagueCode, playerId, ct), cancellationToken);
 
     private async Task<Timestamped<T>?> GetAsync<T>(
         string key, string leagueCode, TimeSpan refreshAfter, Func<CancellationToken, Task<T?>> load, CancellationToken cancellationToken)

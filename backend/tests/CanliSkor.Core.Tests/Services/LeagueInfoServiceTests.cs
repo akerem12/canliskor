@@ -16,6 +16,8 @@ public class LeagueInfoServiceTests
         [new StandingsGroup("2026/2027", [new StandingsRow(1, Besiktas, 6, 4, 0, 2, 14, 7, 7, 12, null, null)])]);
     private static readonly TeamProfile Profile = new("tur.1", Besiktas, false, "3rd in Turkish Super Lig", "Vodafone Park", "Istanbul", [], [], []);
 
+    private static readonly PlayerProfile Striker = new("9", "Striker", "9", PlayerPosition.Forward, null, null, 28, 185, null, Besiktas, []);
+
     private readonly FakeFootballDataProvider _provider = new();
     private readonly FakeMatchStore _store = new();
     private readonly FakeTimeProvider _time = new(Now);
@@ -42,6 +44,31 @@ public class LeagueInfoServiceTests
         Assert.Equal(Now, first?.FetchedAtUtc);
         Assert.Same(first, second);
         Assert.Equal(["standings:tur.1"], _provider.InfoRequests);
+    }
+
+    [Fact]
+    public async Task Player_is_loaded_once_whichever_followed_league_asks_for_it()
+    {
+        _provider.Returns(Striker);
+        var service = CreateService();
+
+        var first = await service.GetPlayerAsync("tur.1", "9");
+        var second = await service.GetPlayerAsync("eng.1", "9");
+
+        Assert.Same(Striker, first?.Value);
+        Assert.Same(first, second);
+        Assert.Equal(["player:tur.1:9"], _provider.InfoRequests);
+    }
+
+    [Fact]
+    public async Task Player_is_null_when_unknown_or_asked_for_under_a_league_that_is_not_followed()
+    {
+        _provider.Returns(Striker);
+        var service = CreateService();
+
+        Assert.Null(await service.GetPlayerAsync("tur.1", "404"));
+        Assert.Null(await service.GetPlayerAsync("ger.1", "9"));
+        Assert.Equal(["player:tur.1:404"], _provider.InfoRequests);
     }
 
     [Fact]

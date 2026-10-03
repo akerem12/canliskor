@@ -15,7 +15,16 @@ public sealed record MatchDetail(
 /// <param name="Side">The team the event counts for. An own goal counts for the team that benefits from it.</param>
 /// <param name="Player">Scorer, booked player, or the player coming on.</param>
 /// <param name="RelatedPlayer">Assist provider, or the player going off. Null if none or unknown.</param>
-public sealed record MatchEvent(MatchEventType Type, string Clock, TeamSide Side, string? Player, string? RelatedPlayer);
+/// <param name="PlayerId">The provider's id of <paramref name="Player"/>, for opening their profile. Null if unknown.</param>
+/// <param name="RelatedPlayerId">The provider's id of <paramref name="RelatedPlayer"/>. Null if unknown.</param>
+public sealed record MatchEvent(
+    MatchEventType Type,
+    string Clock,
+    TeamSide Side,
+    string? Player,
+    string? RelatedPlayer,
+    string? PlayerId = null,
+    string? RelatedPlayerId = null);
 
 public enum MatchEventType
 {

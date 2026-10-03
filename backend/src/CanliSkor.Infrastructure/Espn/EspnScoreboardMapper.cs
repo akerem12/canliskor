@@ -49,7 +49,8 @@ internal static class EspnScoreboardMapper
             HomeTeam: MapTeam(home.Team),
             AwayTeam: MapTeam(away.Team),
             Score: started ? ParseScore(home.Score, away.Score) : null,
-            Venue: string.IsNullOrWhiteSpace(competition?.Venue?.FullName) ? null : competition.Venue.FullName);
+            Venue: string.IsNullOrWhiteSpace(competition?.Venue?.FullName) ? null : competition.Venue.FullName,
+            Odds: EspnOddsMapper.Map(competition?.Odds));
     }
 
     internal static MatchStatus MapStatus(EspnStatusType? type)

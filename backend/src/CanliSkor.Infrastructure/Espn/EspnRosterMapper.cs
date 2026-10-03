@@ -33,7 +33,7 @@ internal static class EspnRosterMapper
         return new Squad(leagueCode, response.Team.Id, response.Team.DisplayName, players);
     }
 
-    private static PlayerPosition? MapPosition(string? abbreviation) => abbreviation switch
+    internal static PlayerPosition? MapPosition(string? abbreviation) => abbreviation switch
     {
         "G" => PlayerPosition.Goalkeeper,
         "D" => PlayerPosition.Defender,
