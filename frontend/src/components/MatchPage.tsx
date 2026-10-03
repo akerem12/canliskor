@@ -60,16 +60,17 @@ function writeTabToUrl(tab: Tab) {
 export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch, onNavigate, onClose }: Props) {
   const { t } = useI18n()
   const { detail, error } = useMatchDetail(leagueCode, matchId, pushed, watchMatch)
-  // Until a tab is picked: line-ups once they are announced, otherwise events.
   const [pickedTab, setPickedTab] = useState(tabFromUrl)
   const pickTab = (picked: Tab) => {
     setPickedTab(picked)
     writeTabToUrl(picked)
   }
-  const tab = pickedTab ?? (detail?.lineups ? 'lineups' : 'events')
 
   // The pushed match has the live clock; the detail's copy may be up to one refresh behind.
   const match = pushed ?? detail?.match
+
+  // Until a tab is picked: line-ups once they are announced, or the possible ones before kick-off; otherwise events.
+  const tab = pickedTab ?? (detail?.lineups || match?.status === 'Scheduled' ? 'lineups' : 'events')
 
   return (
     <main className="detail" aria-label={match ? t.match.versus(match.homeTeam.name, match.awayTeam.name) : t.match.details}>

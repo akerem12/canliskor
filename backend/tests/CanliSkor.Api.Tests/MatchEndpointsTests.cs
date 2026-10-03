@@ -315,6 +315,21 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         Assert.Equal(JsonValueKind.Null, league.GetProperty("saves").ValueKind);
     }
 
+    [Fact]
+    public async Task Get_expected_lineups_is_empty_for_a_match_that_has_its_line_ups()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/matches/77/expected-lineups");
+
+        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("home").ValueKind);
+        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("away").ValueKind);
+    }
+
+    [Fact]
+    public async Task Get_expected_lineups_returns_404_for_unknown_matches()
+    {
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync("/api/leagues/tur.1/matches/404/expected-lineups")).StatusCode);
+    }
+
     [Theory]
     [InlineData("/api/leagues/ger.1/players/9")]     // league not followed
     [InlineData("/api/leagues/tur.1/players/404")]   // unknown player

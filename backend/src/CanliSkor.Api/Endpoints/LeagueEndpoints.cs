@@ -33,6 +33,23 @@ public static class LeagueEndpoints
         })
             .WithTags("Matches");
 
+        // Possible line-ups for a match that hasn't announced its own: each team as it started its last match.
+        app.MapGet("/api/leagues/{code}/matches/{id:regex(^[0-9]{{1,15}}$)}/expected-lineups", async Task<Results<Ok<ExpectedLineupsResponse>, NotFound, ProblemHttpResult>> (
+            string code, string id, ExpectedLineupService lineups, CancellationToken ct) =>
+        {
+            try
+            {
+                return await lineups.GetAsync(code, id, ct) is { } expected
+                    ? TypedResults.Ok(expected.ToResponse())
+                    : TypedResults.NotFound();
+            }
+            catch (FootballDataProviderException)
+            {
+                return TypedResults.Problem("The line-ups are temporarily unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        })
+            .WithTags("Matches");
+
         // Followed leagues with their names, in display order.
         app.MapGet("/api/competitions", async (LeagueInfoService leagues, CancellationToken ct) =>
             (await leagues.GetLeaguesAsync(ct)).Select(l => new LeagueResponse(l.Code, l.Name)).ToList())

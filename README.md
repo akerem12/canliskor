@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig, major European and South American leagues, the UEFA Nations League and international friendlies.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 18: Turkish and English, dark and light themes).
+> Status: **work in progress** (step 19: possible line-ups before kick-off).
 
 ## Architecture
 
@@ -190,6 +190,14 @@ match. `AssistAttribution` fills the gap where that leaves no doubt: a player wi
 exactly one of the team's goals (on the pitch at the time, not the scorer) set up that one. Anything ambiguous stays
 open; the line-ups still mark every player who assisted.
 
+### Possible line-ups
+
+Until a match announces its line-ups (about an hour before kick-off), its Line-ups tab shows possible ones. ESPN
+has no predictions, so `ExpectedLineupService` shows each team as it last started: the eleven and formation of its
+most recent played match that has a line-up (the latest three are tried; competitions that aren't followed are
+skipped). It is marked as a guess, with a dashed pitch and the match each eleven comes from, because injuries,
+suspensions and rotation aren't known. Once the real line-ups are out they replace it.
+
 ### Languages and themes
 
 The header has two switches. **Language:** English or Turkish; a browser set to Turkish starts in Turkish. Every
@@ -317,6 +325,7 @@ merged in from `/live`.
 | `GET /api/matches?date=2026-10-10` | Another day, up to 7 days back or ahead (else `400`) |
 | `GET /api/matches/live` | Matches currently in play |
 | `GET /api/leagues/{code}/matches/{id}` | One match with its events, statistics and line-ups (`404` if unknown, `503` if ESPN is down and nothing is cached) |
+| `GET /api/leagues/{code}/matches/{id}/expected-lineups` | Possible line-ups for a match without announced ones: `{ home, away }`, each `{ lineup, basedOn }` (the eleven as in the match detail's line-up, and the earlier match it is from) or `null` if nothing is known; both `null` once the real line-ups are out |
 | `GET /api/competitions` | Followed leagues with their names: `[{ code, name }]` |
 | `GET /api/leagues/{code}/standings` | The league table: `{ leagueCode, leagueName, groups, lastUpdatedUtc }`; each group `{ name, rows }`, each row `{ rank, team, played, wins, draws, losses, goalsFor, goalsAgainst, goalDifference, points, note, noteColor }`. No groups if the competition has no table |
 | `GET /api/teams/search?q=gala` | Teams whose name contains the query (two characters or more): `[{ league: { code, name }, team }]` |

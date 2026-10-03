@@ -3,6 +3,13 @@ namespace CanliSkor.Core.Domain;
 /// <summary>Both teams' line-ups. Only exists once both have been announced.</summary>
 public sealed record MatchLineups(TeamLineup Home, TeamLineup Away);
 
+/// <summary>How the two teams may line up in a match that hasn't announced its line-ups. A side is null if nothing is known.</summary>
+public sealed record ExpectedLineups(ExpectedLineup? Home, ExpectedLineup? Away);
+
+/// <param name="Lineup">The starting eleven only, without anything that happened in a match.</param>
+/// <param name="BasedOn">The team's earlier match this line-up was taken from.</param>
+public sealed record ExpectedLineup(TeamLineup Lineup, Match BasedOn);
+
 /// <param name="Formation">E.g. "4-2-3-1": the number of outfield players per row, defence first.</param>
 /// <param name="ShirtColor">Colour of the shirt worn in this match as "#rrggbb". Null if unknown.</param>
 /// <param name="Rows">

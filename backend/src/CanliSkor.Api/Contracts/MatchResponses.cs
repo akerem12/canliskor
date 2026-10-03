@@ -66,6 +66,14 @@ public sealed record MatchStatResponse(MatchStatType Type, double Home, double A
 
 public sealed record MatchLineupsResponse(TeamLineupResponse Home, TeamLineupResponse Away);
 
+/// <summary>Possible line-ups before the real ones are announced: each team as it started its last match.</summary>
+/// <param name="Home">Null if nothing is known for the team, and for both once the real line-ups are out.</param>
+public sealed record ExpectedLineupsResponse(ExpectedLineupResponse? Home, ExpectedLineupResponse? Away);
+
+/// <param name="Lineup">The starting eleven only: no bench, and no minutes or statistics.</param>
+/// <param name="BasedOn">The team's earlier match the line-up is taken from.</param>
+public sealed record ExpectedLineupResponse(TeamLineupResponse Lineup, MatchResponse BasedOn);
+
 /// <param name="Formation">E.g. "4-2-3-1": the number of outfield players per row, defence first.</param>
 /// <param name="ShirtColor">"#rrggbb", or null if unknown.</param>
 /// <param name="Rows">Starting eleven: the goalkeeper's row first, then defence to attack; each row from the team's own left to right.</param>
@@ -230,6 +238,10 @@ public static class ContractMappings
         snapshot.Detail.Stats.Select(s => new MatchStatResponse(s.Type, s.Home, s.Away)).ToList(),
         snapshot.Detail.Lineups is { } lineups ? new MatchLineupsResponse(ToResponse(lineups.Home), ToResponse(lineups.Away)) : null,
         snapshot.FetchedAtUtc);
+
+    public static ExpectedLineupsResponse ToResponse(this ExpectedLineups expected) => new(
+        expected.Home is { } home ? new ExpectedLineupResponse(ToResponse(home.Lineup), home.BasedOn.ToResponse()) : null,
+        expected.Away is { } away ? new ExpectedLineupResponse(ToResponse(away.Lineup), away.BasedOn.ToResponse()) : null);
 
     public static SquadResponse ToResponse(this SquadSnapshot snapshot) => new(
         snapshot.Squad.TeamId,

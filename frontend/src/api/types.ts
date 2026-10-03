@@ -114,6 +114,20 @@ export interface TeamLineup {
   bench: LineupPlayer[]
 }
 
+/** Possible line-ups before the real ones are announced: each team as it started its last match. */
+export interface ExpectedLineups {
+  /** Null if nothing is known for the team, and for both once the real line-ups are out. */
+  home: ExpectedLineup | null
+  away: ExpectedLineup | null
+}
+
+export interface ExpectedLineup {
+  /** The starting eleven only: no bench, and no minutes or statistics. */
+  lineup: TeamLineup
+  /** The team's earlier match the line-up is taken from. */
+  basedOn: Match
+}
+
 export type PlayerPosition = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Forward'
 
 export interface LineupPlayer {

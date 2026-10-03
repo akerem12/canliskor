@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import type { LineupPlayer, Match, MatchLineups, PlayerStats, Team, TeamLineup } from '../api/types'
+import { getExpectedLineups } from '../api/http'
+import type { ExpectedLineup, LineupPlayer, Match, MatchLineups, PlayerStats, Team, TeamLineup } from '../api/types'
+import { useFetch } from '../api/useFetch'
 import { useI18n } from '../i18n/useI18n'
 import type { Shirt } from '../lineups'
 import { pitchName, pitchRows, shirtColors } from '../lineups'
 import { usePlayerProfile } from '../players/usePlayerProfile'
-import { formatTime } from '../time'
+import { formatMatchDate, formatTime } from '../time'
+import { Skeleton } from './common'
 
 interface Props {
   lineups: MatchLineups | null
@@ -23,11 +26,10 @@ export function Lineups({ lineups, match }: Props) {
   const [selected, setSelected] = useState<Selected | null>(null)
 
   if (!lineups) {
-    return (
-      <p className="detail__empty">
-        {match.status === 'Scheduled' ? t.lineups.announcedLater(formatTime(match.kickoff)) : t.lineups.none}
-      </p>
-    )
+    // Before the announcement there is at least a guess to show.
+    return match.status === 'Scheduled'
+      ? <PossibleLineups match={match} />
+      : <p className="detail__empty">{t.lineups.none}</p>
   }
 
   const shirts = shirtColors(lineups.home.shirtColor, lineups.away.shirtColor)
@@ -61,6 +63,65 @@ export function Lineups({ lineups, match }: Props) {
       </div>
 
       {selected && <PlayerSheet {...selected} leagueCode={match.leagueCode} onClose={() => setSelected(null)} />}
+    </section>
+  )
+}
+
+/**
+ * How the teams may line up, for a match still waiting for its line-ups: each team as it started its last match.
+ * Shown as a guess, with the match it comes from. A player leads straight to their profile, as there is no match
+ * of theirs to show yet.
+ */
+function PossibleLineups({ match }: { match: Match }) {
+  const { t } = useI18n()
+  const openPlayer = usePlayerProfile()
+  const expected = useFetch(`expected-lineups/${match.leagueCode}/${match.id}`, () => getExpectedLineups(match.leagueCode, match.id))
+  const announcedLater = <p className="detail__empty">{t.lineups.announcedLater(formatTime(match.kickoff))}</p>
+
+  if (expected.loading) return <Skeleton rows={8} height={26} />
+  const { home, away } = expected.data ?? { home: null, away: null }
+  if (!home && !away) return announcedLater
+
+  const shirts = shirtColors(home?.lineup.shirtColor ?? null, away?.lineup.shirtColor ?? null)
+  const sides = [
+    { side: 'home', expected: home, team: match.homeTeam, shirt: shirts.home },
+    { side: 'away', expected: away, team: match.awayTeam, shirt: shirts.away },
+  ] as const
+  const source = ({ basedOn }: ExpectedLineup) => t.lineups.basedOn(
+    `${basedOn.homeTeam.shortName} ${basedOn.score ? `${basedOn.score.home}-${basedOn.score.away}` : '-'} ${basedOn.awayTeam.shortName}`,
+    formatMatchDate(basedOn.kickoff, t))
+
+  return (
+    <section aria-label={t.lineups.possible}>
+      <div className="possible">
+        <strong>{t.lineups.possible}</strong>
+        <p>{t.lineups.possibleNote(formatTime(match.kickoff))}</p>
+        <ul>
+          {sides.map(({ side, expected: known, team }) => (
+            <li key={side}><b>{team.shortName}:</b> {known ? source(known) : t.lineups.nothingKnown}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className={home && away ? 'pitch pitch--possible' : 'pitch pitch--possible pitch--single'}>
+        {sides.map(({ side, expected: known, team, shirt }) => known && (
+          <div key={side} className={`pitch__half pitch__half--${side}`} aria-label={t.lineups.startingEleven(team.name)}>
+            <span className="pitch__team">{team.shortName} · {known.lineup.formation}</span>
+            {pitchRows(known.lineup, side).map((row, i) => (
+              <div key={i} className="pitch__row">
+                {row.map(player => (
+                  <PitchPlayer
+                    key={player.id}
+                    player={player}
+                    shirt={shirt}
+                    onSelect={() => openPlayer({ leagueCode: match.leagueCode, playerId: player.id, name: player.name })}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </section>
   )
 }

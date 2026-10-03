@@ -117,6 +117,11 @@ export const tr: Dictionary = {
     title: 'İlk 11',
     announcedLater: time => `İlk 11'ler maçtan yaklaşık bir saat önce açıklanır (${time}).`,
     none: 'Bu maç için ilk 11 bilgisi yok.',
+    possible: 'Muhtemel 11\'ler',
+    possibleNote: time =>
+      `Bu bir tahmindir, açıklama değil: her takım son maçına çıktığı 11 ile gösterilir. Gerçek 11'ler maçtan yaklaşık bir saat önce açıklanır (${time}).`,
+    basedOn: (result, date) => `${date} tarihli ${result} maçındaki 11`,
+    nothingKnown: 'esas alınacak yakın tarihli bir 11 yok',
     startingEleven: team => `${team} ilk 11`,
     substitutes: 'Yedekler',
     substitutesOf: team => `${team} yedekleri`,

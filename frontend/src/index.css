@@ -293,6 +293,14 @@ h1, h2 { margin: 0; }
 }
 .pitch__half--away .pitch__team { top: auto; bottom: 8px; }
 .pitch__row { display: flex; justify-content: space-evenly; }
+/* A guess, not the real thing: dashed outline, and an explanation on top. */
+.pitch--possible { border-style: dashed; }
+.pitch--single::before { display: none; }
+.pitch--single .pitch__half { border-bottom: none; }
+.possible { margin-bottom: 10px; padding: 10px 12px; border: 1px dashed var(--gold); border-radius: 10px; background: var(--gold-soft); font-size: 0.85rem; }
+.possible strong { color: var(--gold); }
+.possible p { margin: 4px 0 6px; color: var(--muted); }
+.possible ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 
 .player {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
