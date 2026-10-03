@@ -21,7 +21,7 @@ public class AssistAttributionTests
             new TeamLineup("4-4-2", null, [starters], bench),
             new TeamLineup("4-4-2", null, [[Player("Opponent", assists: 1)]], [])));
 
-    private static string?[] Assists(MatchDetail detail) => AssistAttribution.Apply(detail).Events.Select(e => e.RelatedPlayer).ToArray();
+    private static IEnumerable<string?> Assists(MatchDetail detail) => AssistAttribution.Apply(detail).Events.Select(e => e.RelatedPlayer).ToList();
 
     [Fact]
     public void The_only_goal_goes_to_the_only_player_with_an_assist()
