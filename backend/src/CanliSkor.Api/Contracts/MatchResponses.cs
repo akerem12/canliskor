@@ -14,6 +14,7 @@ public sealed record LeagueMatchesResponse(
     DateTimeOffset LastUpdatedUtc,
     IReadOnlyList<MatchResponse> Matches);
 
+/// <param name="Venue">The stadium, or null if unknown.</param>
 /// <param name="Kickoff">Kickoff in Istanbul time, e.g. "2026-10-09T20:00:00+03:00" — an exact instant, ready to display.</param>
 public sealed record MatchResponse(
     string Id,
@@ -23,7 +24,8 @@ public sealed record MatchResponse(
     string? Clock,
     TeamResponse HomeTeam,
     TeamResponse AwayTeam,
-    ScoreResponse? Score);
+    ScoreResponse? Score,
+    string? Venue);
 
 public sealed record TeamResponse(string Id, string Name, string ShortName, string? LogoUrl);
 
@@ -120,6 +122,9 @@ public sealed record StandingsRowResponse(
     string? Note,
     string? NoteColor);
 
+/// <param name="Matches">Matches still to be played this month and next, soonest first.</param>
+public sealed record LeagueFixturesResponse(string LeagueCode, string LeagueName, IReadOnlyList<MatchResponse> Matches, DateTimeOffset LastUpdatedUtc);
+
 /// <param name="StandingSummary">E.g. "3rd in Turkish Super Lig"; null if the competition has no table.</param>
 /// <param name="Stadium">Null if unknown, and for national teams.</param>
 /// <param name="RecentMatches">This season's played matches in all competitions, newest first.</param>
@@ -157,7 +162,8 @@ public static class ContractMappings
         match.Clock,
         ToResponse(match.HomeTeam),
         ToResponse(match.AwayTeam),
-        match.Score is { } s ? new ScoreResponse(s.Home, s.Away) : null);
+        match.Score is { } s ? new ScoreResponse(s.Home, s.Away) : null,
+        match.Venue);
 
     public static MatchDetailResponse ToResponse(this MatchDetailSnapshot snapshot) => new(
         snapshot.Detail.Match.ToResponse(),
@@ -180,6 +186,12 @@ public static class ContractMappings
             g.Rows.Select(r => new StandingsRowResponse(
                 r.Rank, ToResponse(r.Team), r.Played, r.Wins, r.Draws, r.Losses,
                 r.GoalsFor, r.GoalsAgainst, r.GoalDifference, r.Points, r.Note, r.NoteColor)).ToList())).ToList(),
+        entry.FetchedAtUtc);
+
+    public static LeagueFixturesResponse ToResponse(this Timestamped<LeagueFixtures> entry) => new(
+        entry.Value.LeagueCode,
+        entry.Value.LeagueName,
+        entry.Value.Matches.Select(ToResponse).ToList(),
         entry.FetchedAtUtc);
 
     public static TeamProfileResponse ToResponse(this Timestamped<TeamProfile> entry) => new(

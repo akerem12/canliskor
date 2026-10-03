@@ -3,6 +3,7 @@ import { getCompetitions, getStandings, getTeam } from '../api/http'
 import type { Match, TeamProfile } from '../api/types'
 import { isInPlay } from '../api/types'
 import { useFetch } from '../api/useFetch'
+import { FavoriteButton } from '../favorites/FavoriteButton'
 import type { Route } from '../route'
 import type { Result } from '../teamForm'
 import { formGuide, resultFor } from '../teamForm'
@@ -107,7 +108,13 @@ function Hero({ profile, league }: { profile: TeamProfile; league: string }) {
     <div className="hero">
       <TeamLogo team={profile.team} size={72} />
       <div className="hero__text">
-        <h2>{profile.team.name}</h2>
+        <h2>
+          {profile.team.name}
+          <FavoriteButton
+            team={{ leagueCode: profile.leagueCode, teamId: profile.team.id, name: profile.team.name, logoUrl: profile.team.logoUrl }}
+            size="large"
+          />
+        </h2>
         <p className="hero__line">{profile.standingSummary ?? league}</p>
         <dl className="hero__facts">
           <div>

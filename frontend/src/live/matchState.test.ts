@@ -11,6 +11,7 @@ const match = (id: string, overrides: Partial<Match> = {}): Match => ({
   homeTeam: { id: 'h', name: 'Galatasaray', shortName: 'GS', logoUrl: null },
   awayTeam: { id: 'a', name: 'Kasimpasa', shortName: 'KAS', logoUrl: null },
   score: { home: 0, away: 0 },
+  venue: null,
   ...overrides,
 })
 

@@ -124,4 +124,46 @@ public class LeagueInfoServiceTests
         // eng.1 hasn't been polled yet: its code stands in.
         Assert.Equal([new League("tur.1", "Turkish Super Lig"), new League("eng.1", "eng.1")], leagues);
     }
+
+    [Fact]
+    public async Task Fixtures_are_the_matches_still_to_play_soonest_first()
+    {
+        var team = new Team("2", "Other", "Other", null);
+        Match At(string id, double hoursFromNow, MatchStatus status) =>
+            new(id, "tur.1", Now.AddHours(hoursFromNow), status, null, Besiktas, team, null);
+        _provider.Returns(new LeagueFixtures("tur.1", "Turkish Super Lig",
+        [
+            At("played", -48, MatchStatus.Finished),
+            At("later", 72, MatchStatus.Scheduled),
+            At("live", -1, MatchStatus.Live),
+            At("postponed", 24, MatchStatus.Postponed),
+            At("next", 26, MatchStatus.Scheduled),
+        ]));
+
+        var fixtures = await CreateService().GetFixturesAsync("tur.1");
+
+        Assert.Equal(["live", "next", "later"], fixtures?.Value.Matches.Select(m => m.Id));
+        Assert.Equal("Turkish Super Lig", fixtures?.Value.LeagueName);
+        // Asked for from today's date in Istanbul (Now is 21:00 there on the 9th).
+        Assert.Equal(["fixtures:tur.1:2026-10-09"], _provider.InfoRequests);
+    }
+
+    [Fact]
+    public async Task Fixtures_are_cached_and_matches_that_have_been_played_since_drop_out()
+    {
+        var team = new Team("2", "Other", "Other", null);
+        _provider.Returns(new LeagueFixtures("tur.1", "Turkish Super Lig",
+        [
+            new Match("soon", "tur.1", Now.AddHours(1), MatchStatus.Scheduled, null, Besiktas, team, null),
+            new Match("tomorrow", "tur.1", Now.AddHours(24), MatchStatus.Scheduled, null, Besiktas, team, null),
+        ]));
+        var service = CreateService();
+        await service.GetFixturesAsync("tur.1");
+
+        // Five hours on (the cache is refreshed, the fake still says "Scheduled"): kickoff is long past.
+        _time.Advance(TimeSpan.FromHours(5));
+        var later = await service.GetFixturesAsync("tur.1");
+
+        Assert.Equal(["tomorrow"], later?.Value.Matches.Select(m => m.Id));
+    }
 }

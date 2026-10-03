@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig, major European and South American leagues, the UEFA Nations League and international friendlies.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 14: league tables and team pages).
+> Status: **work in progress** (step 15: favourite teams and leagues).
 
 ## Architecture
 
@@ -128,6 +128,23 @@ matches; national teams have none. ESPN has no founding year for clubs, so the s
 Every page has a link: `/?league=tur.1` (table), `/?league=tur.1&team=1895` (team), `/?view=leagues`. While data is
 on its way pages show skeleton placeholders; a failed load shows what went wrong with a retry button.
 
+### Favourites
+
+A star next to every team (in tables and on team pages) and every league (in the league list, on league pages and
+above each league's matches) adds it to the favourites, or takes it out again. Favourites live in the browser's
+`localStorage` (`canliskor.favorites.v1`), so they survive a reload and need no account; a click shows at once
+everywhere on the page, and other open tabs follow.
+
+The Favourites page collects the upcoming matches of all favourite teams (every competition they play in) and
+favourite leagues (this month and next) into one list, soonest first, each match once: competition, date and time,
+both teams with crests, the stadium, and links to the match and to both teams. A bar of chips at the top, one per
+favourite, narrows the list to that team or league. Without favourites the page explains how to pick some; if one
+favourite fails to load, the others are still shown and the page says which one is missing, with a retry.
+
+The code is in `frontend/src/favorites`: `favorites.ts` (data and pure operations), `FavoritesProvider.tsx` and
+`useFavorites.ts` (state and storage), `FavoriteButton.tsx` (the star), `feed.ts` (merging and filtering matches)
+and `FavoritesPage.tsx`.
+
 ## Data source
 
 ESPN's public JSON API (no key required), e.g.
@@ -228,11 +245,13 @@ merged in from `/live`.
 | `GET /api/leagues/{code}/matches/{id}` | One match with its events, statistics and line-ups (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 | `GET /api/competitions` | Followed leagues with their names: `[{ code, name }]` |
 | `GET /api/leagues/{code}/standings` | The league table: `{ leagueCode, leagueName, groups, lastUpdatedUtc }`; each group `{ name, rows }`, each row `{ rank, team, played, wins, draws, losses, goalsFor, goalsAgainst, goalDifference, points, note, noteColor }`. No groups if the competition has no table |
+| `GET /api/leagues/{code}/fixtures` | The league's matches still to be played, this month and next, soonest first: `{ leagueCode, leagueName, matches, lastUpdatedUtc }` (cached 30 minutes) |
 | `GET /api/leagues/{code}/teams/{teamId}` | A team: `{ team, isNationalTeam, standingSummary, stadium, stadiumCity, recentMatches, upcomingMatches, competitions, lastUpdatedUtc }`. Matches have the same shape as in `/api/matches` and cover every competition the team plays in; `competitions` names them (`[{ code, name }]`) |
 | `GET /api/leagues/{code}/teams/{teamId}/squad` | A team's squad: `{ teamId, teamName, players, lastUpdatedUtc }`, each player `{ id, name, jersey, position, age, nationality }` (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings
-(`Scheduled`, `Live`, `HalfTime`, `Finished`, `Postponed`, `Cancelled`), and `score` is `null` before kickoff.
+(`Scheduled`, `Live`, `HalfTime`, `Finished`, `Postponed`, `Cancelled`), `score` is `null` before kickoff, and
+`venue` is the stadium (`null` if ESPN has none).
 Each league includes `lastUpdatedUtc` so clients can detect stale data.
 
 A match detail is `{ match, events, stats, lineups, lastUpdatedUtc }`. Events are in match order:

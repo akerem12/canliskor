@@ -90,7 +90,7 @@ internal static class EspnTeamMapper
 
                 // Same shape as a scoreboard event once the score is flattened, so the same rules apply.
                 return EspnScoreboardMapper.MapEvent(
-                    new EspnEvent(e.Id, e.Date, competition?.Status, [new EspnCompetition(competitors)]),
+                    new EspnEvent(e.Id, e.Date, competition?.Status, [new EspnCompetition(competitors, competition?.Venue)]),
                     e.League?.Slug ?? leagueCode);
             })
             .OfType<Match>();

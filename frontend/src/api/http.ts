@@ -1,4 +1,4 @@
-import type { Competition, LeagueMatches, MatchDay, MatchDetail, Squad, Standings, TeamProfile } from './types'
+import type { Competition, LeagueFixtures, LeagueMatches, MatchDay, MatchDetail, Squad, Standings, TeamProfile } from './types'
 
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url)
@@ -27,3 +27,6 @@ export const getStandings = (leagueCode: string) =>
 /** A team's results and fixtures in one competition. */
 export const getTeam = (leagueCode: string, teamId: string) =>
   getJson<TeamProfile>(`/api/leagues/${encodeURIComponent(leagueCode)}/teams/${encodeURIComponent(teamId)}`)
+/** A competition's matches still to be played, this month and next. */
+export const getLeagueFixtures = (leagueCode: string) =>
+  getJson<LeagueFixtures>(`/api/leagues/${encodeURIComponent(leagueCode)}/fixtures`)

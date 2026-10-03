@@ -22,6 +22,9 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
 
     private const string AllCompetitions = "all";
 
+    /// <summary>More than any league plays in a month; ESPN's default would cut a busy month short.</summary>
+    private const int MonthLimit = 300;
+
     /// <summary>
     /// ESPN files matches under their US Eastern date, so a 02:00 Istanbul kickoff (e.g. an evening game in Brazil)
     /// is listed under the previous day. An Istanbul day always lies within the previous and the same Eastern day,
@@ -65,6 +68,28 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         var response = await GetOrNullAsync<EspnStandingsResponse>(url, $"standings for '{leagueCode}'", cancellationToken);
 
         return response is null ? null : EspnTeamMapper.MapStandings(response, leagueCode);
+    }
+
+    public async Task<LeagueFixtures?> GetLeagueFixturesAsync(string leagueCode, DateOnly from, CancellationToken cancellationToken = default)
+    {
+        // ESPN rejects day ranges but takes a whole month ("202610"), so two requests cover this month and the next.
+        var matches = new List<Match>();
+        string? leagueName = null;
+        foreach (var month in new[] { from, from.AddMonths(1) })
+        {
+            var url = $"{Uri.EscapeDataString(leagueCode)}/scoreboard?dates={month.ToString("yyyyMM", CultureInfo.InvariantCulture)}&limit={MonthLimit}";
+            var response = await GetOrNullAsync<EspnScoreboardResponse>(url, $"fixtures for '{leagueCode}' in {month:yyyy-MM}", cancellationToken);
+            if (response is null)
+            {
+                return null;
+            }
+
+            var scoreboard = EspnScoreboardMapper.Map(response, leagueCode, month);
+            leagueName ??= scoreboard.League.Name;
+            matches.AddRange(scoreboard.Matches);
+        }
+
+        return new LeagueFixtures(leagueCode, leagueName ?? leagueCode, matches.DistinctBy(m => m.Id).OrderBy(m => m.KickoffUtc).ToList());
     }
 
     public async Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)

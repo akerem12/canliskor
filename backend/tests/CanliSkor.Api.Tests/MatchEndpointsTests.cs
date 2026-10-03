@@ -172,6 +172,19 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Get_league_fixtures_returns_only_matches_still_to_play()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/fixtures");
+        var root = json.RootElement;
+
+        Assert.Equal("Turkish Super Lig", root.GetProperty("leagueName").GetString());
+        var fixture = Assert.Single(root.GetProperty("matches").EnumerateArray());
+        Assert.Equal("81", fixture.GetProperty("id").GetString());
+        Assert.Equal("RAMS Park", fixture.GetProperty("venue").GetString());
+        Assert.Equal("2026-10-16T20:00:00+03:00", fixture.GetProperty("kickoff").GetString());
+    }
+
+    [Fact]
     public async Task Get_team_returns_profile_results_and_fixtures()
     {
         using var json = await GetJson("/api/leagues/tur.1/teams/432");
@@ -195,6 +208,7 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     [Theory]
     [InlineData("/api/leagues/ger.1/standings")]   // league not followed
     [InlineData("/api/leagues/eng.1/standings")]   // unknown to the provider
+    [InlineData("/api/leagues/ger.1/fixtures")]    // league not followed
     [InlineData("/api/leagues/tur.1/teams/404")]   // unknown team
     [InlineData("/api/leagues/tur.1/teams/abc")]   // not an ESPN id
     public async Task Get_standings_and_team_return_404_when_unknown(string url)
@@ -308,6 +322,16 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
         Task.FromResult(leagueCode != "tur.1" ? null : new LeagueStandings(leagueCode, "Turkish Super Lig",
         [
             new StandingsGroup("2026/2027", [new StandingsRow(1, Galatasaray, 6, 5, 1, 0, 14, 3, 11, 16, "Champions League", "#81d6ac")]),
+        ]));
+
+    public Task<LeagueFixtures?> GetLeagueFixturesAsync(string leagueCode, DateOnly from, CancellationToken cancellationToken = default) =>
+        Task.FromResult(leagueCode != "tur.1" ? null : new LeagueFixtures(leagueCode, "Turkish Super Lig",
+        [
+            // Played already: not a fixture any more.
+            new Match("80", leagueCode, new DateTimeOffset(2026, 10, 2, 17, 0, 0, TimeSpan.Zero), MatchStatus.Finished, "90'",
+                Galatasaray, new Team("436", "Fenerbahce", "Fenerbahce", null), new Score(2, 1)),
+            new Match("81", leagueCode, new DateTimeOffset(2026, 10, 16, 17, 0, 0, TimeSpan.Zero), MatchStatus.Scheduled, null,
+                Galatasaray, new Team("1895", "Besiktas", "Besiktas", null), null, Venue: "RAMS Park"),
         ]));
 
     public Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>

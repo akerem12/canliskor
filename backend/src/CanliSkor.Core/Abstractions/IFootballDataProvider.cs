@@ -23,6 +23,11 @@ public interface IFootballDataProvider
     /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
     Task<LeagueStandings?> GetStandingsAsync(string leagueCode, CancellationToken cancellationToken = default);
 
+    /// <summary>Every match of the league in the month of <paramref name="from"/> and the month after.</summary>
+    /// <returns>Null if the provider doesn't know this league.</returns>
+    /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
+    Task<LeagueFixtures?> GetLeagueFixturesAsync(string leagueCode, DateOnly from, CancellationToken cancellationToken = default);
+
     /// <returns>Null if the provider doesn't know a team with this id in this league.</returns>
     /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
     Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default);

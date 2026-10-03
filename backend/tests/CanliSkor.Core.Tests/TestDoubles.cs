@@ -83,6 +83,7 @@ internal sealed class FakeFootballDataProvider : IFootballDataProvider
     private readonly Dictionary<(string, string), MatchDetail> _details = new();
     private readonly Dictionary<(string, string), Squad> _squads = new();
     private readonly Dictionary<string, LeagueStandings> _standings = new();
+    private readonly Dictionary<string, LeagueFixtures> _fixtures = new();
     private readonly Dictionary<(string, string), TeamProfile> _teams = new();
 
     public List<(string LeagueCode, DateOnly Date)> Requests { get; } = [];
@@ -117,6 +118,16 @@ internal sealed class FakeFootballDataProvider : IFootballDataProvider
         return FailInfo
             ? throw new FootballDataProviderException($"Standings of {leagueCode} unavailable")
             : Task.FromResult(_standings.GetValueOrDefault(leagueCode));
+    }
+
+    public void Returns(LeagueFixtures fixtures) => _fixtures[fixtures.LeagueCode] = fixtures;
+
+    public Task<LeagueFixtures?> GetLeagueFixturesAsync(string leagueCode, DateOnly from, CancellationToken cancellationToken = default)
+    {
+        InfoRequests.Add($"fixtures:{leagueCode}:{from:yyyy-MM-dd}");
+        return FailInfo
+            ? throw new FootballDataProviderException($"Fixtures of {leagueCode} unavailable")
+            : Task.FromResult(_fixtures.GetValueOrDefault(leagueCode));
     }
 
     public Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)

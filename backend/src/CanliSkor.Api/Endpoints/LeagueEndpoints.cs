@@ -55,6 +55,23 @@ public static class LeagueEndpoints
         })
             .WithTags("Leagues");
 
+        // The league's matches still to be played, this month and next.
+        app.MapGet("/api/leagues/{code}/fixtures", async Task<Results<Ok<LeagueFixturesResponse>, NotFound, ProblemHttpResult>> (
+            string code, LeagueInfoService leagues, CancellationToken ct) =>
+        {
+            try
+            {
+                return await leagues.GetFixturesAsync(code, ct) is { } fixtures
+                    ? TypedResults.Ok(fixtures.ToResponse())
+                    : TypedResults.NotFound();
+            }
+            catch (FootballDataProviderException)
+            {
+                return TypedResults.Problem("The fixtures are temporarily unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        })
+            .WithTags("Leagues");
+
         // A team: its results and every coming fixture, in all competitions it plays in.
         app.MapGet("/api/leagues/{code}/teams/{teamId:regex(^[0-9]{{1,15}}$)}", async Task<Results<Ok<TeamProfileResponse>, NotFound, ProblemHttpResult>> (
             string code, string teamId, LeagueInfoService leagues, CancellationToken ct) =>

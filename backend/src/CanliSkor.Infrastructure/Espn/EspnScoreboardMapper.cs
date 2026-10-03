@@ -26,7 +26,8 @@ internal static class EspnScoreboardMapper
 
     internal static Match? MapEvent(EspnEvent e, string leagueCode)
     {
-        var competitors = e.Competitions?.FirstOrDefault()?.Competitors;
+        var competition = e.Competitions?.FirstOrDefault();
+        var competitors = competition?.Competitors;
         var home = competitors?.FirstOrDefault(c => c.HomeAway == "home");
         var away = competitors?.FirstOrDefault(c => c.HomeAway == "away");
 
@@ -47,7 +48,8 @@ internal static class EspnScoreboardMapper
             Clock: started ? e.Status?.DisplayClock : null,
             HomeTeam: MapTeam(home.Team),
             AwayTeam: MapTeam(away.Team),
-            Score: started ? ParseScore(home.Score, away.Score) : null);
+            Score: started ? ParseScore(home.Score, away.Score) : null,
+            Venue: string.IsNullOrWhiteSpace(competition?.Venue?.FullName) ? null : competition.Venue.FullName);
     }
 
     internal static MatchStatus MapStatus(EspnStatusType? type)

@@ -26,6 +26,12 @@ public sealed partial class LeagueInfoService(
     /// <summary>Results and fixtures of one team change a couple of times a week.</summary>
     public static readonly TimeSpan TeamRefreshAfter = TimeSpan.FromMinutes(15);
 
+    /// <summary>Fixture lists change rarely: a postponement, a kickoff time moved for television.</summary>
+    public static readonly TimeSpan FixturesRefreshAfter = TimeSpan.FromMinutes(30);
+
+    /// <summary>A match that kicked off this long ago still counts as coming up, so one in play doesn't vanish from the list.</summary>
+    public static readonly TimeSpan UpcomingGrace = TimeSpan.FromHours(3);
+
     /// <summary>Followed leagues in display order, with the names the provider gave on today's scoreboards.</summary>
     public async Task<IReadOnlyList<League>> GetLeaguesAsync(CancellationToken cancellationToken = default)
     {
@@ -45,6 +51,34 @@ public sealed partial class LeagueInfoService(
     /// <exception cref="FootballDataProviderException">Loading failed and nothing is cached.</exception>
     public Task<Timestamped<LeagueStandings>?> GetStandingsAsync(string leagueCode, CancellationToken cancellationToken = default) =>
         GetAsync($"standings:{leagueCode}", leagueCode, StandingsRefreshAfter, ct => provider.GetStandingsAsync(leagueCode, ct), cancellationToken);
+
+    /// <summary>The league's matches still to be played, this month and next, soonest first.</summary>
+    /// <returns>Null if the league isn't followed or the provider doesn't know it.</returns>
+    /// <exception cref="FootballDataProviderException">Loading failed and nothing is cached.</exception>
+    public async Task<Timestamped<LeagueFixtures>?> GetFixturesAsync(string leagueCode, CancellationToken cancellationToken = default)
+    {
+        var today = IstanbulTime.Today(timeProvider);
+        var entry = await GetAsync(
+            // The month is part of the key: on the 1st a new pair of months is loaded.
+            $"fixtures:{leagueCode}:{today.Year}-{today.Month}",
+            leagueCode,
+            FixturesRefreshAfter,
+            ct => provider.GetLeagueFixturesAsync(leagueCode, today, ct),
+            cancellationToken);
+        if (entry is null)
+        {
+            return null;
+        }
+
+        // The cached list is the whole two months; what has been played since is dropped on the way out.
+        var earliest = timeProvider.GetUtcNow() - UpcomingGrace;
+        var upcoming = entry.Value.Matches
+            .Where(m => m.KickoffUtc >= earliest && m.Status is MatchStatus.Scheduled or MatchStatus.Live or MatchStatus.HalfTime)
+            .OrderBy(m => m.KickoffUtc)
+            .ToList();
+
+        return entry with { Value = entry.Value with { Matches = upcoming } };
+    }
 
     /// <returns>Null if the league isn't followed or the provider doesn't know the team in it.</returns>
     /// <exception cref="FootballDataProviderException">Loading failed and nothing is cached.</exception>

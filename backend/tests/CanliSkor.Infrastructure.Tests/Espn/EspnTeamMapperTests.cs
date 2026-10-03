@@ -53,6 +53,7 @@ public class EspnTeamMapperTests
         Assert.Equal("Amed SFK", latest.HomeTeam.Name);
         Assert.Equal("Besiktas", latest.AwayTeam.Name);
         Assert.Equal(new Score(3, 2), latest.Score);
+        Assert.Equal("Diyarbakir Stadyumu", latest.Venue);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 import type { Standings, StandingsGroup } from '../api/types'
+import { FavoriteButton } from '../favorites/FavoriteButton'
 import type { Route } from '../route'
 import { TeamLogo } from './common'
 
@@ -55,6 +56,7 @@ function GroupTable({ group, title, leagueCode, teamId, onNavigate }: {
             <th className="table__wide" scope="col" title="Goals for and against">Goals</th>
             <th scope="col" title="Goal difference">GD</th>
             <th scope="col" title="Points">Pts</th>
+            <th scope="col"><span className="visually-hidden">Favourite</span></th>
           </tr>
         </thead>
         <tbody>
@@ -77,6 +79,9 @@ function GroupTable({ group, title, leagueCode, teamId, onNavigate }: {
               <td className="table__wide">{row.goalsFor}:{row.goalsAgainst}</td>
               <td>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
               <td className="table__points">{row.points}</td>
+              <td className="table__star">
+                <FavoriteButton team={{ leagueCode, teamId: row.team.id, name: row.team.name, logoUrl: row.team.logoUrl }} />
+              </td>
             </tr>
           ))}
         </tbody>

@@ -14,6 +14,7 @@ describe('routeFromSearch', () => {
     expect(routeFromSearch('?league=tur.1&team=1895')).toEqual({ view: 'team', leagueCode: 'tur.1', teamId: '1895' })
     expect(routeFromSearch('?league=tur.1')).toEqual({ view: 'league', leagueCode: 'tur.1' })
     expect(routeFromSearch('?view=leagues')).toEqual({ view: 'leagues' })
+    expect(routeFromSearch('?view=favorites')).toEqual({ view: 'favorites' })
   })
 
   it('still opens links to a match tab', () => {
@@ -25,6 +26,7 @@ describe('routeToSearch', () => {
   const routes: Route[] = [
     { view: 'matches' },
     { view: 'leagues' },
+    { view: 'favorites' },
     { view: 'league', leagueCode: 'bra.1' },
     { view: 'team', leagueCode: 'bra.1', teamId: '2026' },
     { view: 'match', leagueCode: 'bra.1', matchId: '401' },

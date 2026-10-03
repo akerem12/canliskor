@@ -1,5 +1,6 @@
 import { getCompetitions, getStandings } from '../api/http'
 import { useFetch } from '../api/useFetch'
+import { FavoriteButton } from '../favorites/FavoriteButton'
 import type { Route } from '../route'
 import { EmptyState, Skeleton } from './common'
 import { StandingsTable } from './StandingsTable'
@@ -23,6 +24,7 @@ export function LeaguesPage({ onNavigate }: { onNavigate: (route: Route) => void
                 <span>{league.name}</span>
                 <span aria-hidden>›</span>
               </button>
+              <FavoriteButton league={league} size="large" />
             </li>
           ))}
         </ul>
@@ -49,7 +51,10 @@ export function LeaguePage({ leagueCode, leagueName, onNavigate, onBack }: Leagu
         <button className="page__back" onClick={onBack}>← Back</button>
         <button className="page__crumb" onClick={() => onNavigate({ view: 'leagues' })}>All leagues</button>
       </header>
-      <h2 className="page__title">{name}</h2>
+      <h2 className="page__title">
+        {name}
+        <FavoriteButton league={{ code: leagueCode, name }} size="large" />
+      </h2>
 
       <section className="panel" aria-label="Standings">
         {standings.loading && <Skeleton rows={12} />}

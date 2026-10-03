@@ -19,7 +19,7 @@ internal sealed record EspnStatus(string? DisplayClock, EspnStatusType? Type);
 
 internal sealed record EspnStatusType(string? Name, string? State);
 
-internal sealed record EspnCompetition(IReadOnlyList<EspnCompetitor>? Competitors);
+internal sealed record EspnCompetition(IReadOnlyList<EspnCompetitor>? Competitors, EspnVenue? Venue = null);
 
 internal sealed record EspnCompetitor(string? HomeAway, string? Score, EspnTeam? Team);
 

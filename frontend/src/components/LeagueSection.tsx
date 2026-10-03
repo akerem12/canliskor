@@ -1,4 +1,5 @@
 import type { LeagueMatches } from '../api/types'
+import { FavoriteButton } from '../favorites/FavoriteButton'
 import type { Route } from '../route'
 import { formatTime } from '../time'
 import { MatchRow } from './MatchRow'
@@ -17,6 +18,7 @@ export function LeagueSection({ league, recentGoals, onNavigate }: Props) {
           <button className="league__name" onClick={() => onNavigate({ view: 'league', leagueCode: league.code })} title="Table and teams">
             {league.name} <span aria-hidden>›</span>
           </button>
+          <FavoriteButton league={{ code: league.code, name: league.name }} />
         </h2>
         <span className="league__updated" title="Last fetched from the data source">
           updated {formatTime(league.lastUpdatedUtc)}

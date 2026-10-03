@@ -7,6 +7,8 @@ import { LeaguePage, LeaguesPage } from './components/LeaguePages'
 import { LeagueSection } from './components/LeagueSection'
 import { MatchPage } from './components/MatchPage'
 import { TeamPage } from './components/TeamPage'
+import { FavoritesPage } from './favorites/FavoritesPage'
+import { useFavorites } from './favorites/useFavorites'
 import { useLiveScores } from './live/useLiveScores'
 import type { Route } from './route'
 import { routeFromSearch, routeToSearch, sameRoute } from './route'
@@ -76,6 +78,9 @@ export default function App() {
   const [filter, setFilter] = useState<Filter>('all')
   const { route, navigate, back } = useRoute()
 
+  const { favorites } = useFavorites()
+  const favoriteCount = favorites.teams.length + favorites.leagues.length
+
   const leagueOf = (code: string) => leagues.find(l => l.code === code)
 
   return (
@@ -102,6 +107,12 @@ export default function App() {
           onClick={() => navigate({ view: 'leagues' })}
         >
           Leagues &amp; teams
+        </button>
+        <button
+          className={route.view === 'favorites' ? 'mainnav__item mainnav__item--active' : 'mainnav__item'}
+          onClick={() => navigate({ view: 'favorites' })}
+        >
+          ★ Favourites{favoriteCount > 0 && <span className="mainnav__count">{favoriteCount}</span>}
         </button>
       </nav>
 
@@ -131,6 +142,7 @@ export default function App() {
           <LeaguePage leagueCode={route.leagueCode} leagueName={leagueOf(route.leagueCode)?.name} onNavigate={navigate} onBack={back} />
         )}
         {route.view === 'leagues' && <LeaguesPage onNavigate={navigate} />}
+        {route.view === 'favorites' && <FavoritesPage onNavigate={navigate} />}
         {route.view === 'matches' && (
           <MatchList
             dayOffset={dayOffset}

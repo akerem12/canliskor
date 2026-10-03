@@ -25,6 +25,8 @@ export interface Match {
   homeTeam: Team
   awayTeam: Team
   score: Score | null
+  /** The stadium, or null if unknown. */
+  venue: string | null
 }
 
 export interface LeagueMatches {
@@ -173,6 +175,14 @@ export interface TeamProfile {
   upcomingMatches: Match[]
   /** Names of the competitions those matches belong to; not all of them are followed. */
   competitions: Competition[]
+  lastUpdatedUtc: string
+}
+
+export interface LeagueFixtures {
+  leagueCode: string
+  leagueName: string
+  /** Matches still to be played this month and next, soonest first. */
+  matches: Match[]
   lastUpdatedUtc: string
 }
 

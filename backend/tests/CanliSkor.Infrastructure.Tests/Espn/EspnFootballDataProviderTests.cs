@@ -142,6 +142,22 @@ public class EspnFootballDataProviderTests
     }
 
     [Fact]
+    public async Task Requests_this_month_and_the_next_for_league_fixtures()
+    {
+        var handler = new StubHandler(_ => Json(FixtureLoader.ReadJson("scoreboard-tur1-scheduled.json")));
+
+        var fixtures = await CreateProvider(handler).GetLeagueFixturesAsync("tur.1", new DateOnly(2026, 12, 20));
+
+        Assert.Equal(
+            ["https://espn.test/soccer/tur.1/scoreboard?dates=202612&limit=300", "https://espn.test/soccer/tur.1/scoreboard?dates=202701&limit=300"],
+            handler.RequestUris.Select(u => u.ToString()));
+        // The same response twice: every match once, in kickoff order.
+        Assert.Equal(fixtures!.Matches.Select(m => m.Id).Distinct(), fixtures.Matches.Select(m => m.Id));
+        Assert.Equal(fixtures.Matches.OrderBy(m => m.KickoffUtc), fixtures.Matches);
+        Assert.NotEmpty(fixtures.Matches);
+    }
+
+    [Fact]
     public async Task Requests_standings_from_the_other_branch_of_the_api()
     {
         var handler = new StubHandler(_ => Json(FixtureLoader.ReadJson("standings-tur1.json")));

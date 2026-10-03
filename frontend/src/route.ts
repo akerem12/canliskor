@@ -3,13 +3,14 @@
 export type Route =
   | { view: 'matches' }
   | { view: 'leagues' }
+  | { view: 'favorites' }
   | { view: 'league'; leagueCode: string }
   | { view: 'team'; leagueCode: string; teamId: string }
   | { view: 'match'; leagueCode: string; matchId: string }
 
 /**
  * "?league=tur.1&match=401888379" → that match; "?league=tur.1&team=1895" → that team; "?league=tur.1" → the
- * league's table; "?view=leagues" → the list of leagues; anything else → the matches of the day.
+ * league's table; "?view=leagues" → the list of leagues; "?view=favorites" → the favourites; anything else → the matches of the day.
  */
 export function routeFromSearch(search: string): Route {
   const params = new URLSearchParams(search)
@@ -21,6 +22,7 @@ export function routeFromSearch(search: string): Route {
   if (leagueCode && teamId) return { view: 'team', leagueCode, teamId }
   if (leagueCode) return { view: 'league', leagueCode }
   if (params.get('view') === 'leagues') return { view: 'leagues' }
+  if (params.get('view') === 'favorites') return { view: 'favorites' }
   return { view: 'matches' }
 }
 
@@ -36,6 +38,9 @@ export function routeToSearch(route: Route, currentSearch: string): string {
   switch (route.view) {
     case 'leagues':
       params.set('view', 'leagues')
+      break
+    case 'favorites':
+      params.set('view', 'favorites')
       break
     case 'league':
       params.set('league', route.leagueCode)
