@@ -96,6 +96,45 @@ public sealed record SquadResponse(string TeamId, string TeamName, IReadOnlyList
 
 public sealed record SquadPlayerResponse(string Id, string Name, string? Jersey, PlayerPosition? Position, int? Age, string? Nationality);
 
+public sealed record LeagueResponse(string Code, string Name);
+
+/// <param name="Groups">One for a plain league, several for group stages, none if the competition has no table.</param>
+/// <param name="LastUpdatedUtc">When the table was fetched from the data source.</param>
+public sealed record StandingsResponse(string LeagueCode, string LeagueName, IReadOnlyList<StandingsGroupResponse> Groups, DateTimeOffset LastUpdatedUtc);
+
+public sealed record StandingsGroupResponse(string Name, IReadOnlyList<StandingsRowResponse> Rows);
+
+/// <param name="Note">What the position means, e.g. "Champions League"; null for most rows.</param>
+/// <param name="NoteColor">"#rrggbb" of that zone, or null.</param>
+public sealed record StandingsRowResponse(
+    int Rank,
+    TeamResponse Team,
+    int Played,
+    int Wins,
+    int Draws,
+    int Losses,
+    int GoalsFor,
+    int GoalsAgainst,
+    int GoalDifference,
+    int Points,
+    string? Note,
+    string? NoteColor);
+
+/// <param name="StandingSummary">E.g. "3rd in Turkish Super Lig"; null if the competition has no table.</param>
+/// <param name="Stadium">Null if unknown, and for national teams.</param>
+/// <param name="RecentMatches">Played matches in this competition, newest first.</param>
+/// <param name="UpcomingMatches">Fixtures in this competition, soonest first.</param>
+public sealed record TeamProfileResponse(
+    string LeagueCode,
+    TeamResponse Team,
+    bool IsNationalTeam,
+    string? StandingSummary,
+    string? Stadium,
+    string? StadiumCity,
+    IReadOnlyList<MatchResponse> RecentMatches,
+    IReadOnlyList<MatchResponse> UpcomingMatches,
+    DateTimeOffset LastUpdatedUtc);
+
 /// <summary>SignalR "MatchUpdated" payload: the full new match state plus what changed (e.g. to animate a goal).</summary>
 /// <remarks>Both flags false means only the clock moved.</remarks>
 public sealed record MatchUpdatedMessage(MatchResponse Match, bool ScoreChanged, bool StatusChanged);
@@ -130,6 +169,27 @@ public static class ContractMappings
         snapshot.Squad.TeamName,
         snapshot.Squad.Players.Select(p => new SquadPlayerResponse(p.Id, p.Name, p.Jersey, p.Position, p.Age, p.Nationality)).ToList(),
         snapshot.FetchedAtUtc);
+
+    public static StandingsResponse ToResponse(this Timestamped<LeagueStandings> entry) => new(
+        entry.Value.LeagueCode,
+        entry.Value.LeagueName,
+        entry.Value.Groups.Select(g => new StandingsGroupResponse(
+            g.Name,
+            g.Rows.Select(r => new StandingsRowResponse(
+                r.Rank, ToResponse(r.Team), r.Played, r.Wins, r.Draws, r.Losses,
+                r.GoalsFor, r.GoalsAgainst, r.GoalDifference, r.Points, r.Note, r.NoteColor)).ToList())).ToList(),
+        entry.FetchedAtUtc);
+
+    public static TeamProfileResponse ToResponse(this Timestamped<TeamProfile> entry) => new(
+        entry.Value.LeagueCode,
+        ToResponse(entry.Value.Team),
+        entry.Value.IsNationalTeam,
+        entry.Value.StandingSummary,
+        entry.Value.Stadium,
+        entry.Value.StadiumCity,
+        entry.Value.RecentMatches.Select(ToResponse).ToList(),
+        entry.Value.UpcomingMatches.Select(ToResponse).ToList(),
+        entry.FetchedAtUtc);
 
     public static MatchUpdatedMessage ToMessage(this MatchChange change) => new(
         change.Match.ToResponse(),

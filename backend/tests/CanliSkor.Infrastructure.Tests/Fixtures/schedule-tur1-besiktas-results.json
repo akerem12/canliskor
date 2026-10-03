@@ -1,0 +1,542 @@
+{
+ "timestamp": "2026-10-03T13:21:48Z",
+ "status": "success",
+ "season": {
+  "year": 2026,
+  "type": 14382,
+  "name": "2026-27 Turkish Super Lig",
+  "displayName": "2026-27 Turkish Super Lig",
+  "half": 1
+ },
+ "team": {
+  "id": "1895",
+  "abbreviation": "BES",
+  "location": "Besiktas",
+  "name": "Besiktas",
+  "displayName": "Besiktas",
+  "clubhouse": "https://www.espn.com/soccer/club/_/id/1895/besiktas",
+  "color": "ffffff",
+  "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png",
+  "recordSummary": "4-0-2",
+  "seasonSummary": "2026-27",
+  "standingSummary": "3rd in Turkish Super Lig",
+  "isNational": false,
+  "groups": {
+   "id": "1"
+  }
+ },
+ "events": [
+  {
+   "id": "401888382",
+   "date": "2026-09-20T17:00Z",
+   "name": "Besiktas at Amed SFK",
+   "shortName": "BES @ AMED",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888382",
+     "date": "2026-09-20T17:00Z",
+     "venue": {
+      "fullName": "Diyarbakir Stadyumu",
+      "address": {
+       "city": "Diyarbakir",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 5400,
+      "addedClock": 720,
+      "displayClock": "90'+12'",
+      "period": 2,
+      "type": {
+       "id": "28",
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "completed": true,
+       "description": "Full Time",
+       "detail": "FT",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "132335",
+       "homeAway": "home",
+       "winner": true,
+       "team": {
+        "id": "132335",
+        "displayName": "Amed SFK",
+        "shortDisplayName": "Amed SFK",
+        "abbreviation": "AMED",
+        "logos": []
+       },
+       "score": {
+        "value": 3,
+        "displayValue": "3"
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 2,
+        "displayValue": "2"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888292",
+   "date": "2026-09-11T17:00Z",
+   "name": "Erzurum BB at Besiktas",
+   "shortName": "ERZ @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888292",
+     "date": "2026-09-11T17:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 5400,
+      "addedClock": 240,
+      "displayClock": "90'+4'",
+      "period": 2,
+      "type": {
+       "id": "28",
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "completed": true,
+       "description": "Full Time",
+       "detail": "FT",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": true,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 3,
+        "displayValue": "3"
+       }
+      },
+      {
+       "id": "19267",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "19267",
+        "displayName": "Erzurum BB",
+        "shortDisplayName": "Erzurum",
+        "abbreviation": "ERZ",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/19267.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 0,
+        "displayValue": "0"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888301",
+   "date": "2026-09-05T17:00Z",
+   "name": "Besiktas at Fenerbahce",
+   "shortName": "BES @ FEN",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888301",
+     "date": "2026-09-05T17:00Z",
+     "venue": {
+      "fullName": "Şükrü Saracoğlu Stadium",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 5400,
+      "addedClock": 480,
+      "displayClock": "90'+8'",
+      "period": 2,
+      "type": {
+       "id": "28",
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "completed": true,
+       "description": "Full Time",
+       "detail": "FT",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "436",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "436",
+        "displayName": "Fenerbahce",
+        "shortDisplayName": "Fenerbahce",
+        "abbreviation": "FEN",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/436.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 1,
+        "displayValue": "1"
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": true,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 2,
+        "displayValue": "2"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888387",
+   "date": "2026-08-31T18:30Z",
+   "name": "Çorum FK at Besiktas",
+   "shortName": "COR @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888387",
+     "date": "2026-08-31T18:30Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 5400,
+      "addedClock": 180,
+      "displayClock": "90'+3'",
+      "period": 2,
+      "type": {
+       "id": "28",
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "completed": true,
+       "description": "Full Time",
+       "detail": "FT",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": true,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 6,
+        "displayValue": "6"
+       }
+      },
+      {
+       "id": "132334",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "132334",
+        "displayName": "Çorum FK",
+        "shortDisplayName": "Çorum FK",
+        "abbreviation": "COR",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/132334.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 2,
+        "displayValue": "2"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888317",
+   "date": "2026-08-23T18:30Z",
+   "name": "Besiktas at Alanyaspor",
+   "shortName": "BES @ ALA",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888317",
+     "date": "2026-08-23T18:30Z",
+     "venue": {
+      "fullName": "Kirbiyik Holding Stadyumu",
+      "address": {
+       "city": "Antalya",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 5400,
+      "addedClock": 240,
+      "displayClock": "90'+4'",
+      "period": 2,
+      "type": {
+       "id": "28",
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "completed": true,
+       "description": "Full Time",
+       "detail": "FT",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "9078",
+       "homeAway": "home",
+       "winner": true,
+       "team": {
+        "id": "9078",
+        "displayName": "Alanyaspor",
+        "shortDisplayName": "Alanyaspor",
+        "abbreviation": "ALA",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/9078.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 1,
+        "displayValue": "1"
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 0,
+        "displayValue": "0"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888321",
+   "date": "2026-08-16T18:30Z",
+   "name": "Eyupspor at Besiktas",
+   "shortName": "EYU @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888321",
+     "date": "2026-08-16T18:30Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 5400,
+      "addedClock": 240,
+      "displayClock": "90'+4'",
+      "period": 2,
+      "type": {
+       "id": "28",
+       "name": "STATUS_FULL_TIME",
+       "state": "post",
+       "completed": true,
+       "description": "Full Time",
+       "detail": "FT",
+       "shortDetail": "FT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": true,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 1,
+        "displayValue": "1"
+       }
+      },
+      {
+       "id": "20729",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "20729",
+        "displayName": "Eyupspor",
+        "shortDisplayName": "Eyupspor",
+        "abbreviation": "EYU",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/20729.png"
+         }
+        ]
+       },
+       "score": {
+        "value": 0,
+        "displayValue": "0"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

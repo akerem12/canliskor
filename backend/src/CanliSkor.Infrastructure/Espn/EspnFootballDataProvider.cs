@@ -17,6 +17,9 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
+    // Standings live in another branch of ESPN's API than everything under the base address ("/apis/site/v2/...").
+    private const string StandingsPath = "/apis/v2/sports/soccer/";
+
     /// <summary>
     /// ESPN files matches under their US Eastern date, so a 02:00 Istanbul kickoff (e.g. an evening game in Brazil)
     /// is listed under the previous day. An Istanbul day always lies within the previous and the same Eastern day,
@@ -52,6 +55,31 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         var response = await GetOrNullAsync<EspnRosterResponse>(url, $"roster for team '{teamId}' in '{leagueCode}'", cancellationToken);
 
         return response is null ? null : EspnRosterMapper.Map(response, leagueCode);
+    }
+
+    public async Task<LeagueStandings?> GetStandingsAsync(string leagueCode, CancellationToken cancellationToken = default)
+    {
+        var url = StandingsPath + $"{Uri.EscapeDataString(leagueCode)}/standings";
+        var response = await GetOrNullAsync<EspnStandingsResponse>(url, $"standings for '{leagueCode}'", cancellationToken);
+
+        return response is null ? null : EspnTeamMapper.MapStandings(response, leagueCode);
+    }
+
+    public async Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{Uri.EscapeDataString(leagueCode)}/teams/{Uri.EscapeDataString(teamId)}/schedule";
+        var what = $"schedule for team '{teamId}' in '{leagueCode}'";
+
+        // Results and fixtures are two views of the same schedule. Sequential, like everything else we ask of ESPN.
+        var results = await GetOrNullAsync<EspnScheduleResponse>(url, what, cancellationToken);
+        if (results is null)
+        {
+            return null;
+        }
+
+        var fixtures = await GetOrNullAsync<EspnScheduleResponse>(url + "?fixture=true", what, cancellationToken);
+
+        return EspnTeamMapper.MapProfile(results, fixtures ?? new EspnScheduleResponse(results.Team, []), leagueCode);
     }
 
     /// <returns>Null if ESPN doesn't know the resource: it answers an unknown id with 404 (and some malformed ids with 400).</returns>

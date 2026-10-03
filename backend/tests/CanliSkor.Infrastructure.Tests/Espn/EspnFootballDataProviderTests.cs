@@ -125,6 +125,41 @@ public class EspnFootballDataProviderTests
         await Assert.ThrowsAsync<FootballDataProviderException>(() => provider.GetSquadAsync("tur.1", "1895"));
     }
 
+    [Fact]
+    public async Task Requests_results_then_fixtures_for_a_team()
+    {
+        var handler = new StubHandler(request => Json(FixtureLoader.ReadJson(
+            request.RequestUri!.Query.Contains("fixture=true") ? "schedule-tur1-besiktas-fixtures.json" : "schedule-tur1-besiktas-results.json")));
+
+        var team = await CreateProvider(handler).GetTeamProfileAsync("tur.1", "1895");
+
+        Assert.Equal(
+            ["https://espn.test/soccer/tur.1/teams/1895/schedule", "https://espn.test/soccer/tur.1/teams/1895/schedule?fixture=true"],
+            handler.RequestUris.Select(u => u.ToString()));
+        Assert.Equal(6, team?.RecentMatches.Count);
+        Assert.Equal(28, team?.UpcomingMatches.Count);
+    }
+
+    [Fact]
+    public async Task Requests_standings_from_the_other_branch_of_the_api()
+    {
+        var handler = new StubHandler(_ => Json(FixtureLoader.ReadJson("standings-tur1.json")));
+
+        var standings = await CreateProvider(handler).GetStandingsAsync("tur.1");
+
+        Assert.Equal("https://espn.test/apis/v2/sports/soccer/tur.1/standings", Assert.Single(handler.RequestUris).ToString());
+        Assert.Equal(18, standings?.Groups[0].Rows.Count);
+    }
+
+    [Fact]
+    public async Task Unknown_league_has_no_standings_and_unknown_team_no_profile()
+    {
+        var provider = CreateProvider(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.BadRequest)));
+
+        Assert.Null(await provider.GetStandingsAsync("xxx.1"));
+        Assert.Null(await provider.GetTeamProfileAsync("tur.1", "999999"));
+    }
+
     private static EspnFootballDataProvider CreateProvider(HttpMessageHandler handler) =>
         new(new HttpClient(handler) { BaseAddress = BaseAddress });
 

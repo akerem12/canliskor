@@ -32,6 +32,7 @@ internal sealed class FakeMatchStore : IMatchStore
     private readonly Dictionary<(string, DateOnly), ScoreboardSnapshot> _snapshots = new();
     private readonly Dictionary<(string, string), MatchDetailSnapshot> _details = new();
     private readonly Dictionary<(string, string), SquadSnapshot> _squads = new();
+    private readonly Dictionary<string, object> _cached = new();
 
     public Task<ScoreboardSnapshot?> GetAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default) =>
         Task.FromResult(_snapshots.GetValueOrDefault((leagueCode, date)));
@@ -54,6 +55,17 @@ internal sealed class FakeMatchStore : IMatchStore
     public Task<SquadSnapshot?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_squads.GetValueOrDefault((leagueCode, teamId)));
 
+    public Task<Timestamped<T>?> GetCachedAsync<T>(string key, CancellationToken cancellationToken = default)
+        where T : class =>
+        Task.FromResult(_cached.GetValueOrDefault(key) as Timestamped<T>);
+
+    public Task SetCachedAsync<T>(string key, Timestamped<T> entry, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        _cached[key] = entry;
+        return Task.CompletedTask;
+    }
+
     public Task SetSquadAsync(SquadSnapshot snapshot, CancellationToken cancellationToken = default)
     {
         _squads[(snapshot.Squad.LeagueCode, snapshot.Squad.TeamId)] = snapshot;
@@ -70,6 +82,8 @@ internal sealed class FakeFootballDataProvider : IFootballDataProvider
     private readonly Dictionary<(string, DateOnly), LeagueScoreboard> _scoreboards = new();
     private readonly Dictionary<(string, string), MatchDetail> _details = new();
     private readonly Dictionary<(string, string), Squad> _squads = new();
+    private readonly Dictionary<string, LeagueStandings> _standings = new();
+    private readonly Dictionary<(string, string), TeamProfile> _teams = new();
 
     public List<(string LeagueCode, DateOnly Date)> Requests { get; } = [];
 
@@ -88,6 +102,30 @@ internal sealed class FakeFootballDataProvider : IFootballDataProvider
         _details[(detail.Match.LeagueCode, detail.Match.Id)] = detail;
 
     public void Returns(Squad squad) => _squads[(squad.LeagueCode, squad.TeamId)] = squad;
+
+    public void Returns(LeagueStandings standings) => _standings[standings.LeagueCode] = standings;
+
+    public void Returns(TeamProfile team) => _teams[(team.LeagueCode, team.Team.Id)] = team;
+
+    public List<string> InfoRequests { get; } = [];
+
+    public bool FailInfo { get; set; }
+
+    public Task<LeagueStandings?> GetStandingsAsync(string leagueCode, CancellationToken cancellationToken = default)
+    {
+        InfoRequests.Add($"standings:{leagueCode}");
+        return FailInfo
+            ? throw new FootballDataProviderException($"Standings of {leagueCode} unavailable")
+            : Task.FromResult(_standings.GetValueOrDefault(leagueCode));
+    }
+
+    public Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
+    {
+        InfoRequests.Add($"team:{leagueCode}:{teamId}");
+        return FailInfo
+            ? throw new FootballDataProviderException($"Team {teamId} unavailable")
+            : Task.FromResult(_teams.GetValueOrDefault((leagueCode, teamId)));
+    }
 
     public Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
     {

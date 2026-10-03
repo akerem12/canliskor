@@ -45,6 +45,17 @@ internal sealed class InMemoryMatchStore(IMemoryCache cache) : IMatchStore
         return Task.CompletedTask;
     }
 
+    public Task<Timestamped<T>?> GetCachedAsync<T>(string key, CancellationToken cancellationToken = default)
+        where T : class =>
+        Task.FromResult(cache.Get<Timestamped<T>>($"cached:{key}"));
+
+    public Task SetCachedAsync<T>(string key, Timestamped<T> entry, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        cache.Set($"cached:{key}", entry, DetailRetention);
+        return Task.CompletedTask;
+    }
+
     private static string DetailKey(string leagueCode, string matchId) => $"detail:{leagueCode}:{matchId}";
 
     private static string SquadKey(string leagueCode, string teamId) => $"squad:{leagueCode}:{teamId}";

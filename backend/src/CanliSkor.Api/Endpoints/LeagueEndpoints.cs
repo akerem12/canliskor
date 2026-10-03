@@ -33,6 +33,45 @@ public static class LeagueEndpoints
         })
             .WithTags("Matches");
 
+        // Followed leagues with their names, in display order.
+        app.MapGet("/api/competitions", async (LeagueInfoService leagues, CancellationToken ct) =>
+            (await leagues.GetLeaguesAsync(ct)).Select(l => new LeagueResponse(l.Code, l.Name)).ToList())
+            .WithTags("Leagues");
+
+        // The league table. Competitions without one (friendlies) answer with no groups.
+        app.MapGet("/api/leagues/{code}/standings", async Task<Results<Ok<StandingsResponse>, NotFound, ProblemHttpResult>> (
+            string code, LeagueInfoService leagues, CancellationToken ct) =>
+        {
+            try
+            {
+                return await leagues.GetStandingsAsync(code, ct) is { } standings
+                    ? TypedResults.Ok(standings.ToResponse())
+                    : TypedResults.NotFound();
+            }
+            catch (FootballDataProviderException)
+            {
+                return TypedResults.Problem("The standings are temporarily unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        })
+            .WithTags("Leagues");
+
+        // A team in one competition: its recent results and coming fixtures there.
+        app.MapGet("/api/leagues/{code}/teams/{teamId:regex(^[0-9]{{1,15}}$)}", async Task<Results<Ok<TeamProfileResponse>, NotFound, ProblemHttpResult>> (
+            string code, string teamId, LeagueInfoService leagues, CancellationToken ct) =>
+        {
+            try
+            {
+                return await leagues.GetTeamAsync(code, teamId, ct) is { } team
+                    ? TypedResults.Ok(team.ToResponse())
+                    : TypedResults.NotFound();
+            }
+            catch (FootballDataProviderException)
+            {
+                return TypedResults.Problem("The team is temporarily unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        })
+            .WithTags("Teams");
+
         // A team's squad for the current season. Same rules as match details: numeric ids, followed leagues only.
         app.MapGet("/api/leagues/{code}/teams/{teamId:regex(^[0-9]{{1,15}}$)}/squad", async Task<Results<Ok<SquadResponse>, NotFound, ProblemHttpResult>> (
             string code, string teamId, SquadService squads, CancellationToken ct) =>

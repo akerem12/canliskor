@@ -124,6 +124,8 @@ ESPN's public JSON API (no key required), e.g.
 | UEFA Champions League | `uefa.champions` |
 | UEFA Europa League | `uefa.europa` |
 | UEFA Nations League | `uefa.nations` |
+| CONMEBOL Libertadores | `conmebol.libertadores` |
+| CONMEBOL Sudamericana | `conmebol.sudamericana` |
 | Argentine Liga Profesional | `arg.1` |
 | Brazilian Série A | `bra.1` |
 | Colombian Primera A | `col.1` |
@@ -245,7 +247,7 @@ Recommended client flow: connect, subscribe, then load `GET /api/matches` and ap
 `backend/src/CanliSkor.Api/appsettings.json`:
 
 ```json
-"Football": { "Leagues": [ "tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.nations", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly" ] },
+"Football": { "Leagues": [ "tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.nations", "conmebol.libertadores", "conmebol.sudamericana", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly" ] },
 "Polling": {
   "LiveInterval": "00:00:30",
   "IdleInterval": "00:15:00",

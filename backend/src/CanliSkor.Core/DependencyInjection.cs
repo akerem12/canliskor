@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<OnDemandScoreboardLoader>();
         services.AddScoped<MatchDetailService>();
         services.AddScoped<SquadService>();
+        services.AddScoped<LeagueInfoService>();
         services.AddSingleton<OnDemandFetchGate>();
         services.AddSingleton<MatchViewerRegistry>();
         services.AddScoped<LiveDetailRefresher>();

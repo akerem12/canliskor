@@ -1,0 +1,2210 @@
+{
+ "timestamp": "2026-10-03T13:20:48Z",
+ "status": "success",
+ "season": {
+  "year": 2026,
+  "type": 14382,
+  "name": "2026-27 Turkish Super Lig",
+  "displayName": "2026-27 Turkish Super Lig",
+  "half": 1
+ },
+ "team": {
+  "id": "1895",
+  "abbreviation": "BES",
+  "location": "Besiktas",
+  "name": "Besiktas",
+  "displayName": "Besiktas",
+  "clubhouse": "https://www.espn.com/soccer/club/_/id/1895/besiktas",
+  "color": "ffffff",
+  "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png",
+  "recordSummary": "4-0-2",
+  "seasonSummary": "2026-27",
+  "standingSummary": "3rd in Turkish Super Lig",
+  "isNational": false,
+  "groups": {
+   "id": "1"
+  }
+ },
+ "events": [
+  {
+   "id": "401888279",
+   "date": "2026-10-11T16:00Z",
+   "name": "Kocaelispor at Besiktas",
+   "shortName": "KOC @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888279",
+     "date": "2026-10-11T16:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Sun, October 11th at 12:00 PM EDT",
+       "shortDetail": "10/11 - 12:00 PM EDT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "995",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "995",
+        "displayName": "Kocaelispor",
+        "shortDisplayName": "Kocaelispor",
+        "abbreviation": "KOC",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/995.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888277",
+   "date": "2026-10-19T17:00Z",
+   "name": "Besiktas at Trabzonspor",
+   "shortName": "BES @ TRAB",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888277",
+     "date": "2026-10-19T17:00Z",
+     "venue": {
+      "fullName": "Papara Park",
+      "address": {
+       "city": "Trabzon",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Mon, October 19th at 1:00 PM EDT",
+       "shortDetail": "10/19 - 1:00 PM EDT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "997",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "997",
+        "displayName": "Trabzonspor",
+        "shortDisplayName": "Trabzonspor",
+        "abbreviation": "TRAB",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/997.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888264",
+   "date": "2026-10-26T16:00Z",
+   "name": "Istanbul Basaksehir at Besiktas",
+   "shortName": "IBFK @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888264",
+     "date": "2026-10-26T16:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Mon, October 26th at 12:00 PM EDT",
+       "shortDetail": "10/26 - 12:00 PM EDT"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "7914",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "7914",
+        "displayName": "Istanbul Basaksehir",
+        "shortDisplayName": "Istanbul BB",
+        "abbreviation": "IBFK",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/7914.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888262",
+   "date": "2026-11-01T16:00Z",
+   "name": "Besiktas at Kasimpasa",
+   "shortName": "BES @ KAS",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888262",
+     "date": "2026-11-01T16:00Z",
+     "venue": {
+      "fullName": "Recep Tayyip Erdogan Stadium",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Sun, November 1st at 11:00 AM EST",
+       "shortDetail": "11/1 - 11:00 AM EST"
+      }
+     },
+     "competitors": [
+      {
+       "id": "6870",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "6870",
+        "displayName": "Kasimpasa",
+        "shortDisplayName": "Kasimpasa",
+        "abbreviation": "KAS",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/6870.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888251",
+   "date": "2026-11-08T18:00Z",
+   "name": "Genclerbirligi at Besiktas",
+   "shortName": "GEN @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888251",
+     "date": "2026-11-08T18:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Sun, November 8th at 1:00 PM EST",
+       "shortDetail": "11/8 - 1:00 PM EST"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "996",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "996",
+        "displayName": "Genclerbirligi",
+        "shortDisplayName": "Genclerbirli",
+        "abbreviation": "GEN",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/996.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888246",
+   "date": "2026-11-22T13:00Z",
+   "name": "Besiktas at Konyaspor",
+   "shortName": "BES @ KNY",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888246",
+     "date": "2026-11-22T13:00Z",
+     "venue": {
+      "fullName": "Medas Konya Büyüksehir Stadyumu",
+      "address": {
+       "city": "Konya",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Sun, November 22nd at 8:00 AM EST",
+       "shortDetail": "11/22 - 8:00 AM EST"
+      }
+     },
+     "competitors": [
+      {
+       "id": "7648",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "7648",
+        "displayName": "Konyaspor",
+        "shortDisplayName": "Konyaspor",
+        "abbreviation": "KNY",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/7648.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888237",
+   "date": "2026-11-30T18:00Z",
+   "name": "Galatasaray at Besiktas",
+   "shortName": "GAL @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888237",
+     "date": "2026-11-30T18:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Mon, November 30th at 1:00 PM EST",
+       "shortDetail": "11/30 - 1:00 PM EST"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "432",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "432",
+        "displayName": "Galatasaray",
+        "shortDisplayName": "Galatasaray",
+        "abbreviation": "GAL",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/432.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888230",
+   "date": "2026-12-06T13:00Z",
+   "name": "Samsunspor at Besiktas",
+   "shortName": "SAM @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888230",
+     "date": "2026-12-06T13:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Sun, December 6th at 8:00 AM EST",
+       "shortDetail": "12/6 - 8:00 AM EST"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "11429",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "11429",
+        "displayName": "Samsunspor",
+        "shortDisplayName": "Samsunspor",
+        "abbreviation": "SAM",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/11429.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888228",
+   "date": "2026-12-14T17:00Z",
+   "name": "Besiktas at Gaziantep FK",
+   "shortName": "BES @ GAZ",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888228",
+     "date": "2026-12-14T17:00Z",
+     "venue": {
+      "fullName": "Gaziantep Stadium",
+      "address": {
+       "city": "Gaziantep",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Mon, December 14th at 12:00 PM EST",
+       "shortDetail": "12/14 - 12:00 PM EST"
+      }
+     },
+     "competitors": [
+      {
+       "id": "20070",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "20070",
+        "displayName": "Gaziantep FK",
+        "shortDisplayName": "Gaziantep",
+        "abbreviation": "GAZ",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/20070.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888215",
+   "date": "2026-12-20T16:00Z",
+   "name": "Caykur Rizespor at Besiktas",
+   "shortName": "CAY @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888215",
+     "date": "2026-12-20T16:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "Sun, December 20th at 11:00 AM EST",
+       "shortDetail": "12/20 - 11:00 AM EST"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "7656",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "7656",
+        "displayName": "Caykur Rizespor",
+        "shortDisplayName": "Caykur Rizespor",
+        "abbreviation": "CAY",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/7656.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888209",
+   "date": "2027-01-17T20:00Z",
+   "name": "Besiktas at Goztepe",
+   "shortName": "BES @ GOZ",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888209",
+     "date": "2027-01-17T20:00Z",
+     "venue": {
+      "fullName": "Göztepe Gürsel Aksel Stadi",
+      "address": {
+       "city": "Izmir",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "1/17 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "789",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "789",
+        "displayName": "Goztepe",
+        "shortDisplayName": "Goztepe",
+        "abbreviation": "GOZ",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/789.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888202",
+   "date": "2027-01-24T20:00Z",
+   "name": "Besiktas at Eyupspor",
+   "shortName": "BES @ EYU",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888202",
+     "date": "2027-01-24T20:00Z",
+     "venue": {
+      "fullName": "Esenyurt Necmi Kadioglu Stadi",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "1/24 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "20729",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "20729",
+        "displayName": "Eyupspor",
+        "shortDisplayName": "Eyupspor",
+        "abbreviation": "EYU",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/20729.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888198",
+   "date": "2027-01-31T20:00Z",
+   "name": "Alanyaspor at Besiktas",
+   "shortName": "ALA @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888198",
+     "date": "2027-01-31T20:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "1/31 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "9078",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "9078",
+        "displayName": "Alanyaspor",
+        "shortDisplayName": "Alanyaspor",
+        "abbreviation": "ALA",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/9078.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888354",
+   "date": "2027-02-07T20:00Z",
+   "name": "Besiktas at Çorum FK",
+   "shortName": "BES @ COR",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888354",
+     "date": "2027-02-07T20:00Z",
+     "venue": {
+      "fullName": "Çorum Sehir Stadyumu",
+      "address": {
+       "city": "Çorum",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "2/7 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "132334",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "132334",
+        "displayName": "Çorum FK",
+        "shortDisplayName": "Çorum FK",
+        "abbreviation": "COR",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/132334.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888183",
+   "date": "2027-02-14T20:00Z",
+   "name": "Fenerbahce at Besiktas",
+   "shortName": "FEN @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888183",
+     "date": "2027-02-14T20:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "2/14 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "436",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "436",
+        "displayName": "Fenerbahce",
+        "shortDisplayName": "Fenerbahce",
+        "abbreviation": "FEN",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/436.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888178",
+   "date": "2027-02-21T20:00Z",
+   "name": "Besiktas at Erzurum BB",
+   "shortName": "BES @ ERZ",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888178",
+     "date": "2027-02-21T20:00Z",
+     "venue": {
+      "fullName": "Erzurum Kazim Karabekir",
+      "address": {
+       "city": "Erzurum",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "2/21 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "19267",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "19267",
+        "displayName": "Erzurum BB",
+        "shortDisplayName": "Erzurum",
+        "abbreviation": "ERZ",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/19267.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888349",
+   "date": "2027-02-28T20:00Z",
+   "name": "Amed SFK at Besiktas",
+   "shortName": "AMED @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888349",
+     "date": "2027-02-28T20:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "2/28 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "132335",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "132335",
+        "displayName": "Amed SFK",
+        "shortDisplayName": "Amed SFK",
+        "abbreviation": "AMED",
+        "logos": []
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888107",
+   "date": "2027-03-07T20:00Z",
+   "name": "Besiktas at Kocaelispor",
+   "shortName": "BES @ KOC",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888107",
+     "date": "2027-03-07T20:00Z",
+     "venue": {
+      "fullName": "Yildiz Entegre Kocaeli Stadyumu",
+      "address": {
+       "city": "Kocaeli",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "3/7 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "995",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "995",
+        "displayName": "Kocaelispor",
+        "shortDisplayName": "Kocaelispor",
+        "abbreviation": "KOC",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/995.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888170",
+   "date": "2027-03-14T18:00Z",
+   "name": "Trabzonspor at Besiktas",
+   "shortName": "TRAB @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888170",
+     "date": "2027-03-14T18:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "3/14 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "997",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "997",
+        "displayName": "Trabzonspor",
+        "shortDisplayName": "Trabzonspor",
+        "abbreviation": "TRAB",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/997.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888057",
+   "date": "2027-03-21T18:00Z",
+   "name": "Besiktas at Istanbul Basaksehir",
+   "shortName": "BES @ IBFK",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888057",
+     "date": "2027-03-21T18:00Z",
+     "venue": {
+      "fullName": "Basaksehir Fatih Terim Stadium",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "3/21 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "7914",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "7914",
+        "displayName": "Istanbul Basaksehir",
+        "shortDisplayName": "Istanbul BB",
+        "abbreviation": "IBFK",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/7914.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888160",
+   "date": "2027-04-04T18:00Z",
+   "name": "Kasimpasa at Besiktas",
+   "shortName": "KAS @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888160",
+     "date": "2027-04-04T18:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "4/4 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "6870",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "6870",
+        "displayName": "Kasimpasa",
+        "shortDisplayName": "Kasimpasa",
+        "abbreviation": "KAS",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/6870.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888096",
+   "date": "2027-04-11T18:00Z",
+   "name": "Besiktas at Genclerbirligi",
+   "shortName": "BES @ GEN",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888096",
+     "date": "2027-04-11T18:00Z",
+     "venue": {
+      "fullName": "Eryaman Stadium",
+      "address": {
+       "city": "Ankara",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "4/11 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "996",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "996",
+        "displayName": "Genclerbirligi",
+        "shortDisplayName": "Genclerbirli",
+        "abbreviation": "GEN",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/996.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888153",
+   "date": "2027-04-18T18:00Z",
+   "name": "Konyaspor at Besiktas",
+   "shortName": "KNY @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888153",
+     "date": "2027-04-18T18:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "4/18 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "7648",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "7648",
+        "displayName": "Konyaspor",
+        "shortDisplayName": "Konyaspor",
+        "abbreviation": "KNY",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/7648.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888113",
+   "date": "2027-04-25T18:00Z",
+   "name": "Besiktas at Galatasaray",
+   "shortName": "BES @ GAL",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888113",
+     "date": "2027-04-25T18:00Z",
+     "venue": {
+      "fullName": "RAMS Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "4/25 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "432",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "432",
+        "displayName": "Galatasaray",
+        "shortDisplayName": "Galatasaray",
+        "abbreviation": "GAL",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/432.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888140",
+   "date": "2027-05-02T18:00Z",
+   "name": "Besiktas at Samsunspor",
+   "shortName": "BES @ SAM",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888140",
+     "date": "2027-05-02T18:00Z",
+     "venue": {
+      "fullName": "Samsun 19 Mayis Stadium",
+      "address": {
+       "city": "Samsun",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "5/2 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "11429",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "11429",
+        "displayName": "Samsunspor",
+        "shortDisplayName": "Samsunspor",
+        "abbreviation": "SAM",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/11429.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888148",
+   "date": "2027-05-09T18:00Z",
+   "name": "Gaziantep FK at Besiktas",
+   "shortName": "GAZ @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888148",
+     "date": "2027-05-09T18:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "5/9 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "20070",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "20070",
+        "displayName": "Gaziantep FK",
+        "shortDisplayName": "Gaziantep",
+        "abbreviation": "GAZ",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/20070.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888133",
+   "date": "2027-05-16T18:00Z",
+   "name": "Besiktas at Caykur Rizespor",
+   "shortName": "BES @ CAY",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888133",
+     "date": "2027-05-16T18:00Z",
+     "venue": {
+      "fullName": "Estadio Caykur Didi",
+      "address": {
+       "city": "Rize",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "5/16 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "7656",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "7656",
+        "displayName": "Caykur Rizespor",
+        "shortDisplayName": "Caykur Rizespor",
+        "abbreviation": "CAY",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/7656.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "1895",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401888143",
+   "date": "2027-05-23T18:00Z",
+   "name": "Goztepe at Besiktas",
+   "shortName": "GOZ @ BES",
+   "league": {
+    "id": "3946",
+    "alternateId": "18",
+    "name": "Turkish Super Lig",
+    "abbreviation": "Turkish Super Lig",
+    "shortName": "Turkish Super Lig",
+    "midsizeName": "TUR.1",
+    "slug": "tur.1",
+    "isTournament": false
+   },
+   "competitions": [
+    {
+     "id": "401888143",
+     "date": "2027-05-23T18:00Z",
+     "venue": {
+      "fullName": "Vodafone Park",
+      "address": {
+       "city": "Istanbul",
+       "country": "Türkiye"
+      }
+     },
+     "status": {
+      "clock": 0,
+      "addedClock": 0,
+      "displayClock": "0'",
+      "period": 0,
+      "type": {
+       "id": "1",
+       "name": "STATUS_SCHEDULED",
+       "state": "pre",
+       "completed": false,
+       "description": "Scheduled",
+       "detail": "5/23 - TBD",
+       "shortDetail": "TBD"
+      }
+     },
+     "competitors": [
+      {
+       "id": "1895",
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "1895",
+        "displayName": "Besiktas",
+        "shortDisplayName": "Besiktas",
+        "abbreviation": "BES",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"
+         }
+        ]
+       }
+      },
+      {
+       "id": "789",
+       "homeAway": "away",
+       "winner": false,
+       "team": {
+        "id": "789",
+        "displayName": "Goztepe",
+        "shortDisplayName": "Goztepe",
+        "abbreviation": "GOZ",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/soccer/500/789.png"
+         }
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

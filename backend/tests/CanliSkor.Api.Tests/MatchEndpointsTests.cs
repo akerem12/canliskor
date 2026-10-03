@@ -157,6 +157,63 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Get_standings_returns_the_table()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/standings");
+        var root = json.RootElement;
+
+        Assert.Equal("Turkish Super Lig", root.GetProperty("leagueName").GetString());
+        var row = Assert.Single(Assert.Single(root.GetProperty("groups").EnumerateArray()).GetProperty("rows").EnumerateArray());
+        Assert.Equal(1, row.GetProperty("rank").GetInt32());
+        Assert.Equal("Galatasaray", row.GetProperty("team").GetProperty("name").GetString());
+        Assert.Equal(16, row.GetProperty("points").GetInt32());
+        Assert.Equal(11, row.GetProperty("goalDifference").GetInt32());
+        Assert.Equal("Champions League", row.GetProperty("note").GetString());
+    }
+
+    [Fact]
+    public async Task Get_team_returns_profile_results_and_fixtures()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/teams/432");
+        var root = json.RootElement;
+
+        Assert.Equal("Galatasaray", root.GetProperty("team").GetProperty("name").GetString());
+        Assert.Equal("1st in Turkish Super Lig", root.GetProperty("standingSummary").GetString());
+        Assert.Equal("RAMS Park", root.GetProperty("stadium").GetString());
+
+        var result = Assert.Single(root.GetProperty("recentMatches").EnumerateArray());
+        Assert.Equal("Finished", result.GetProperty("status").GetString());
+        Assert.Equal(2, result.GetProperty("score").GetProperty("home").GetInt32());
+
+        var fixture = Assert.Single(root.GetProperty("upcomingMatches").EnumerateArray());
+        Assert.Equal("2026-10-16T20:00:00+03:00", fixture.GetProperty("kickoff").GetString());
+        Assert.Equal(JsonValueKind.Null, fixture.GetProperty("score").ValueKind);
+    }
+
+    [Theory]
+    [InlineData("/api/leagues/ger.1/standings")]   // league not followed
+    [InlineData("/api/leagues/eng.1/standings")]   // unknown to the provider
+    [InlineData("/api/leagues/tur.1/teams/404")]   // unknown team
+    [InlineData("/api/leagues/tur.1/teams/abc")]   // not an ESPN id
+    public async Task Get_standings_and_team_return_404_when_unknown(string url)
+    {
+        var response = await _client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_competitions_returns_followed_leagues_with_names()
+    {
+        using var json = await GetJson("/api/competitions");
+
+        var first = json.RootElement[0];
+        Assert.Equal("tur.1", first.GetProperty("code").GetString());
+        Assert.Equal("Turkish Super Lig", first.GetProperty("name").GetString());
+        Assert.Equal(13, json.RootElement.GetArrayLength());
+    }
+
+    [Fact]
     public async Task Get_squad_returns_the_players()
     {
         using var json = await GetJson("/api/leagues/tur.1/teams/432/squad");
@@ -193,7 +250,7 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         using var json = await GetJson("/api/leagues");
 
         Assert.Equal(
-            ["tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.nations", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly"],
+            ["tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.nations", "conmebol.libertadores", "conmebol.sudamericana", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly"],
             json.RootElement.EnumerateArray().Select(e => e.GetString()));
     }
 
@@ -242,6 +299,26 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
     private static LineupPlayer Player(string id, string name, PlayerPosition? position, int goals) =>
         new(id, name, name, Jersey: id, position, CameOnAt: null, WentOffAt: position == PlayerPosition.Forward ? "80'" : null,
             new PlayerMatchStats(goals, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+
+    private static readonly Team Galatasaray = new("432", "Galatasaray", "Galatasaray", "https://logo.test/432.png");
+
+    public Task<LeagueStandings?> GetStandingsAsync(string leagueCode, CancellationToken cancellationToken = default) =>
+        Task.FromResult(leagueCode != "tur.1" ? null : new LeagueStandings(leagueCode, "Turkish Super Lig",
+        [
+            new StandingsGroup("2026/2027", [new StandingsRow(1, Galatasaray, 6, 5, 1, 0, 14, 3, 11, 16, "Champions League", "#81d6ac")]),
+        ]));
+
+    public Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(leagueCode != "tur.1" || teamId != "432" ? null : new TeamProfile(
+            leagueCode, Galatasaray, IsNationalTeam: false, "1st in Turkish Super Lig", "RAMS Park", "Istanbul",
+            [
+                new Match("70", leagueCode, new DateTimeOffset(2026, 10, 2, 17, 0, 0, TimeSpan.Zero), MatchStatus.Finished, "90'",
+                    Galatasaray, new Team("436", "Fenerbahce", "Fenerbahce", null), new Score(2, 1)),
+            ],
+            [
+                new Match("71", leagueCode, new DateTimeOffset(2026, 10, 16, 17, 0, 0, TimeSpan.Zero), MatchStatus.Scheduled, null,
+                    new Team("1895", "Besiktas", "Besiktas", null), Galatasaray, null),
+            ]));
 
     public Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
         Task.FromResult(leagueCode != "tur.1" || teamId != "432" ? null : new Squad(leagueCode, teamId, "Galatasaray",
