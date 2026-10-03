@@ -7,7 +7,7 @@ namespace CanliSkor.Core.Services;
 /// <summary>
 /// Possible line-ups for a match that hasn't announced its own yet. The data source has no predictions, so each
 /// team is shown as it last started: the eleven and the formation of its most recent played match that has a
-/// line-up. That is a guess (injuries, suspensions and rotation aren't known), and it says which match it is from.
+/// usable line-up. That is a guess (injuries, suspensions and rotation aren't known), and it says which match it is from.
 /// Everything is read through the cached services, so repeat views cost nothing.
 /// </summary>
 public sealed partial class ExpectedLineupService(
@@ -15,8 +15,14 @@ public sealed partial class ExpectedLineupService(
     LeagueInfoService leagues,
     ILogger<ExpectedLineupService> logger)
 {
-    /// <summary>How many of a team's latest matches are looked at for a line-up: small leagues' friendlies have none.</summary>
-    public const int MatchesToTry = 3;
+    /// <summary>
+    /// How many of a team's latest matches are looked at for a line-up. Friendlies often have none, or one without
+    /// a formation, so a national team may need to go back a few.
+    /// </summary>
+    public const int MatchesToTry = 5;
+
+    /// <summary>More players than this side by side isn't a formation anyone plays: the data lacks positions.</summary>
+    private const int WidestRow = 6;
 
     private static readonly PlayerMatchStats NoStats = new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -63,7 +69,7 @@ public sealed partial class ExpectedLineupService(
                     : detail.Match.AwayTeam.Id == teamId ? lineups.Away
                     : null;
 
-                if (lineup is not null)
+                if (lineup is not null && IsLaidOut(lineup))
                 {
                     return new ExpectedLineup(StartersOnly(lineup), detail!.Match);
                 }
@@ -77,6 +83,16 @@ public sealed partial class ExpectedLineupService(
 
         return null;
     }
+
+    /// <summary>
+    /// True for an eleven that can be drawn on a pitch: a goalkeeper, then at least two rows of outfield players.
+    /// Where the provider has no formation for a match, all eleven come in a single row ("11"), or as "7-3".
+    /// </summary>
+    public static bool IsLaidOut(TeamLineup lineup) =>
+        lineup.Rows.Count >= 3
+        && lineup.Rows[0].Count == 1
+        && lineup.Rows.Sum(row => row.Count) == 11
+        && lineup.Rows.All(row => row.Count is >= 1 and <= WidestRow);
 
     /// <summary>The eleven as they lined up, without what happened in that match: no bench, minutes, goals or cards.</summary>
     private static TeamLineup StartersOnly(TeamLineup lineup) => lineup with

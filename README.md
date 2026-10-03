@@ -194,9 +194,10 @@ open; the line-ups still mark every player who assisted.
 
 Until a match announces its line-ups (about an hour before kick-off), its Line-ups tab shows possible ones. ESPN
 has no predictions, so `ExpectedLineupService` shows each team as it last started: the eleven and formation of its
-most recent played match that has a line-up (the latest three are tried; competitions that aren't followed are
-skipped). It is marked as a guess, with a dashed pitch and the match each eleven comes from, because injuries,
-suspensions and rotation aren't known. Once the real line-ups are out they replace it.
+most recent played match that has a usable line-up. The latest five are tried; competitions that aren't followed
+are skipped, and so are matches ESPN has no formation for (all eleven would come out in one row). It is titled
+"Possible line-ups" and drawn with a dashed outline; hovering a team's name says which match the eleven is from.
+Injuries, suspensions and rotation aren't known. Once the real line-ups are out they replace it.
 
 ### Languages and themes
 

@@ -119,10 +119,7 @@ export const en = {
     announcedLater: (time: string) => `Line-ups are announced about an hour before kick-off (${time}).`,
     none: 'No line-ups available for this match.',
     possible: 'Possible line-ups',
-    possibleNote: (time: string) =>
-      `A guess, not an announcement: each team as it started its last match. The real line-ups come about an hour before kick-off (${time}).`,
-    basedOn: (result: string, date: string) => `as in ${result} on ${date}`,
-    nothingKnown: 'no recent line-up to go by',
+    basedOn: (result: string, date: string) => `As in ${result} on ${date}`,
     startingEleven: (team: string) => `${team} starting eleven`,
     substitutes: 'Substitutes',
     substitutesOf: (team: string) => `${team} substitutes`,

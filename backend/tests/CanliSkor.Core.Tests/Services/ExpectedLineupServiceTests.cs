@@ -30,12 +30,22 @@ public class ExpectedLineupServiceTests
     private static Match Game(string id, Team home, Team away, MatchStatus status, int daysAgo, string league = "tur.1") =>
         new(id, league, Now.AddDays(-daysAgo), status, null, home, away, status == MatchStatus.Finished ? new Score(1, 0) : null);
 
-    private static TeamLineup Lineup(string formation, params string[] starters) => new(
+    private static LineupPlayer Starter(string name) => new(name, name, name, "9", PlayerPosition.Forward, null, "70'",
+        new PlayerMatchStats(2, 1, 5, 3, 0, 0, 0, 1, 0, 0, 0, 0), MinutesPlayed: 70);
+
+    /// <summary>A 4-4-2 on the pitch whatever it is called; <paramref name="striker"/> is the first of the two forwards.</summary>
+    private static TeamLineup Lineup(string formation, string striker) => Rows(formation, striker, 1, 4, 4, 2);
+
+    /// <summary>An eleven in rows of the given sizes; <paramref name="last"/> is the first player of the last row.</summary>
+    private static TeamLineup Rows(string formation, string last, params int[] sizes) => new(
         formation,
         "#aa0031",
-        [starters.Select(name => new LineupPlayer(name, name, name, "9", PlayerPosition.Forward, null, "70'",
-            new PlayerMatchStats(2, 1, 5, 3, 0, 0, 0, 1, 0, 0, 0, 0), MinutesPlayed: 70)).ToList()],
+        sizes.Select((size, row) => (IReadOnlyList<LineupPlayer>)Enumerable.Range(0, size)
+            .Select(i => Starter(row == sizes.Length - 1 && i == 0 ? last : $"{formation} player {row}.{i}"))
+            .ToList()).ToList(),
         [new LineupPlayer("Sub", "Sub", "Sub", "20", PlayerPosition.Forward, "70'", null, new PlayerMatchStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))]);
+
+    private static string Striker(ExpectedLineup expected) => expected.Lineup.Rows[^1][0].Name;
 
     /// <summary>The match to be played, and what each team has played before it (newest first).</summary>
     private Match Upcoming(Match[] homeHistory, Match[] awayHistory, MatchLineups? announced = null)
@@ -62,11 +72,11 @@ public class ExpectedLineupServiceTests
         var expected = await CreateService().GetAsync("tur.1", "100");
 
         Assert.Equal("4-2-3-1", expected!.Home!.Lineup.Formation);
-        Assert.Equal("Home striker", expected.Home.Lineup.Rows[0][0].Name);
+        Assert.Equal("Home striker", Striker(expected.Home));
         Assert.Equal(homeLast, expected.Home.BasedOn);
         // The away team played away in its last match: its own side of that match is taken.
         Assert.Equal("3-5-2", expected.Away!.Lineup.Formation);
-        Assert.Equal("Away striker", expected.Away.Lineup.Rows[0][0].Name);
+        Assert.Equal("Away striker", Striker(expected.Away));
         Assert.Equal(awayLast, expected.Away.BasedOn);
     }
 
@@ -78,7 +88,7 @@ public class ExpectedLineupServiceTests
         Played(last, Lineup("4-4-2", "Starter"), Lineup("4-4-2", "Someone"));
 
         var lineup = (await CreateService().GetAsync("tur.1", "100"))!.Home!.Lineup;
-        var starter = lineup.Rows[0][0];
+        var starter = lineup.Rows[^1][0];
 
         Assert.Empty(lineup.Bench);
         Assert.Equal(new PlayerMatchStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), starter.Stats);
@@ -102,6 +112,35 @@ public class ExpectedLineupServiceTests
 
         Assert.Equal(league, expected!.Home!.BasedOn);
         Assert.Null(expected.Away);
+    }
+
+    [Theory]
+    [InlineData(11)]         // no formation at all: everyone in one row
+    [InlineData(1, 7, 3)]    // "7-3"
+    [InlineData(1, 4, 4)]    // a player missing
+    [InlineData(2, 4, 3, 2)] // nobody in goal
+    public async Task A_line_up_without_a_real_formation_is_skipped_for_the_one_before(params int[] rows)
+    {
+        var friendly = Game("94", Home, Other, MatchStatus.Finished, daysAgo: 4);
+        var league = Game("93", Home, Other, MatchStatus.Finished, daysAgo: 8);
+        Upcoming([friendly, league], []);
+        Played(friendly, Rows("11", "Unplaced", rows), Lineup("4-4-2", "Someone"));
+        Played(league, Lineup("4-3-3", "Regular"), Lineup("4-4-2", "Someone"));
+
+        var expected = await CreateService().GetAsync("tur.1", "100");
+
+        Assert.Equal(league, expected!.Home!.BasedOn);
+        Assert.Equal("Regular", Striker(expected.Home));
+    }
+
+    [Theory]
+    [InlineData(1, 4, 4, 2)]
+    [InlineData(1, 5, 4, 1)]
+    [InlineData(1, 4, 1, 2, 1, 2)]
+    [InlineData(1, 3, 6, 1)]
+    public void Ordinary_formations_are_laid_out(params int[] rows)
+    {
+        Assert.True(ExpectedLineupService.IsLaidOut(Rows("x", "Striker", rows)));
     }
 
     [Fact]

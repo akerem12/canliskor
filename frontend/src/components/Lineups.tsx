@@ -69,8 +69,8 @@ export function Lineups({ lineups, match }: Props) {
 
 /**
  * How the teams may line up, for a match still waiting for its line-ups: each team as it started its last match.
- * Shown as a guess, with the match it comes from. A player leads straight to their profile, as there is no match
- * of theirs to show yet.
+ * Titled "Possible line-ups" and drawn with a dashed outline; hovering a team's name says which match it is from.
+ * A player leads straight to their profile, as there is no match of theirs to show yet.
  */
 function PossibleLineups({ match }: { match: Match }) {
   const { t } = useI18n()
@@ -93,20 +93,12 @@ function PossibleLineups({ match }: { match: Match }) {
 
   return (
     <section aria-label={t.lineups.possible}>
-      <div className="possible">
-        <strong>{t.lineups.possible}</strong>
-        <p>{t.lineups.possibleNote(formatTime(match.kickoff))}</p>
-        <ul>
-          {sides.map(({ side, expected: known, team }) => (
-            <li key={side}><b>{team.shortName}:</b> {known ? source(known) : t.lineups.nothingKnown}</li>
-          ))}
-        </ul>
-      </div>
+      <h3 className="detail__heading possible">{t.lineups.possible}</h3>
 
       <div className={home && away ? 'pitch pitch--possible' : 'pitch pitch--possible pitch--single'}>
         {sides.map(({ side, expected: known, team, shirt }) => known && (
           <div key={side} className={`pitch__half pitch__half--${side}`} aria-label={t.lineups.startingEleven(team.name)}>
-            <span className="pitch__team">{team.shortName} · {known.lineup.formation}</span>
+            <span className="pitch__team" title={source(known)}>{team.shortName} · {known.lineup.formation}</span>
             {pitchRows(known.lineup, side).map((row, i) => (
               <div key={i} className="pitch__row">
                 {row.map(player => (
