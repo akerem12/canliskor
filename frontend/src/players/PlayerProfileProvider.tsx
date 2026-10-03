@@ -5,7 +5,7 @@ import type { PlayerProfile } from '../api/types'
 import { useFetch } from '../api/useFetch'
 import { EmptyState, Skeleton, TeamLogo } from '../components/common'
 import { useI18n } from '../i18n/useI18n'
-import { competitionLabel, statLines } from './playerStats'
+import { competitionLabel, statLines, totalStats } from './playerStats'
 import type { PlayerRef } from './usePlayerProfile'
 import { PlayerProfileContext } from './usePlayerProfile'
 
@@ -70,8 +70,16 @@ function PlayerProfileDialog({ player, onClose }: { player: PlayerRef; onClose: 
 
 function ProfileBody({ profile }: { profile: PlayerProfile }) {
   const { t } = useI18n()
+  // The first tab is everything added up; with a single competition that would only repeat it.
+  const hasTotal = profile.competitions.length > 1
+  const tabs = hasTotal
+    ? [{ label: t.player.total, heading: t.player.allCompetitions, stats: totalStats(profile.competitions) }]
+    : []
+  for (const c of profile.competitions) {
+    tabs.push({ label: competitionLabel(c.name), heading: [c.name, c.teamName].filter(Boolean).join(' · '), stats: c })
+  }
   const [picked, setPicked] = useState(0)
-  const competition = profile.competitions[picked]
+  const tab = tabs[picked]
 
   const nationality = profile.nationality && (
     <span className="profile__nation">
@@ -99,25 +107,25 @@ function ProfileBody({ profile }: { profile: PlayerProfile }) {
       )}
 
       <h3 className="detail__heading">{t.player.thisSeason}</h3>
-      {competition ? (
+      {tab ? (
         <>
           <div className="quickbar profile__tabs" role="tablist" aria-label={t.player.competitions}>
-            {profile.competitions.map((c, i) => (
+            {tabs.map(({ label, heading }, i) => (
               <button
-                key={c.name}
+                key={heading}
                 role="tab"
                 aria-selected={i === picked}
                 className={i === picked ? 'chip chip--active' : 'chip'}
                 onClick={() => setPicked(i)}
               >
-                {competitionLabel(c.name)}
+                {label}
               </button>
             ))}
           </div>
 
-          <p className="profile__for">{[competition.name, competition.teamName].filter(Boolean).join(' · ')}</p>
+          <p className="profile__for">{tab.heading}</p>
           <dl className="profile__stats" role="tabpanel">
-            {statLines(competition).map(line => (
+            {statLines(tab.stats).map(line => (
               <div key={line.key} className="profile__stat">
                 <dd>{line.value}</dd>
                 <dt>{t.player.stats[line.key]}</dt>

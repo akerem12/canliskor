@@ -175,6 +175,8 @@ export const en = {
     position: 'Position',
     thisSeason: 'This season',
     competitions: 'Competitions',
+    total: 'Total',
+    allCompetitions: 'All competitions this season, club and country',
     noStats: 'No statistics recorded for this season yet.',
     note: "Minutes played and passing figures aren't published by the data source.",
     stats: {

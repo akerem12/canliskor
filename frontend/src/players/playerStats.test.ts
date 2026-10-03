@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PlayerCompetitionStats } from '../api/types'
-import { competitionLabel, statLines } from './playerStats'
+import { competitionLabel, statLines, totalStats } from './playerStats'
 
 const outfield: PlayerCompetitionStats = {
   name: '2026-27 Turkish Super Lig', leagueCode: 'tur.1', teamName: 'Galatasaray',
@@ -42,6 +42,49 @@ describe('statLines', () => {
 
   it('keeps the goal of a goalkeeper who scored', () => {
     expect(valueOf({ ...outfield, saves: 4, goals: 1 }, 'goals')).toBe(1)
+  })
+})
+
+describe('totalStats', () => {
+  const cup: PlayerCompetitionStats = {
+    ...outfield, name: '2026-27 Champions League', leagueCode: 'uefa.champions',
+    starts: 1, substituteAppearances: null, goals: 1, assists: 0, shots: 2, shotsOnTarget: 1,
+    yellowCards: 0, redCards: 1, foulsCommitted: 1, foulsSuffered: 0, offsides: 3,
+  }
+
+  it('adds up every competition', () => {
+    const total = totalStats([outfield, cup])
+
+    expect(total.starts).toBe(4)
+    expect(total.goals).toBe(3)
+    expect(total.assists).toBe(1)
+    expect(total.shots).toBe(10)
+    expect(total.shotsOnTarget).toBe(4)
+    expect(total.yellowCards).toBe(1)
+    expect(total.redCards).toBe(1)
+    expect(total.foulsCommitted).toBe(3)
+    expect(total.foulsSuffered).toBe(6)
+    expect(total.offsides).toBe(3)
+  })
+
+  it('has no matches played, as substitute appearances are known for one competition only', () => {
+    expect(totalStats([outfield, cup]).substituteAppearances).toBeNull()
+    expect(labels(totalStats([outfield, cup]))[0]).toBe('starts')
+  })
+
+  it('keeps goalkeeping numbers out for an outfield player', () => {
+    const total = totalStats([outfield, cup])
+
+    expect(total.saves).toBeNull()
+    expect(total.cleanSheets).toBeNull()
+    expect(total.goalsConceded).toBeNull()
+  })
+
+  it('adds up a goalkeeper\'s clean sheets, saves and goals conceded', () => {
+    const league = { ...outfield, cleanSheets: 2, saves: 8, goalsConceded: 8 }
+    const europe = { ...cup, cleanSheets: 0, saves: 2, goalsConceded: 3 }
+
+    expect(totalStats([league, europe])).toMatchObject({ cleanSheets: 2, saves: 10, goalsConceded: 11 })
   })
 })
 

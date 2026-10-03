@@ -174,6 +174,8 @@ export const tr: Dictionary = {
     position: 'Mevki',
     thisSeason: 'Bu sezon',
     competitions: 'Turnuvalar',
+    total: 'Toplam',
+    allCompetitions: 'Bu sezonki tüm turnuvalar, kulüp ve millî takım',
     noStats: 'Bu sezon için henüz istatistik yok.',
     note: 'Oynadığı dakika ve pas verileri veri kaynağında yayımlanmıyor.',
     stats: {

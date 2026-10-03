@@ -176,7 +176,8 @@ so there is no second data source and no API key. ESPN quotes American odds; `Es
 ### Player profiles
 
 Any player's name (in the squads, the line-up sheet, the match events) opens a profile dialog: name, number,
-position, nationality with flag, age, height, club, and this season's numbers with one tab per competition
+position, nationality with flag, age, height, club, and this season's numbers: a Total tab first (everything
+added up, club and country), then one tab per competition
 (league, cups, internationals). `GET /api/leagues/{code}/players/{id}` answers from ESPN's athlete page and its
 overview, cached for 30 minutes. What ESPN doesn't have is left out rather than made up: there are no minutes
 played and no passing figures for footballers, and substitute appearances are only known for the player's main
