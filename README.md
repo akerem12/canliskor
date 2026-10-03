@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/akerem12/canliskor/actions/workflows/ci.yml/badge.svg)](https://github.com/akerem12/canliskor/actions/workflows/ci.yml)
 
-A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European leagues.
+A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European and South American leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
 > Status: **work in progress** (step 8: match details — goals, cards, substitutions, statistics).
@@ -97,6 +97,10 @@ ESPN's public JSON API (no key required), e.g.
 | La Liga | `esp.1` |
 | UEFA Champions League | `uefa.champions` |
 | UEFA Europa League | `uefa.europa` |
+| Argentine Liga Profesional | `arg.1` |
+| Brazilian Série A | `bra.1` |
+| Colombian Primera A | `col.1` |
+| Chilean Primera División | `chi.1` |
 
 ## Prerequisites
 
@@ -202,7 +206,7 @@ Recommended client flow: connect, subscribe, then load `GET /api/matches` and ap
 `backend/src/CanliSkor.Api/appsettings.json`:
 
 ```json
-"Football": { "Leagues": [ "tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa" ] },
+"Football": { "Leagues": [ "tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "arg.1", "bra.1", "col.1", "chi.1" ] },
 "Polling": {
   "LiveInterval": "00:00:30",
   "IdleInterval": "00:15:00",
