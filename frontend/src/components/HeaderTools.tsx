@@ -20,7 +20,8 @@ export function HeaderTools() {
         {t.settings.language}
       </button>
       <button className="tools__button tools__button--icon" aria-label={themeLabel} title={themeLabel} onClick={toggle}>
-        <span aria-hidden>{theme === 'dark' ? '☀️' : '🌙'}</span>
+        {/* Shows the theme that is on: a moon in the dark, a sun in the light. */}
+        <span aria-hidden>{theme === 'dark' ? '🌙' : '☀️'}</span>
       </button>
     </div>
   )
