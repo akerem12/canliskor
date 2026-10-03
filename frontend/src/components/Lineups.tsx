@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { LineupPlayer, Match, MatchLineups, PlayerStats, Team, TeamLineup } from '../api/types'
 import type { Shirt } from '../lineups'
-import { pitchName, pitchRows, ratingBand, shirtColors } from '../lineups'
+import { pitchName, pitchRows, shirtColors } from '../lineups'
 import { formatTime } from '../time'
 
 interface Props {
@@ -59,10 +59,6 @@ export function Lineups({ lineups, match }: Props) {
         ))}
       </div>
 
-      <p className="ratings-note">
-        Ratings are CanlıSkor's own estimate from goals, assists, shots, saves, fouls and cards. They aren't official.
-      </p>
-
       {selected && <PlayerSheet {...selected} onClose={() => setSelected(null)} />}
     </section>
   )
@@ -73,7 +69,6 @@ function PitchPlayer({ player, shirt, onSelect }: { player: LineupPlayer; shirt:
     <button className="player" onClick={onSelect} title={player.name}>
       <span className="player__shirt" style={{ background: shirt.fill, color: shirt.text }}>
         {player.jersey ?? ''}
-        {player.rating !== null && <RatingBadge rating={player.rating} className="player__rating" />}
         <PlayerMarks player={player} className="player__marks" />
       </span>
       <span className="player__name">{pitchName(player)}</span>
@@ -101,7 +96,6 @@ function Bench({ lineup, team, shirt, onSelect }: {
               <PlayerMarks player={player} />
             </span>
             {player.cameOnAt && <span className="bench__on">▲ {player.cameOnAt}</span>}
-            {player.rating !== null && <RatingBadge rating={player.rating} />}
           </button>
         </li>
       ))}
@@ -125,14 +119,6 @@ function PlayerMarks({ player, className }: { player: LineupPlayer; className?: 
   )
 }
 
-function RatingBadge({ rating, className }: { rating: number; className?: string }) {
-  return (
-    <span className={`rating rating--${ratingBand(rating)}${className ? ` ${className}` : ''}`} title="CanlıSkor rating (our own estimate)">
-      {rating.toFixed(1)}
-    </span>
-  )
-}
-
 const statLabels: [keyof PlayerStats, string][] = [
   ['goals', 'Goals'],
   ['assists', 'Assists'],
@@ -148,7 +134,7 @@ const statLabels: [keyof PlayerStats, string][] = [
   ['ownGoals', 'Own goals'],
 ]
 
-/** One player's match: minutes, rating and statistics. A modal dialog: Esc or a click outside closes it. */
+/** One player's match: minutes and statistics. A modal dialog: Esc or a click outside closes it. */
 function PlayerSheet({ player, team, shirt, onClose }: Selected & { onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
 
@@ -184,24 +170,15 @@ function PlayerSheet({ player, team, shirt, onClose }: Selected & { onClose: () 
         {played ? (
           <>
             <div className="sheet__summary">
-              <div>
-                <span className="sheet__value">{player.minutesPlayed}'</span>
-                <span className="sheet__label">
-                  {[
-                    player.cameOnAt && `on ${player.cameOnAt}`,
-                    player.wentOffAt && `off ${player.wentOffAt}`,
-                    player.sentOffAt && `sent off ${player.sentOffAt}`,
-                  ].filter(Boolean).join(', ') || 'minutes played'}
-                </span>
-              </div>
-              <div>
-                {player.rating !== null
-                  ? <RatingBadge rating={player.rating} className="sheet__rating" />
-                  : <span className="sheet__value">–</span>}
-                <span className="sheet__label">
-                  {player.rating !== null ? 'CanlıSkor rating' : 'not rated: under 10 minutes played'}
-                </span>
-              </div>
+              <span className="sheet__value">{player.minutesPlayed}'</span>
+              <span className="sheet__label">
+                {[
+                  'minutes played',
+                  player.cameOnAt && `on ${player.cameOnAt}`,
+                  player.wentOffAt && `off ${player.wentOffAt}`,
+                  player.sentOffAt && `sent off ${player.sentOffAt}`,
+                ].filter(Boolean).join(' · ')}
+              </span>
             </div>
 
             {stats.length > 0 ? (
@@ -217,11 +194,6 @@ function PlayerSheet({ player, team, shirt, onClose }: Selected & { onClose: () 
               <p className="sheet__empty">Nothing recorded: no shots, fouls, cards or goals conceded.</p>
             )}
 
-            {player.rating !== null && (
-              <p className="ratings-note">
-                The rating is our own estimate, worked out from the numbers above and the result. It isn't official.
-              </p>
-            )}
           </>
         ) : (
           <p className="sheet__empty">{player.position ? 'The match has not started.' : 'Has not played in this match.'}</p>

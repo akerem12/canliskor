@@ -226,7 +226,6 @@ h1, h2 { margin: 0; }
   border: 1px solid rgb(0 0 0 / 0.35); box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
   font-size: 0.85rem; font-weight: 800; font-variant-numeric: tabular-nums;
 }
-.player__rating { position: absolute; top: -8px; right: -18px; }
 .player__marks { position: absolute; bottom: -6px; left: -14px; }
 .player__name {
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -237,16 +236,6 @@ h1, h2 { margin: 0; }
 .marks { display: inline-flex; align-items: center; gap: 1px; font-size: 0.7rem; }
 .marks__own-goal { filter: hue-rotate(140deg) saturate(4); }
 .marks .card { width: 8px; height: 11px; }
-
-.rating {
-  display: inline-block; flex: none; min-width: 2.1em; padding: 1px 4px; border-radius: 5px;
-  font-size: 0.7rem; font-weight: 800; line-height: 1.3; text-align: center; color: #fff;
-  font-variant-numeric: tabular-nums; text-shadow: none;
-}
-.rating--poor { background: #d6262f; }
-.rating--average { background: #e07b00; }
-.rating--good { background: #1e9e4c; }
-.rating--excellent { background: #1f6fd6; }
 
 .benches { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .bench { min-width: 0; }
@@ -264,8 +253,6 @@ h1, h2 { margin: 0; }
 .bench__shirt { width: 26px; height: 26px; font-size: 0.72rem; box-shadow: none; }
 .bench__name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .bench__on { flex: none; font-size: 0.75rem; font-weight: 700; color: var(--accent); }
-
-.ratings-note { margin: 14px 0 0; font-size: 0.75rem; color: var(--muted); text-align: center; }
 
 /* Squads */
 .squads { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -294,10 +281,8 @@ h1, h2 { margin: 0; }
   font: inherit; font-size: 1.4rem; line-height: 1; cursor: pointer; flex: none;
   width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--surface-alt); color: var(--text);
 }
-.sheet__summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; text-align: center; }
-.sheet__summary > div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 8px; background: var(--surface-alt); }
+.sheet__summary { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 14px 0; padding: 10px 6px; border-radius: 8px; background: var(--surface-alt); text-align: center; }
 .sheet__value { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.sheet__rating { font-size: 1.1rem; padding: 2px 8px; }
 .sheet__label { font-size: 0.75rem; color: var(--muted); }
 .sheet__stats { margin: 0; }
 .sheet__stats > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--border); }
@@ -309,7 +294,6 @@ h1, h2 { margin: 0; }
   .detail { padding: 12px 10px 14px; }
   .pitch__half { gap: 10px; padding-left: 2px; padding-right: 2px; }
   .player__shirt { width: 30px; height: 30px; font-size: 0.78rem; }
-  .player__rating { right: -16px; }
   .player__name { font-size: 0.7rem; }
   .benches { grid-template-columns: 1fr; gap: 16px; }
   .squads { gap: 10px; }

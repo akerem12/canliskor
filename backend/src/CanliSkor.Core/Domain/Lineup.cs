@@ -24,10 +24,6 @@ public sealed record TeamLineup(
 /// <param name="WentOffAt">Match minute the player was substituted off. Null if they weren't.</param>
 /// <param name="SentOffAt">Match minute of the player's red card. Null if they weren't sent off.</param>
 /// <param name="MinutesPlayed">Null for a substitute who hasn't come on, and before kickoff.</param>
-/// <param name="Rating">
-/// Our own estimate, 3.0 to 10.0 with one decimal (see <c>PlayerRatingCalculator</c>). Null if the player
-/// hasn't been on the pitch long enough to be rated.
-/// </param>
 public sealed record LineupPlayer(
     string Id,
     string Name,
@@ -38,8 +34,7 @@ public sealed record LineupPlayer(
     string? WentOffAt,
     PlayerMatchStats Stats,
     string? SentOffAt = null,
-    int? MinutesPlayed = null,
-    double? Rating = null);
+    int? MinutesPlayed = null);
 
 public enum PlayerPosition
 {

@@ -104,8 +104,6 @@ export interface LineupPlayer {
   wentOffAt: string | null
   sentOffAt: string | null
   minutesPlayed: number | null
-  /** Our own estimate from the match statistics, 3.0 to 10.0; null if played too briefly to be rated. */
-  rating: number | null
   stats: PlayerStats
 }
 

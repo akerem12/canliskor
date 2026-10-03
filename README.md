@@ -85,7 +85,7 @@ accepted, and ESPN's summary is checked to belong to the requested league (ESPN 
 An open match page is kept current by the server. The page subscribes to its match on the SignalR hub;
 `MatchViewerRegistry` remembers which matches have viewers, and after each scoreboard poll `LiveDetailRefresher`
 reloads the detail of every watched match that is in play and pushes it to that match's group. So cards,
-substitutions, statistics and ratings arrive within one poll interval without the page asking, any number of viewers
+substitutions and statistics arrive within one poll interval without the page asking, any number of viewers
 cost one ESPN call per match per poll, and matches nobody is looking at cost none. The page also reloads its detail
 when a score or status change is pushed, which covers kickoff and full time. The open match and tab are kept in the
 URL (`/?league=esp.1&match=401882858&tab=squads`); Back returns to the match list.
@@ -99,9 +99,10 @@ right. If the formation is missing or doesn't add up to the outfield players, pl
 Substitutes are all listed as `SUB`, so one who came on takes the position group of the player they replaced.
 Line-ups are `null` until both are announced, about an hour before kickoff.
 
-The frontend draws both elevens on a vertical pitch, home team at the top, with shirt number, rating, goals, cards
+The frontend draws both elevens on a vertical pitch, home team at the top, with shirt number, goals, cards
 and the minute a player went off; the substitutes are listed below. If both teams' shirt colours are too alike, the
-away team is drawn in white or black. Clicking a player shows their minutes, rating and statistics.
+away team is drawn in white or black. Clicking a player shows their minutes and statistics. Minutes played aren't in the data, so `PlayingTime` works
+them out from when a player came on, went off or was sent off and how far the match is.
 
 ### Squads
 
@@ -109,30 +110,6 @@ The Squads tab lists both teams' registered players for the season, grouped by p
 nationality and age. They come from ESPN's team roster through `SquadService`, cached for 6 hours (a squad only
 changes with a transfer), behind the same one-at-a-time gate and followed-leagues rule as match details. ESPN has no
 usable data on coaches or on injured and suspended players, so the site doesn't show them.
-
-### Player ratings
-
-Ratings are **our own estimate**, computed by `PlayerRatingCalculator` from the per-player statistics ESPN provides
-(goals, assists, shots on target, fouls, offsides, cards, own goals, saves, goals conceded while on the pitch). They
-are not taken from any rating provider. A rating starts at 6.5 and each event adds or subtracts its weight:
-
-| | Goalkeeper | Defender | Midfielder | Forward |
-|---|---|---|---|---|
-| Goal | +1.5 | +1.4 | +1.2 | +1.0 |
-| Goal conceded while on the pitch | −0.4 | −0.25 | −0.1 | — |
-| Clean sheet (60+ minutes) | +0.6 | +0.5 | +0.2 | — |
-
-Assist +0.8 · shot on target that wasn't a goal +0.2 · save +0.3 · foul suffered +0.1 · foul committed −0.1 ·
-offside −0.1 · yellow card −0.4 · red card −1.5 · own goal −1.2 · win +0.3 / loss −0.3 (once the match is over).
-The result is clamped to 3.0–10.0 and rounded to one decimal.
-
-Minutes played aren't in the data, so `LineupRater` works them out from when a player came on, went off or was sent
-off and how far the match is. A player with fewer than 10 minutes gets no rating. Ratings are computed when a detail
-is loaded, so they follow a live match at the same pace as the detail itself. All weights live in the `Ratings`
-section of `appsettings.json`.
-
-With so few statistics (no passes, tackles or duels) the ratings are coarse: a defender who simply had a quiet
-game in a 2-1 defeat lands around 5.7.
 
 ## Data source
 
@@ -244,11 +221,10 @@ the team that benefits. `relatedPlayer` is the assist provider or the player goi
 
 `lineups` is `{ home, away }` or `null`. Each team is `{ formation, shirtColor, rows, bench }`: `rows` is the
 starting eleven, goalkeeper's row first, then defence to attack, each row from the team's own left to right; `bench`
-is every substitute. A player is `{ id, name, shortName, jersey, position, cameOnAt, wentOffAt, sentOffAt, minutesPlayed, rating, stats }` with
+is every substitute. A player is `{ id, name, shortName, jersey, position, cameOnAt, wentOffAt, sentOffAt, minutesPlayed, stats }` with
 `position` one of `Goalkeeper`, `Defender`, `Midfielder`, `Forward` (`null` for an unused substitute) and `stats`
 `{ goals, assists, shots, shotsOnTarget, foulsCommitted, foulsSuffered, offsides, yellowCards, redCards, ownGoals,
 saves, goalsConceded }`, where `goalsConceded` counts goals conceded while the player was on the pitch.
-`rating` (3.0–10.0) is our own estimate, `null` for anyone with fewer than 10 minutes played.
 
 ### Real-time: SignalR hub `/hubs/live-scores`
 
@@ -277,7 +253,5 @@ Recommended client flow: connect, subscribe, then load `GET /api/matches` and ap
   "ErrorRetryInterval": "00:01:00"
 }
 ```
-
-The `Ratings` section holds the rating weights described under [Player ratings](#player-ratings).
 
 Options are validated at startup; invalid values stop the app with a clear error.

@@ -10,7 +10,7 @@ export function newerDetail(current: MatchDetail | null, incoming: MatchDetail):
 
 /**
  * One match's line-ups, events and statistics. Loaded over REST, then kept current by the server: while the match
- * is in play and this page is open, every poll pushes a fresh detail (cards, substitutions, ratings included).
+ * is in play and this page is open, every poll pushes a fresh detail (cards and substitutions included).
  * Also reloads at once when the pushed match changes score or status, which covers kickoff and full time.
  * @param pushed The match as kept current over SignalR, if it is on the day being shown.
  */

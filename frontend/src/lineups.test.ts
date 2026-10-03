@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LineupPlayer, TeamLineup } from './api/types'
-import { pitchName, pitchRows, ratingBand, shirtColors } from './lineups'
+import { pitchName, pitchRows, shirtColors } from './lineups'
 
 const player = (shortName: string) => ({ shortName }) as LineupPlayer
 
@@ -8,13 +8,6 @@ const lineup = (rows: string[][]): TeamLineup =>
   ({ formation: '', shirtColor: null, rows: rows.map(row => row.map(player)), bench: [] })
 
 const names = (rows: LineupPlayer[][]) => rows.map(row => row.map(p => p.shortName))
-
-describe('ratingBand', () => {
-  it('splits ratings at 6, 7 and 8', () => {
-    expect([5.9, 6, 6.9, 7, 7.9, 8, 10].map(ratingBand))
-      .toEqual(['poor', 'average', 'average', 'good', 'good', 'excellent', 'excellent'])
-  })
-})
 
 describe('shirtColors', () => {
   it('keeps both shirts when they differ', () => {

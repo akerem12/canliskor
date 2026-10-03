@@ -7,8 +7,8 @@ namespace CanliSkor.Core.Polling;
 
 /// <summary>
 /// Part of a polling round: reloads the detail of every match that is in play and has viewers, and pushes it to
-/// them. The scoreboard only tells score and status, so this is what brings cards, substitutions, statistics and
-/// ratings to an open match page without the page asking.
+/// them. The scoreboard only tells score and status, so this is what brings cards, substitutions and statistics
+/// to an open match page without the page asking.
 /// </summary>
 public sealed partial class LiveDetailRefresher(
     MatchViewerRegistry viewers,

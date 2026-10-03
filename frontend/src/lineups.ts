@@ -1,11 +1,5 @@
 import type { LineupPlayer, TeamLineup } from './api/types'
 
-export type RatingBand = 'poor' | 'average' | 'good' | 'excellent'
-
-/** Colour band of a rating badge: below 6, 6–6.9, 7–7.9, 8 and above. */
-export const ratingBand = (rating: number): RatingBand =>
-  rating < 6 ? 'poor' : rating < 7 ? 'average' : rating < 8 ? 'good' : 'excellent'
-
 export interface Shirt {
   /** "#rrggbb" */
   fill: string

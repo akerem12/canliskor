@@ -1,7 +1,6 @@
 using CanliSkor.Core.Domain;
 using CanliSkor.Core.Options;
 using CanliSkor.Core.Polling;
-using CanliSkor.Core.Ratings;
 using CanliSkor.Core.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -33,7 +32,6 @@ public class ScoreboardPollerTests
                 _provider,
                 _store,
                 new OnDemandFetchGate(),
-                new LineupRater(new StaticOptionsMonitor<RatingOptions>(new RatingOptions())),
                 TestOptions.Leagues(leagues),
                 new StaticOptionsMonitor<PollingOptions>(TestOptions.Polling()),
                 _time,
