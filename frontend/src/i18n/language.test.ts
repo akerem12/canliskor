@@ -47,8 +47,10 @@ describe('dictionaries', () => {
     }
   })
 
-  it('offer the other language in its own words', () => {
-    expect(en.settings.language).toBe('Türkçe')
-    expect(tr.settings.language).toBe('English')
+  it('name themselves on the switch, and offer the other language in its own words', () => {
+    expect(en.settings.language).toBe('English')
+    expect(tr.settings.language).toBe('Türkçe')
+    expect(en.settings.languageTitle).toBe('Türkçeye geç')
+    expect(tr.settings.languageTitle).toBe('Switch to English')
   })
 })

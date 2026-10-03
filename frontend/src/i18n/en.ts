@@ -11,7 +11,7 @@ export const en = {
     favourites: 'Favourites',
   },
   settings: {
-    language: 'Türkçe',
+    language: 'English',
     languageTitle: 'Türkçeye geç',
     toLight: 'Switch to light mode',
     toDark: 'Switch to dark mode',

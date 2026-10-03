@@ -10,7 +10,7 @@ export const tr: Dictionary = {
     favourites: 'Favoriler',
   },
   settings: {
-    language: 'English',
+    language: 'Türkçe',
     languageTitle: 'Switch to English',
     toLight: 'Açık temaya geç',
     toDark: 'Koyu temaya geç',

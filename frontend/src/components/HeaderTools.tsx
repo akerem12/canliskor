@@ -10,10 +10,9 @@ export function HeaderTools() {
 
   return (
     <div className="tools">
-      {/* Named in the language it leads to, so it can be found by someone who can't read the current one. */}
+      {/* Shows the language that is on; the hint, in the other language, says what a click does. */}
       <button
         className="tools__button"
-        lang={otherLanguage(language)}
         title={t.settings.languageTitle}
         onClick={() => setLanguage(otherLanguage(language))}
       >
