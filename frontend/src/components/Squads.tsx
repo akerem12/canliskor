@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
 import { getSquad } from '../api/http'
-import type { Match, PlayerPosition, Squad, SquadPlayer, Team } from '../api/types'
+import type { Match, PlayerPosition, SquadPlayer, Team } from '../api/types'
+import { useFetch } from '../api/useFetch'
+import { EmptyState, Skeleton } from './common'
 
 const groups: { position: PlayerPosition | null; label: string }[] = [
   { position: 'Goalkeeper', label: 'Goalkeepers' },
@@ -20,33 +21,19 @@ export function Squads({ match }: { match: Match }) {
   )
 }
 
-function TeamSquad({ leagueCode, team }: { leagueCode: string; team: Team }) {
-  const [squad, setSquad] = useState<Squad | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    getSquad(leagueCode, team.id).then(
-      s => {
-        if (!cancelled) setSquad(s)
-      },
-      (e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e))
-      },
-    )
-    return () => {
-      cancelled = true
-    }
-  }, [leagueCode, team.id])
+/** @param showName False where the page around it already names the team. */
+export function TeamSquad({ leagueCode, team, showName = true }: { leagueCode: string; team: Team; showName?: boolean }) {
+  const squad = useFetch(`squad/${leagueCode}/${team.id}`, () => getSquad(leagueCode, team.id))
+  const allPlayers = squad.data?.players
 
   return (
     <div className="squad">
-      <h3 className="squad__team">{team.name}</h3>
-      {!squad && !error && <p className="detail__empty">Loading squad…</p>}
-      {error && <p className="detail__empty">No squad available for this team.</p>}
-      {squad && squad.players.length === 0 && <p className="detail__empty">No players listed.</p>}
-      {squad && groups.map(({ position, label }) => {
-        const players = squad.players.filter(p => p.position === position)
+      {showName && <h3 className="squad__team">{team.name}</h3>}
+      {squad.loading && <Skeleton rows={8} />}
+      {squad.error && <EmptyState icon="👥" title="No squad available for this team." onRetry={squad.retry} />}
+      {allPlayers?.length === 0 && <EmptyState icon="👥" title="No players listed." />}
+      {allPlayers && groups.map(({ position, label }) => {
+        const players = allPlayers.filter(p => p.position === position)
         return players.length > 0 && (
           <div key={label}>
             <h4 className="detail__heading">{label}</h4>

@@ -1,4 +1,4 @@
-import type { LeagueMatches, MatchDay, MatchDetail, Squad } from './types'
+import type { Competition, LeagueMatches, MatchDay, MatchDetail, Squad, Standings, TeamProfile } from './types'
 
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url)
@@ -19,3 +19,11 @@ export const getMatchDetail = (leagueCode: string, matchId: string) =>
 /** A team's squad for the current season. */
 export const getSquad = (leagueCode: string, teamId: string) =>
   getJson<Squad>(`/api/leagues/${encodeURIComponent(leagueCode)}/teams/${encodeURIComponent(teamId)}/squad`)
+/** Followed competitions with their names, in display order. */
+export const getCompetitions = () => getJson<Competition[]>('/api/competitions')
+/** A competition's table; no groups if it has none. */
+export const getStandings = (leagueCode: string) =>
+  getJson<Standings>(`/api/leagues/${encodeURIComponent(leagueCode)}/standings`)
+/** A team's results and fixtures in one competition. */
+export const getTeam = (leagueCode: string, teamId: string) =>
+  getJson<TeamProfile>(`/api/leagues/${encodeURIComponent(leagueCode)}/teams/${encodeURIComponent(teamId)}`)

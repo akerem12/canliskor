@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig, major European and South American leagues, the UEFA Nations League and international friendlies.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 13: live match page — details pushed over SignalR).
+> Status: **work in progress** (step 14: league tables and team pages).
 
 ## Architecture
 
@@ -111,6 +111,22 @@ nationality and age. They come from ESPN's team roster through `SquadService`, c
 changes with a transfer), behind the same one-at-a-time gate and followed-leagues rule as match details. ESPN has no
 usable data on coaches or on injured and suspended players, so the site doesn't show them.
 
+### Leagues, tables and teams
+
+The match list only shows leagues that have a match on the selected day, so a league disappears from it on days it
+doesn't play (the South American leagues had no matches at all from 28 September to 1 October 2026). "Leagues &
+teams" lists every followed competition at all times: its table, and from there every team.
+
+A team page shows the team in that competition: standing, stadium, the last five results with a W/D/L form guide,
+the next five fixtures, the table around it and the squad. Team names in a match's scoreline and in tables lead to
+it; league names lead to the table. Results, fixtures and stadium come from ESPN's team schedule (two calls, cached
+15 minutes), tables from ESPN's standings API (cached 5 minutes), both through `LeagueInfoService` behind the same
+one-at-a-time gate and followed-leagues rule as match details. The stadium is the venue of most of the team's home
+matches; national teams have none. ESPN has no founding year for clubs, so the site doesn't show one.
+
+Every page has a link: `/?league=tur.1` (table), `/?league=tur.1&team=1895` (team), `/?view=leagues`. While data is
+on its way pages show skeleton placeholders; a failed load shows what went wrong with a retry button.
+
 ## Data source
 
 ESPN's public JSON API (no key required), e.g.
@@ -208,6 +224,9 @@ merged in from `/live`.
 | `GET /api/matches?date=2026-10-10` | Another day, up to 7 days back or ahead (else `400`) |
 | `GET /api/matches/live` | Matches currently in play |
 | `GET /api/leagues/{code}/matches/{id}` | One match with its events, statistics and line-ups (`404` if unknown, `503` if ESPN is down and nothing is cached) |
+| `GET /api/competitions` | Followed leagues with their names: `[{ code, name }]` |
+| `GET /api/leagues/{code}/standings` | The league table: `{ leagueCode, leagueName, groups, lastUpdatedUtc }`; each group `{ name, rows }`, each row `{ rank, team, played, wins, draws, losses, goalsFor, goalsAgainst, goalDifference, points, note, noteColor }`. No groups if the competition has no table |
+| `GET /api/leagues/{code}/teams/{teamId}` | A team in that competition: `{ team, isNationalTeam, standingSummary, stadium, stadiumCity, recentMatches, upcomingMatches, lastUpdatedUtc }` (matches have the same shape as in `/api/matches`) |
 | `GET /api/leagues/{code}/teams/{teamId}/squad` | A team's squad: `{ teamId, teamName, players, lastUpdatedUtc }`, each player `{ id, name, jersey, position, age, nationality }` (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings

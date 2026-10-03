@@ -27,7 +27,7 @@ function TeamName({ team, align }: { team: Team; align: 'home' | 'away' }) {
 interface Props {
   match: Match
   justScored: boolean
-  onOpen: (match: Match) => void
+  onOpen: () => void
 }
 
 export function MatchRow({ match, justScored, onOpen }: Props) {
@@ -38,8 +38,7 @@ export function MatchRow({ match, justScored, onOpen }: Props) {
     <li>
       <button
         className={['match', live && 'match--live', match.status !== 'Scheduled' && 'match--started', justScored && 'match--goal'].filter(Boolean).join(' ')}
-        onClick={() => onOpen(match)}
-        aria-haspopup="dialog"
+        onClick={onOpen}
       >
         <span className="match__time">{formatTime(match.kickoff)}</span>
         <span className="match__minute">

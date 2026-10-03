@@ -5,6 +5,8 @@ import type { WatchMatch } from '../live/useLiveScores'
 import { useMatchDetail } from '../live/useMatchDetail'
 import { isGoal, withRunningScore } from '../matchEvents'
 import { formatTime } from '../time'
+import type { Route } from '../route'
+import { EmptyState, Skeleton, TeamLogo } from './common'
 import { Lineups } from './Lineups'
 import { Squads } from './Squads'
 
@@ -15,6 +17,7 @@ interface Props {
   /** The match as kept current over SignalR (live clock, score), if it is on the day being shown. */
   pushed: Match | undefined
   watchMatch: WatchMatch
+  onNavigate: (route: Route) => void
   onClose: () => void
 }
 
@@ -56,7 +59,7 @@ function writeTabToUrl(tab: Tab) {
 }
 
 /** One match on a page of its own: the scoreline, then line-ups, events, statistics and squads as tabs. */
-export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch, onClose }: Props) {
+export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch, onNavigate, onClose }: Props) {
   const { detail, error } = useMatchDetail(leagueCode, matchId, pushed, watchMatch)
   // Until a tab is picked: line-ups once they are announced, otherwise events.
   const [pickedTab, setPickedTab] = useState(tabFromUrl)
@@ -72,12 +75,17 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
   return (
     <main className="detail" aria-label={match ? `${match.homeTeam.name} vs ${match.awayTeam.name}` : 'Match details'}>
       <header className="detail__top">
-        <button className="detail__back" onClick={onClose}>← Matches</button>
-        <span className="detail__league">{leagueName ?? leagueCode}</span>
+        <button className="page__back" onClick={onClose}>← Back</button>
+        <button className="page__crumb" onClick={() => onNavigate({ view: 'league', leagueCode })}>{leagueName ?? leagueCode}</button>
       </header>
 
-      {match ? <Scoreline match={match} /> : !error && <p className="notice">Loading match…</p>}
-      {error && !detail && <p className="notice notice--error">Can't load match details ({error}).</p>}
+      {match
+        ? <Scoreline match={match} onOpenTeam={teamId => onNavigate({ view: 'team', leagueCode, teamId })} />
+        : !error && <Skeleton rows={4} height={22} />}
+      {match && !detail && !error && <Skeleton rows={6} />}
+      {error && !detail && (
+        <EmptyState icon="⚠️" title="This match can't be loaded right now." hint="The data source may be busy, or the link is wrong." />
+      )}
 
       {detail && match && (
         <>
@@ -102,13 +110,13 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
   )
 }
 
-function Scoreline({ match }: { match: Match }) {
+function Scoreline({ match, onOpenTeam }: { match: Match; onOpenTeam: (teamId: string) => void }) {
   const live = isInPlay(match.status)
   const status = match.status === 'Live' ? (match.clock ?? 'Live') : statusText[match.status]
 
   return (
     <div className={live ? 'scoreline scoreline--live' : 'scoreline'}>
-      <TeamBadge team={match.homeTeam} />
+      <TeamBadge team={match.homeTeam} onOpen={onOpenTeam} />
       <div className="scoreline__center">
         <span className="scoreline__score">
           {match.score ? `${match.score.home} - ${match.score.away}` : formatTime(match.kickoff)}
@@ -118,19 +126,17 @@ function Scoreline({ match }: { match: Match }) {
           {status}
         </span>
       </div>
-      <TeamBadge team={match.awayTeam} />
+      <TeamBadge team={match.awayTeam} onOpen={onOpenTeam} />
     </div>
   )
 }
 
-function TeamBadge({ team }: { team: Team }) {
+function TeamBadge({ team, onOpen }: { team: Team; onOpen: (teamId: string) => void }) {
   return (
-    <div className="scoreline__team">
-      {team.logoUrl
-        ? <img src={team.logoUrl} alt="" width={48} height={48} />
-        : <span className="scoreline__logo-placeholder" aria-hidden />}
+    <button className="scoreline__team" onClick={() => onOpen(team.id)} title={`${team.name}: form, table and fixtures`}>
+      <TeamLogo team={team} size={48} />
       <span>{team.name}</span>
-    </div>
+    </button>
   )
 }
 

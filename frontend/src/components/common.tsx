@@ -1,0 +1,35 @@
+import { useState } from 'react'
+import type { Team } from '../api/types'
+
+/** A team's crest. A missing or broken image leaves an empty slot of the same size, so rows stay aligned. */
+export function TeamLogo({ team, size }: { team: Team; size: number }) {
+  const [broken, setBroken] = useState(false)
+  const style = { width: size, height: size }
+
+  return team.logoUrl && !broken
+    ? <img className="logo" src={team.logoUrl} alt="" style={style} loading="lazy" onError={() => setBroken(true)} />
+    : <span className="logo logo--none" style={style} aria-hidden />
+}
+
+/** Grey bars standing in for content that is on its way. */
+export function Skeleton({ rows, height = 18 }: { rows: number; height?: number }) {
+  return (
+    <div className="skeleton-group" aria-hidden>
+      {Array.from({ length: rows }, (_, i) => (
+        <span key={i} className="skeleton" style={{ height, width: `${92 - ((i * 17) % 30)}%` }} />
+      ))}
+    </div>
+  )
+}
+
+/** Shown where there is nothing to show: no data yet, none at all, or a failed load (then with a retry). */
+export function EmptyState({ icon, title, hint, onRetry }: { icon: string; title: string; hint?: string; onRetry?: () => void }) {
+  return (
+    <div className="empty">
+      <span className="empty__icon" aria-hidden>{icon}</span>
+      <p className="empty__title">{title}</p>
+      {hint && <p className="empty__hint">{hint}</p>}
+      {onRetry && <button className="empty__retry" onClick={onRetry}>Try again</button>}
+    </div>
+  )
+}

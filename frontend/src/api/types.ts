@@ -123,6 +123,57 @@ export interface PlayerStats {
   goalsConceded: number
 }
 
+export interface Competition {
+  code: string
+  name: string
+}
+
+export interface Standings {
+  leagueCode: string
+  leagueName: string
+  /** One for a plain league, several for group stages, none if the competition has no table. */
+  groups: StandingsGroup[]
+  lastUpdatedUtc: string
+}
+
+export interface StandingsGroup {
+  name: string
+  rows: StandingsRow[]
+}
+
+export interface StandingsRow {
+  rank: number
+  team: Team
+  played: number
+  wins: number
+  draws: number
+  losses: number
+  goalsFor: number
+  goalsAgainst: number
+  goalDifference: number
+  points: number
+  /** What the position means, e.g. "Champions League". */
+  note: string | null
+  /** "#rrggbb" of that zone. */
+  noteColor: string | null
+}
+
+export interface TeamProfile {
+  leagueCode: string
+  team: Team
+  isNationalTeam: boolean
+  /** e.g. "3rd in Turkish Super Lig"; null if the competition has no table. */
+  standingSummary: string | null
+  /** Null if unknown, and for national teams. */
+  stadium: string | null
+  stadiumCity: string | null
+  /** Played matches in this competition, newest first. */
+  recentMatches: Match[]
+  /** Fixtures in this competition, soonest first. */
+  upcomingMatches: Match[]
+  lastUpdatedUtc: string
+}
+
 export interface Squad {
   teamId: string
   teamName: string

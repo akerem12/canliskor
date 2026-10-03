@@ -1,25 +1,35 @@
-import type { LeagueMatches, Match } from '../api/types'
+import type { LeagueMatches } from '../api/types'
+import type { Route } from '../route'
 import { formatTime } from '../time'
 import { MatchRow } from './MatchRow'
 
 interface Props {
   league: LeagueMatches
   recentGoals: ReadonlySet<string>
-  onOpenMatch: (match: Match) => void
+  onNavigate: (route: Route) => void
 }
 
-export function LeagueSection({ league, recentGoals, onOpenMatch }: Props) {
+export function LeagueSection({ league, recentGoals, onNavigate }: Props) {
   return (
     <section className="league">
       <header className="league__header">
-        <h2>{league.name}</h2>
+        <h2>
+          <button className="league__name" onClick={() => onNavigate({ view: 'league', leagueCode: league.code })} title="Table and teams">
+            {league.name} <span aria-hidden>›</span>
+          </button>
+        </h2>
         <span className="league__updated" title="Last fetched from the data source">
           updated {formatTime(league.lastUpdatedUtc)}
         </span>
       </header>
       <ul className="league__matches">
         {league.matches.map(match => (
-          <MatchRow key={match.id} match={match} justScored={recentGoals.has(match.id)} onOpen={onOpenMatch} />
+          <MatchRow
+            key={match.id}
+            match={match}
+            justScored={recentGoals.has(match.id)}
+            onOpen={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}
+          />
         ))}
       </ul>
     </section>

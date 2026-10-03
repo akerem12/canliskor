@@ -26,3 +26,6 @@ const shortDateFormat = new Intl.DateTimeFormat('en-GB', { timeZone: TimeZone, w
 /** "Today", "Tomorrow", or e.g. "Sat 10 Oct". */
 export const formatDayLabel = (yyyyMmDd: string, offset: number) =>
   relativeDays[offset] ?? shortDateFormat.format(new Date(`${yyyyMmDd}T12:00:00+03:00`))
+
+/** "Sat 10 Oct" in Istanbul, for a match's kickoff. */
+export const formatMatchDate = (iso: string) => shortDateFormat.format(new Date(iso))
