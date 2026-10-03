@@ -14,7 +14,7 @@ public class LeagueInfoServiceTests
     private static readonly Team Besiktas = new("1895", "Besiktas", "Besiktas", null);
     private static readonly LeagueStandings Table = new("tur.1", "Turkish Super Lig",
         [new StandingsGroup("2026/2027", [new StandingsRow(1, Besiktas, 6, 4, 0, 2, 14, 7, 7, 12, null, null)])]);
-    private static readonly TeamProfile Profile = new("tur.1", Besiktas, false, "3rd in Turkish Super Lig", "Vodafone Park", "Istanbul", [], []);
+    private static readonly TeamProfile Profile = new("tur.1", Besiktas, false, "3rd in Turkish Super Lig", "Vodafone Park", "Istanbul", [], [], []);
 
     private readonly FakeFootballDataProvider _provider = new();
     private readonly FakeMatchStore _store = new();

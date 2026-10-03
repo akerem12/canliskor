@@ -47,7 +47,8 @@ internal static class EspnTeamMapper
             stadium?.FullName,
             string.IsNullOrWhiteSpace(stadium?.Address?.City) ? null : stadium.Address.City,
             played,
-            upcoming);
+            upcoming,
+            MapCompetitions(results, fixtures));
     }
 
     /// <returns>Null if the response isn't a standings document.</returns>
@@ -67,6 +68,16 @@ internal static class EspnTeamMapper
 
         return new LeagueStandings(leagueCode, response.Name ?? leagueCode, groups);
     }
+
+    /// <summary>Every competition the schedules mention, each once, in the order they first appear.</summary>
+    private static List<League> MapCompetitions(params EspnScheduleResponse[] schedules) =>
+        schedules
+            .SelectMany(s => s.Events ?? [])
+            .Select(e => e.League)
+            .Where(l => !string.IsNullOrEmpty(l?.Slug))
+            .DistinctBy(l => l!.Slug)
+            .Select(l => new League(l!.Slug!, l.Name ?? l.Abbreviation ?? l.Slug!))
+            .ToList();
 
     private static IEnumerable<Match> MapMatches(EspnScheduleResponse schedule, string leagueCode) =>
         (schedule.Events ?? [])

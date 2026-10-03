@@ -20,6 +20,8 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
     // Standings live in another branch of ESPN's API than everything under the base address ("/apis/site/v2/...").
     private const string StandingsPath = "/apis/v2/sports/soccer/";
 
+    private const string AllCompetitions = "all";
+
     /// <summary>
     /// ESPN files matches under their US Eastern date, so a 02:00 Istanbul kickoff (e.g. an evening game in Brazil)
     /// is listed under the previous day. An Istanbul day always lies within the previous and the same Eastern day,
@@ -67,8 +69,10 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
 
     public async Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
     {
-        var url = $"{Uri.EscapeDataString(leagueCode)}/teams/{Uri.EscapeDataString(teamId)}/schedule";
-        var what = $"schedule for team '{teamId}' in '{leagueCode}'";
+        // Under a league's own code ESPN lists only that league's matches; "all" covers every competition
+        // the team plays in (league, cups, Europe), which is what a team's page is about.
+        var url = $"{AllCompetitions}/teams/{Uri.EscapeDataString(teamId)}/schedule";
+        var what = $"schedule for team '{teamId}'";
 
         // Results and fixtures are two views of the same schedule. Sequential, like everything else we ask of ESPN.
         var results = await GetOrNullAsync<EspnScheduleResponse>(url, what, cancellationToken);

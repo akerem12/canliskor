@@ -25,6 +25,7 @@ public class EspnTeamMapperTests
         Assert.Equal(new Team("1895", "Besiktas", "Besiktas", "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png"), profile.Team);
         Assert.False(profile.IsNationalTeam);
         Assert.Equal("3rd in Turkish Super Lig", profile.StandingSummary);
+        Assert.Equal([new League("tur.1", "Turkish Super Lig")], profile.Competitions);
     }
 
     [Fact]
@@ -68,6 +69,33 @@ public class EspnTeamMapperTests
         Assert.Equal("Besiktas", next.HomeTeam.Name);
         Assert.Equal("Kocaelispor", next.AwayTeam.Name);
         Assert.Equal(new DateTimeOffset(2026, 10, 11, 16, 0, 0, TimeSpan.Zero), next.KickoffUtc);
+    }
+
+    [Fact]
+    public void Matches_keep_their_own_competition_and_the_competitions_are_named()
+    {
+        static EspnScheduleEvent Event(string id, string date, string slug, string name) => new(id, date, new EspnLeague(name, name, slug),
+        [
+            new EspnScheduleCompetition(new EspnStatus(null, new EspnStatusType("STATUS_SCHEDULED", "pre")), null,
+            [
+                new EspnScheduleCompetitor("home", new EspnTeam("432", "Galatasaray", "Galatasaray", null), null),
+                new EspnScheduleCompetitor("away", new EspnTeam("83", "Barcelona", "Barcelona", null), null),
+            ]),
+        ]);
+        var team = new EspnScheduleTeam("432", "Galatasaray", null, "2nd in Turkish Super Lig", IsNational: false);
+        var fixtures = new EspnScheduleResponse(team,
+        [
+            Event("2", "2026-10-13T19:00Z", "uefa.champions", "UEFA Champions League"),
+            Event("1", "2026-10-09T17:00Z", "tur.1", "Turkish Super Lig"),
+            Event("3", "2026-10-17T17:00Z", "tur.1", "Turkish Super Lig"),
+        ]);
+
+        var profile = EspnTeamMapper.MapProfile(new EspnScheduleResponse(team, []), fixtures, "tur.1")!;
+
+        Assert.Equal(["tur.1", "uefa.champions", "tur.1"], profile.UpcomingMatches.Select(m => m.LeagueCode));
+        Assert.Equal(
+            [new League("uefa.champions", "UEFA Champions League"), new League("tur.1", "Turkish Super Lig")],
+            profile.Competitions);
     }
 
     [Fact]

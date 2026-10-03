@@ -122,8 +122,9 @@ public sealed record StandingsRowResponse(
 
 /// <param name="StandingSummary">E.g. "3rd in Turkish Super Lig"; null if the competition has no table.</param>
 /// <param name="Stadium">Null if unknown, and for national teams.</param>
-/// <param name="RecentMatches">Played matches in this competition, newest first.</param>
-/// <param name="UpcomingMatches">Fixtures in this competition, soonest first.</param>
+/// <param name="RecentMatches">This season's played matches in all competitions, newest first.</param>
+/// <param name="UpcomingMatches">Every scheduled match in all competitions, soonest first.</param>
+/// <param name="Competitions">Names of the competitions those matches belong to; not all of them are followed.</param>
 public sealed record TeamProfileResponse(
     string LeagueCode,
     TeamResponse Team,
@@ -133,6 +134,7 @@ public sealed record TeamProfileResponse(
     string? StadiumCity,
     IReadOnlyList<MatchResponse> RecentMatches,
     IReadOnlyList<MatchResponse> UpcomingMatches,
+    IReadOnlyList<LeagueResponse> Competitions,
     DateTimeOffset LastUpdatedUtc);
 
 /// <summary>SignalR "MatchUpdated" payload: the full new match state plus what changed (e.g. to animate a goal).</summary>
@@ -189,6 +191,7 @@ public static class ContractMappings
         entry.Value.StadiumCity,
         entry.Value.RecentMatches.Select(ToResponse).ToList(),
         entry.Value.UpcomingMatches.Select(ToResponse).ToList(),
+        entry.Value.Competitions.Select(l => new LeagueResponse(l.Code, l.Name)).ToList(),
         entry.FetchedAtUtc);
 
     public static MatchUpdatedMessage ToMessage(this MatchChange change) => new(

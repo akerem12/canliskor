@@ -167,10 +167,12 @@ export interface TeamProfile {
   /** Null if unknown, and for national teams. */
   stadium: string | null
   stadiumCity: string | null
-  /** Played matches in this competition, newest first. */
+  /** This season's played matches in all competitions, newest first. */
   recentMatches: Match[]
-  /** Fixtures in this competition, soonest first. */
+  /** Every scheduled match in all competitions, soonest first. */
   upcomingMatches: Match[]
+  /** Names of the competitions those matches belong to; not all of them are followed. */
+  competitions: Competition[]
   lastUpdatedUtc: string
 }
 

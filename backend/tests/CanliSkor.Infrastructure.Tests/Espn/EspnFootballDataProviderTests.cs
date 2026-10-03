@@ -134,7 +134,8 @@ public class EspnFootballDataProviderTests
         var team = await CreateProvider(handler).GetTeamProfileAsync("tur.1", "1895");
 
         Assert.Equal(
-            ["https://espn.test/soccer/tur.1/teams/1895/schedule", "https://espn.test/soccer/tur.1/teams/1895/schedule?fixture=true"],
+            // "all": every competition the team plays in, not just the league it was looked up in.
+            ["https://espn.test/soccer/all/teams/1895/schedule", "https://espn.test/soccer/all/teams/1895/schedule?fixture=true"],
             handler.RequestUris.Select(u => u.ToString()));
         Assert.Equal(6, team?.RecentMatches.Count);
         Assert.Equal(28, team?.UpcomingMatches.Count);

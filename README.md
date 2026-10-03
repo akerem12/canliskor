@@ -117,9 +117,10 @@ The match list only shows leagues that have a match on the selected day, so a le
 doesn't play (the South American leagues had no matches at all from 28 September to 1 October 2026). "Leagues &
 teams" lists every followed competition at all times: its table, and from there every team.
 
-A team page shows the team in that competition: standing, stadium, the last five results with a W/D/L form guide,
-the next five fixtures, the table around it and the squad. Team names in a match's scoreline and in tables lead to
-it; league names lead to the table. Results, fixtures and stadium come from ESPN's team schedule (two calls, cached
+A team page shows standing, stadium, the last five results with a W/D/L form guide, every match the team has
+still to play, the table around it and the squad. Results and fixtures cover all the team's competitions (league,
+cups, Europe), each labelled; matches of competitions the site doesn't follow are listed but can't be opened. Team names in a match's scoreline and in tables lead to
+it; league names lead to the table. Results, fixtures and stadium come from ESPN's all-competitions team schedule (two calls, cached
 15 minutes), tables from ESPN's standings API (cached 5 minutes), both through `LeagueInfoService` behind the same
 one-at-a-time gate and followed-leagues rule as match details. The stadium is the venue of most of the team's home
 matches; national teams have none. ESPN has no founding year for clubs, so the site doesn't show one.
@@ -139,6 +140,7 @@ ESPN's public JSON API (no key required), e.g.
 | La Liga | `esp.1` |
 | UEFA Champions League | `uefa.champions` |
 | UEFA Europa League | `uefa.europa` |
+| UEFA Conference League | `uefa.europa.conf` |
 | UEFA Nations League | `uefa.nations` |
 | CONMEBOL Libertadores | `conmebol.libertadores` |
 | CONMEBOL Sudamericana | `conmebol.sudamericana` |
@@ -226,7 +228,7 @@ merged in from `/live`.
 | `GET /api/leagues/{code}/matches/{id}` | One match with its events, statistics and line-ups (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 | `GET /api/competitions` | Followed leagues with their names: `[{ code, name }]` |
 | `GET /api/leagues/{code}/standings` | The league table: `{ leagueCode, leagueName, groups, lastUpdatedUtc }`; each group `{ name, rows }`, each row `{ rank, team, played, wins, draws, losses, goalsFor, goalsAgainst, goalDifference, points, note, noteColor }`. No groups if the competition has no table |
-| `GET /api/leagues/{code}/teams/{teamId}` | A team in that competition: `{ team, isNationalTeam, standingSummary, stadium, stadiumCity, recentMatches, upcomingMatches, lastUpdatedUtc }` (matches have the same shape as in `/api/matches`) |
+| `GET /api/leagues/{code}/teams/{teamId}` | A team: `{ team, isNationalTeam, standingSummary, stadium, stadiumCity, recentMatches, upcomingMatches, competitions, lastUpdatedUtc }`. Matches have the same shape as in `/api/matches` and cover every competition the team plays in; `competitions` names them (`[{ code, name }]`) |
 | `GET /api/leagues/{code}/teams/{teamId}/squad` | A team's squad: `{ teamId, teamName, players, lastUpdatedUtc }`, each player `{ id, name, jersey, position, age, nationality }` (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings
@@ -266,7 +268,7 @@ Recommended client flow: connect, subscribe, then load `GET /api/matches` and ap
 `backend/src/CanliSkor.Api/appsettings.json`:
 
 ```json
-"Football": { "Leagues": [ "tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.nations", "conmebol.libertadores", "conmebol.sudamericana", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly" ] },
+"Football": { "Leagues": [ "tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.europa.conf", "uefa.nations", "conmebol.libertadores", "conmebol.sudamericana", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly" ] },
 "Polling": {
   "LiveInterval": "00:00:30",
   "IdleInterval": "00:15:00",

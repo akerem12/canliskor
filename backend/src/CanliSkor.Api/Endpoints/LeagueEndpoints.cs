@@ -55,7 +55,7 @@ public static class LeagueEndpoints
         })
             .WithTags("Leagues");
 
-        // A team in one competition: its recent results and coming fixtures there.
+        // A team: its results and every coming fixture, in all competitions it plays in.
         app.MapGet("/api/leagues/{code}/teams/{teamId:regex(^[0-9]{{1,15}}$)}", async Task<Results<Ok<TeamProfileResponse>, NotFound, ProblemHttpResult>> (
             string code, string teamId, LeagueInfoService leagues, CancellationToken ct) =>
         {

@@ -1,4 +1,5 @@
-import { getStandings, getTeam } from '../api/http'
+import { useState } from 'react'
+import { getCompetitions, getStandings, getTeam } from '../api/http'
 import type { Match, TeamProfile } from '../api/types'
 import { isInPlay } from '../api/types'
 import { useFetch } from '../api/useFetch'
@@ -18,14 +19,32 @@ interface Props {
   onBack: () => void
 }
 
-const UpcomingCount = 5
+/** How many fixtures and results show before "Show all". */
+const CollapsedCount = 5
 const resultNames: Record<Result, string> = { W: 'Won', D: 'Drawn', L: 'Lost' }
 
-/** One team in one competition: who they are, their form, the table around them, what comes next, and the squad. */
+/** What a fixture row needs to know about the competitions around it. */
+interface Competitions {
+  /** Competition code → its name, for the label on each row. */
+  names: ReadonlyMap<string, string>
+  /** Codes whose matches the site can open. Undefined until known: then every row is a link. */
+  followed: ReadonlySet<string> | undefined
+}
+
+/**
+ * One team: who they are, their form, every match still to come in all competitions, the table around them
+ * and the squad.
+ */
 export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }: Props) {
   const team = useFetch(`team/${leagueCode}/${teamId}`, () => getTeam(leagueCode, teamId))
   const standings = useFetch(`standings/${leagueCode}`, () => getStandings(leagueCode))
+  const followed = useFetch('competitions', getCompetitions)
   const league = standings.data?.leagueName ?? leagueName ?? leagueCode
+
+  const competitions: Competitions = {
+    names: new Map(team.data?.competitions.map(c => [c.code, c.name])),
+    followed: followed.data ? new Set(followed.data.map(c => c.code)) : undefined,
+  }
 
   return (
     <main className="page" aria-label={team.data?.team.name ?? 'Team'}>
@@ -36,7 +55,7 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
 
       {team.loading && <TeamSkeleton />}
       {team.error && (
-        <EmptyState icon="🛡️" title="This team isn't available right now." hint="The data source may be busy, or the team isn't part of this competition." onRetry={team.retry} />
+        <EmptyState icon="🛡️" title="This team isn't available right now." hint="The data source may be busy, or the link is wrong." onRetry={team.retry} />
       )}
 
       {team.data && (
@@ -45,19 +64,15 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
 
           <section className="panel" aria-label="Form">
             <h3 className="panel__title">Last 5 matches</h3>
-            <Form profile={team.data} onNavigate={onNavigate} />
+            <Form profile={team.data} competitions={competitions} onNavigate={onNavigate} />
           </section>
 
           <section className="panel" aria-label="Fixtures">
-            <h3 className="panel__title">Coming up</h3>
+            <h3 className="panel__title">Fixtures · {team.data.upcomingMatches.length} to play</h3>
             {team.data.upcomingMatches.length === 0 ? (
-              <EmptyState icon="📅" title="No fixtures scheduled." hint="Nothing is planned in this competition yet." />
+              <EmptyState icon="📅" title="No fixtures scheduled." hint="Nothing is planned for this team yet." />
             ) : (
-              <ul className="fixtures">
-                {team.data.upcomingMatches.slice(0, UpcomingCount).map(match => (
-                  <FixtureRow key={match.id} match={match} teamId={teamId} onNavigate={onNavigate} />
-                ))}
-              </ul>
+              <MatchList matches={team.data.upcomingMatches} what="fixtures" teamId={teamId} competitions={competitions} onNavigate={onNavigate} />
             )}
           </section>
         </>
@@ -65,7 +80,7 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
 
       {!team.error && (
         <section className="panel" aria-label="Standings">
-          <h3 className="panel__title">Standings</h3>
+          <h3 className="panel__title">Standings · {league}</h3>
           {standings.loading && <Skeleton rows={8} />}
           {standings.error && <EmptyState icon="📊" title="The table isn't available right now." onRetry={standings.retry} />}
           {standings.data && (standings.data.groups.length === 0
@@ -86,6 +101,7 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
 
 function Hero({ profile, league }: { profile: TeamProfile; league: string }) {
   const stadium = [profile.stadium, profile.stadiumCity].filter(Boolean).join(', ')
+  const others = profile.competitions.map(c => c.name).filter(name => name !== league)
 
   return (
     <div className="hero">
@@ -98,6 +114,12 @@ function Hero({ profile, league }: { profile: TeamProfile; league: string }) {
             <dt>Competition</dt>
             <dd>{league}</dd>
           </div>
+          {others.length > 0 && (
+            <div>
+              <dt>Also in</dt>
+              <dd>{others.join(', ')}</dd>
+            </div>
+          )}
           {stadium && (
             <div>
               <dt>Stadium</dt>
@@ -116,10 +138,10 @@ function Hero({ profile, league }: { profile: TeamProfile; league: string }) {
   )
 }
 
-function Form({ profile, onNavigate }: { profile: TeamProfile; onNavigate: (route: Route) => void }) {
+function Form({ profile, competitions, onNavigate }: { profile: TeamProfile; competitions: Competitions; onNavigate: (route: Route) => void }) {
   const guide = formGuide(profile.recentMatches, profile.team.id)
   if (guide.length === 0) {
-    return <EmptyState icon="⚽" title="No matches played yet." hint="Results in this competition will appear here." />
+    return <EmptyState icon="⚽" title="No matches played yet." hint="Results will appear here." />
   }
 
   return (
@@ -129,41 +151,83 @@ function Form({ profile, onNavigate }: { profile: TeamProfile; onNavigate: (rout
           <li key={match.id} className={`form__chip form__chip--${result}`} title={resultNames[result]}>{result}</li>
         ))}
       </ol>
-      <ul className="fixtures">
-        {/* Newest first here: the list is read top down, the chips left to right. */}
-        {[...guide].reverse().map(({ match }) => (
-          <FixtureRow key={match.id} match={match} teamId={profile.team.id} onNavigate={onNavigate} />
-        ))}
-      </ul>
+      {/* Newest first here: the list is read top down, the chips left to right. */}
+      <MatchList matches={profile.recentMatches} what="results" teamId={profile.team.id} competitions={competitions} onNavigate={onNavigate} />
     </>
   )
 }
 
-/** One result or fixture of the team's; leads to the match. */
-function FixtureRow({ match, teamId, onNavigate }: { match: Match; teamId: string; onNavigate: (route: Route) => void }) {
+/** The first few matches, and all of them on request. */
+function MatchList({ matches, what, teamId, competitions, onNavigate }: {
+  matches: Match[]
+  what: 'fixtures' | 'results'
+  teamId: string
+  competitions: Competitions
+  onNavigate: (route: Route) => void
+}) {
+  const [showAll, setShowAll] = useState(false)
+  const shown = showAll ? matches : matches.slice(0, CollapsedCount)
+
+  return (
+    <>
+      <ul className="fixtures">
+        {shown.map(match => (
+          <FixtureRow key={match.id} match={match} teamId={teamId} competitions={competitions} onNavigate={onNavigate} />
+        ))}
+      </ul>
+      {matches.length > CollapsedCount && (
+        <button className="more" onClick={() => setShowAll(!showAll)} aria-expanded={showAll}>
+          {showAll ? 'Show fewer' : `Show all ${matches.length} ${what}`}
+        </button>
+      )}
+    </>
+  )
+}
+
+/** One result or fixture of the team's. Leads to the match if its competition is one the site follows. */
+function FixtureRow({ match, teamId, competitions, onNavigate }: {
+  match: Match
+  teamId: string
+  competitions: Competitions
+  onNavigate: (route: Route) => void
+}) {
   const result = match.status === 'Finished' ? resultFor(match, teamId) : null
   const middle = match.score
     ? `${match.score.home} - ${match.score.away}`
     : match.status === 'Postponed' ? 'PP' : match.status === 'Cancelled' ? 'CANC' : formatTime(match.kickoff)
+  const canOpen = competitions.followed?.has(match.leagueCode) ?? true
+
+  const content = (
+    <>
+      <span className="fixture__when">
+        <span className="fixture__date">{formatMatchDate(match.kickoff)}</span>
+        <span className="fixture__league">{competitions.names.get(match.leagueCode) ?? match.leagueCode}</span>
+      </span>
+      <span className={match.homeTeam.id === teamId ? 'fixture__team fixture__team--home fixture__team--own' : 'fixture__team fixture__team--home'}>
+        {match.homeTeam.shortName}
+      </span>
+      <span className="fixture__score">{middle}</span>
+      <span className={match.awayTeam.id === teamId ? 'fixture__team fixture__team--own' : 'fixture__team'}>
+        {match.awayTeam.shortName}
+      </span>
+      {result
+        ? <span className={`form__chip form__chip--small form__chip--${result}`} title={resultNames[result]}>{result}</span>
+        : <span className="fixture__spacer" aria-hidden />}
+    </>
+  )
+  const className = isInPlay(match.status) ? 'fixture fixture--live' : 'fixture'
 
   return (
     <li>
-      <button
-        className={isInPlay(match.status) ? 'fixture fixture--live' : 'fixture'}
-        onClick={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}
-      >
-        <span className="fixture__date">{formatMatchDate(match.kickoff)}</span>
-        <span className={match.homeTeam.id === teamId ? 'fixture__team fixture__team--home fixture__team--own' : 'fixture__team fixture__team--home'}>
-          {match.homeTeam.shortName}
-        </span>
-        <span className="fixture__score">{middle}</span>
-        <span className={match.awayTeam.id === teamId ? 'fixture__team fixture__team--own' : 'fixture__team'}>
-          {match.awayTeam.shortName}
-        </span>
-        {result
-          ? <span className={`form__chip form__chip--small form__chip--${result}`} title={resultNames[result]}>{result}</span>
-          : <span className="fixture__spacer" aria-hidden />}
-      </button>
+      {canOpen ? (
+        <button className={className} onClick={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}>
+          {content}
+        </button>
+      ) : (
+        <div className={`${className} fixture--static`} title="This competition isn't followed, so the match can't be opened.">
+          {content}
+        </div>
+      )}
     </li>
   )
 }

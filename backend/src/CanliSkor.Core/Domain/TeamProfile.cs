@@ -23,11 +23,13 @@ public sealed record StandingsRow(
     string? Note,
     string? NoteColor);
 
-/// <summary>One team in one competition: who they are, how they have been doing and what comes next.</summary>
-/// <param name="StandingSummary">E.g. "3rd in Turkish Super Lig". Null if the competition has no table.</param>
+/// <summary>One team: who they are, how they have been doing and what comes next, across every competition they play in.</summary>
+/// <param name="LeagueCode">The competition the team was looked up in.</param>
+/// <param name="StandingSummary">E.g. "3rd in Turkish Super Lig" (the team's main league). Null if it has no table.</param>
 /// <param name="Stadium">Where the team plays its home matches. Null if unknown, and for national teams.</param>
-/// <param name="RecentMatches">Played matches in this competition, newest first.</param>
-/// <param name="UpcomingMatches">Fixtures in this competition, soonest first.</param>
+/// <param name="RecentMatches">This season's played matches in all competitions, newest first.</param>
+/// <param name="UpcomingMatches">Every scheduled match in all competitions, soonest first.</param>
+/// <param name="Competitions">The competitions those matches belong to, with their names; not all of them are followed.</param>
 public sealed record TeamProfile(
     string LeagueCode,
     Team Team,
@@ -36,7 +38,8 @@ public sealed record TeamProfile(
     string? Stadium,
     string? StadiumCity,
     IReadOnlyList<Match> RecentMatches,
-    IReadOnlyList<Match> UpcomingMatches);
+    IReadOnlyList<Match> UpcomingMatches,
+    IReadOnlyList<League> Competitions);
 
 /// <summary>Something loaded from the provider plus when we fetched it.</summary>
 public sealed record Timestamped<T>(T Value, DateTimeOffset FetchedAtUtc)

@@ -188,6 +188,8 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         var fixture = Assert.Single(root.GetProperty("upcomingMatches").EnumerateArray());
         Assert.Equal("2026-10-16T20:00:00+03:00", fixture.GetProperty("kickoff").GetString());
         Assert.Equal(JsonValueKind.Null, fixture.GetProperty("score").ValueKind);
+        Assert.Equal("uefa.champions", fixture.GetProperty("leagueCode").GetString());
+        Assert.Equal("UEFA Champions League", root.GetProperty("competitions")[1].GetProperty("name").GetString());
     }
 
     [Theory]
@@ -210,7 +212,7 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         var first = json.RootElement[0];
         Assert.Equal("tur.1", first.GetProperty("code").GetString());
         Assert.Equal("Turkish Super Lig", first.GetProperty("name").GetString());
-        Assert.Equal(13, json.RootElement.GetArrayLength());
+        Assert.Equal(14, json.RootElement.GetArrayLength());
     }
 
     [Fact]
@@ -250,7 +252,7 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         using var json = await GetJson("/api/leagues");
 
         Assert.Equal(
-            ["tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.nations", "conmebol.libertadores", "conmebol.sudamericana", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly"],
+            ["tur.1", "eng.1", "esp.1", "uefa.champions", "uefa.europa", "uefa.europa.conf", "uefa.nations", "conmebol.libertadores", "conmebol.sudamericana", "arg.1", "bra.1", "col.1", "chi.1", "fifa.friendly"],
             json.RootElement.EnumerateArray().Select(e => e.GetString()));
     }
 
@@ -316,9 +318,10 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
                     Galatasaray, new Team("436", "Fenerbahce", "Fenerbahce", null), new Score(2, 1)),
             ],
             [
-                new Match("71", leagueCode, new DateTimeOffset(2026, 10, 16, 17, 0, 0, TimeSpan.Zero), MatchStatus.Scheduled, null,
-                    new Team("1895", "Besiktas", "Besiktas", null), Galatasaray, null),
-            ]));
+                new Match("71", "uefa.champions", new DateTimeOffset(2026, 10, 16, 17, 0, 0, TimeSpan.Zero), MatchStatus.Scheduled, null,
+                    new Team("83", "Barcelona", "Barcelona", null), Galatasaray, null),
+            ],
+            [new League("tur.1", "Turkish Super Lig"), new League("uefa.champions", "UEFA Champions League")]));
 
     public Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
         Task.FromResult(leagueCode != "tur.1" || teamId != "432" ? null : new Squad(leagueCode, teamId, "Galatasaray",
