@@ -14,7 +14,7 @@ internal sealed class InMemoryMatchStore(IMemoryCache cache) : IMatchStore
     // Old days fall out on their own; we only ever need today and yesterday.
     private static readonly TimeSpan Retention = TimeSpan.FromDays(2);
 
-    // Details are only kept for repeat views; MatchDetailService decides when one is stale.
+    // Details and squads are only kept for repeat views; their services decide when one is stale.
     private static readonly TimeSpan DetailRetention = TimeSpan.FromDays(1);
 
     public Task<ScoreboardSnapshot?> GetAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default) =>
@@ -36,7 +36,18 @@ internal sealed class InMemoryMatchStore(IMemoryCache cache) : IMatchStore
         return Task.CompletedTask;
     }
 
+    public Task<SquadSnapshot?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(cache.Get<SquadSnapshot>(SquadKey(leagueCode, teamId)));
+
+    public Task SetSquadAsync(SquadSnapshot snapshot, CancellationToken cancellationToken = default)
+    {
+        cache.Set(SquadKey(snapshot.Squad.LeagueCode, snapshot.Squad.TeamId), snapshot, DetailRetention);
+        return Task.CompletedTask;
+    }
+
     private static string DetailKey(string leagueCode, string matchId) => $"detail:{leagueCode}:{matchId}";
+
+    private static string SquadKey(string leagueCode, string teamId) => $"squad:{leagueCode}:{teamId}";
 
     private static string Key(string leagueCode, DateOnly date) =>
         $"scoreboard:{leagueCode}:{date.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}";

@@ -1,0 +1,742 @@
+{
+ "timestamp": "2026-10-03T12:52:06Z",
+ "status": "success",
+ "season": {
+  "year": 2026,
+  "displayName": "2026-27 Turkish Super Lig",
+  "type": 14382,
+  "name": "2026-27 Turkish Super Lig"
+ },
+ "athletes": [
+  {
+   "id": "205750",
+   "fullName": "Alexander Nübel",
+   "displayName": "Alexander Nübel",
+   "shortName": "A. Nübel",
+   "age": 30,
+   "dateOfBirth": "1996-09-30T07:00Z",
+   "citizenship": "Germany",
+   "jersey": "1",
+   "position": {
+    "id": "1",
+    "name": "Goalkeeper",
+    "displayName": "Goalkeeper",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "278790",
+   "fullName": "Dogan Alemdar",
+   "displayName": "Dogan Alemdar",
+   "shortName": "D. Alemdar",
+   "age": 23,
+   "dateOfBirth": "2002-10-29T08:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "80",
+   "position": {
+    "id": "1",
+    "name": "Goalkeeper",
+    "displayName": "Goalkeeper",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "368542",
+   "fullName": "Emir Yasar",
+   "displayName": "Emir Yasar",
+   "shortName": "E. Yasar",
+   "age": 20,
+   "dateOfBirth": "2006-01-16T08:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "96",
+   "position": {
+    "id": "1",
+    "name": "Goalkeeper",
+    "displayName": "Goalkeeper",
+    "abbreviation": "G",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "216420",
+   "fullName": "Amir Murillo",
+   "displayName": "Amir Murillo",
+   "shortName": "A. Murillo",
+   "age": 30,
+   "dateOfBirth": "1996-02-11T08:00Z",
+   "citizenship": "Panama",
+   "jersey": "62",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "280711",
+   "fullName": "Emir Han Topcu",
+   "displayName": "Emir Han Topcu",
+   "shortName": "E. Topcu",
+   "age": 25,
+   "dateOfBirth": "2000-10-11T07:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "53",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "283682",
+   "fullName": "Tiago Djaló",
+   "displayName": "Tiago Djaló",
+   "shortName": "T. Djaló",
+   "age": 26,
+   "dateOfBirth": "2000-04-09T07:00Z",
+   "citizenship": "Portugal",
+   "jersey": "35",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "283691",
+   "fullName": "Ridvan Yilmaz",
+   "displayName": "Ridvan Yilmaz",
+   "shortName": "R. Yilmaz",
+   "age": 25,
+   "dateOfBirth": "2001-05-21T07:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "33",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "308449",
+   "fullName": "Emmanuel Agbadou",
+   "displayName": "Emmanuel Agbadou",
+   "shortName": "E. Agbadou",
+   "age": 29,
+   "dateOfBirth": "1997-06-17T07:00Z",
+   "citizenship": "Ivory Coast",
+   "jersey": "12",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "340741",
+   "fullName": "Umit Akdag",
+   "displayName": "Umit Akdag",
+   "shortName": "U. Akdag",
+   "age": 22,
+   "dateOfBirth": "2003-10-06T07:00Z",
+   "citizenship": "Romania",
+   "jersey": "50",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "345243",
+   "fullName": "Kassoum Ouattara",
+   "displayName": "Kassoum Ouattara",
+   "shortName": "K. Ouattara",
+   "age": 21,
+   "dateOfBirth": "2004-10-14T07:00Z",
+   "citizenship": "France",
+   "jersey": "11",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "346213",
+   "fullName": "Yasin Ozcan",
+   "displayName": "Yasin Ozcan",
+   "shortName": "Y. Ozcan",
+   "age": 20,
+   "dateOfBirth": "2006-04-20T07:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "58",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "372033",
+   "fullName": "Taylan Bulut",
+   "displayName": "Taylan Bulut",
+   "shortName": "T. Bulut",
+   "age": 20,
+   "dateOfBirth": "2006-01-19T08:00Z",
+   "citizenship": "Germany",
+   "jersey": "22",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "388235",
+   "fullName": "Mustafa Yortaç",
+   "displayName": "Mustafa Yortaç",
+   "shortName": "M. Yortaç",
+   "age": 18,
+   "dateOfBirth": "2008-03-01T08:00Z",
+   "jersey": "63",
+   "position": {
+    "id": "2",
+    "name": "Defender",
+    "displayName": "Defender",
+    "abbreviation": "D",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "187638",
+   "fullName": "Wilfred Ndidi",
+   "displayName": "Wilfred Ndidi",
+   "shortName": "W. Ndidi",
+   "age": 29,
+   "dateOfBirth": "1996-12-16T08:00Z",
+   "citizenship": "Nigeria",
+   "jersey": "4",
+   "position": {
+    "id": "10",
+    "name": "Midfielder",
+    "displayName": "Midfielder",
+    "abbreviation": "M",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "220705",
+   "fullName": "Milot Rashica",
+   "displayName": "Milot Rashica",
+   "shortName": "M. Rashica",
+   "age": 30,
+   "dateOfBirth": "1996-06-28T07:00Z",
+   "citizenship": "Kosovo",
+   "jersey": "7",
+   "position": {
+    "id": "10",
+    "name": "Midfielder",
+    "displayName": "Midfielder",
+    "abbreviation": "M",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "225563",
+   "fullName": "Salih Özcan",
+   "displayName": "Salih Özcan",
+   "shortName": "S. Özcan",
+   "age": 28,
+   "dateOfBirth": "1998-01-11T08:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "6",
+   "position": {
+    "id": "10",
+    "name": "Midfielder",
+    "displayName": "Midfielder",
+    "abbreviation": "M",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "272700",
+   "fullName": "Orkun Kökçü",
+   "displayName": "Orkun Kökçü",
+   "shortName": "O. Kökçü",
+   "age": 25,
+   "dateOfBirth": "2000-12-29T08:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "10",
+   "position": {
+    "id": "10",
+    "name": "Midfielder",
+    "displayName": "Midfielder",
+    "abbreviation": "M",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "283930",
+   "fullName": "Kartal Kayra Yilmaz",
+   "displayName": "Kartal Kayra Yilmaz",
+   "shortName": "K. Yilmaz",
+   "age": 25,
+   "dateOfBirth": "2000-11-04T08:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "8",
+   "position": {
+    "id": "10",
+    "name": "Midfielder",
+    "displayName": "Midfielder",
+    "abbreviation": "M",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "319985",
+   "fullName": "Junior Olaitan",
+   "displayName": "Junior Olaitan",
+   "shortName": "J. Olaitan",
+   "age": 24,
+   "dateOfBirth": "2002-05-09T07:00Z",
+   "citizenship": "Benin",
+   "jersey": "15",
+   "position": {
+    "id": "10",
+    "name": "Midfielder",
+    "displayName": "Midfielder",
+    "abbreviation": "M",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "323975",
+   "fullName": "Fabio Miretti",
+   "displayName": "Fabio Miretti",
+   "shortName": "F. Miretti",
+   "age": 23,
+   "dateOfBirth": "2003-08-03T07:00Z",
+   "citizenship": "Italy",
+   "jersey": "21",
+   "position": {
+    "id": "10",
+    "name": "Midfielder",
+    "displayName": "Midfielder",
+    "abbreviation": "M",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "3107403",
+   "fullName": "Ozan Sevim",
+   "displayName": "Ozan Sevim",
+   "shortName": "O. Sevim",
+   "jersey": "66",
+   "position": {
+    "id": "10",
+    "name": "Midfielder",
+    "displayName": "Midfielder",
+    "abbreviation": "M",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "174980",
+   "fullName": "Leandro Trossard",
+   "displayName": "Leandro Trossard",
+   "shortName": "L. Trossard",
+   "age": 31,
+   "dateOfBirth": "1994-12-04T08:00Z",
+   "citizenship": "Belgium",
+   "jersey": "19",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "217476",
+   "fullName": "Václav Cerný",
+   "displayName": "Václav Cerný",
+   "shortName": "V. Cerný",
+   "age": 28,
+   "dateOfBirth": "1997-10-17T07:00Z",
+   "citizenship": "Czechia",
+   "jersey": "18",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "235677",
+   "fullName": "Dusan Vlahovic",
+   "displayName": "Dusan Vlahovic",
+   "shortName": "D. Vlahovic",
+   "age": 26,
+   "dateOfBirth": "2000-01-28T08:00Z",
+   "citizenship": "Serbia",
+   "jersey": "28",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "302434",
+   "fullName": "Oh Hyeon-Gyu",
+   "displayName": "Oh Hyeon-Gyu",
+   "shortName": "O. Hyeon-Gyu",
+   "age": 25,
+   "dateOfBirth": "2001-04-12T07:00Z",
+   "citizenship": "South Korea",
+   "jersey": "9",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "318534",
+   "fullName": "Ernest Poku",
+   "displayName": "Ernest Poku",
+   "shortName": "E. Poku",
+   "age": 22,
+   "dateOfBirth": "2004-01-28T08:00Z",
+   "citizenship": "Netherlands",
+   "jersey": "17",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "345212",
+   "fullName": "Semih Kiliçsoy",
+   "displayName": "Semih Kiliçsoy",
+   "shortName": "S. Kiliçsoy",
+   "age": 21,
+   "dateOfBirth": "2005-08-15T07:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "90",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "368543",
+   "fullName": "Mustafa Hekimoglu",
+   "displayName": "Mustafa Hekimoglu",
+   "shortName": "M. Hekimoglu",
+   "age": 19,
+   "dateOfBirth": "2007-04-22T07:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "23",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "384290",
+   "fullName": "Ilhan Fakili",
+   "displayName": "Ilhan Fakili",
+   "shortName": "I. Fakili",
+   "age": 20,
+   "dateOfBirth": "2006-01-20T08:00Z",
+   "citizenship": "France",
+   "jersey": "29",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  },
+  {
+   "id": "416475",
+   "fullName": "Ahmet Bircan",
+   "displayName": "Ahmet Bircan",
+   "shortName": "A. Bircan",
+   "age": 19,
+   "dateOfBirth": "2007-01-24T08:00Z",
+   "citizenship": "Türkiye",
+   "jersey": "70",
+   "position": {
+    "id": "19",
+    "name": "Forward",
+    "displayName": "Forward",
+    "abbreviation": "F",
+    "leaf": false
+   },
+   "injuries": [],
+   "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+   }
+  }
+ ],
+ "team": {
+  "id": "1895",
+  "abbreviation": "BES",
+  "location": "Besiktas",
+  "name": "Besiktas",
+  "displayName": "Besiktas",
+  "clubhouse": "https://www.espn.com/soccer/club/_/id/1895/besiktas",
+  "color": "ffffff",
+  "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/1895.png",
+  "recordSummary": "4-0-2",
+  "seasonSummary": "2026-27",
+  "standingSummary": "3rd in Turkish Super Lig",
+  "isNational": false
+ }
+}

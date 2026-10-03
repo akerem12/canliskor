@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European and South American leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 11: match page with line-ups on a pitch, substitutes and our own player ratings).
+> Status: **work in progress** (step 12: squads on the match page).
 
 ## Architecture
 
@@ -67,7 +67,7 @@ The frontend keeps the selected day in the URL (`/?date=2026-10-10`), so links c
 ### Match details
 
 Clicking a match opens its page: line-ups, events (goals with assists, penalties and own goals, cards,
-substitutions) and team statistics, as tabs.
+substitutions), team statistics and both squads, as tabs.
 They come from ESPN's match summary, loaded on request by `MatchDetailService` and cached in the store. How long
 a cached detail is used depends on the match:
 
@@ -98,6 +98,13 @@ Line-ups are `null` until both are announced, about an hour before kickoff.
 The frontend draws both elevens on a vertical pitch, home team at the top, with shirt number, rating, goals, cards
 and the minute a player went off; the substitutes are listed below. If both teams' shirt colours are too alike, the
 away team is drawn in white or black. Clicking a player shows their minutes, rating and statistics.
+
+### Squads
+
+The Squads tab lists both teams' registered players for the season, grouped by position, with shirt number,
+nationality and age. They come from ESPN's team roster through `SquadService`, cached for 6 hours (a squad only
+changes with a transfer), behind the same one-at-a-time gate and followed-leagues rule as match details. ESPN has no
+usable data on coaches or on injured and suspended players, so the site doesn't show them.
 
 ### Player ratings
 
@@ -216,6 +223,7 @@ merged in from `/live`.
 | `GET /api/matches?date=2026-10-10` | Another day, up to 7 days back or ahead (else `400`) |
 | `GET /api/matches/live` | Matches currently in play |
 | `GET /api/leagues/{code}/matches/{id}` | One match with its events, statistics and line-ups (`404` if unknown, `503` if ESPN is down and nothing is cached) |
+| `GET /api/leagues/{code}/teams/{teamId}/squad` | A team's squad: `{ teamId, teamName, players, lastUpdatedUtc }`, each player `{ id, name, jersey, position, age, nationality }` (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings
 (`Scheduled`, `Live`, `HalfTime`, `Finished`, `Postponed`, `Cancelled`), and `score` is `null` before kickoff.

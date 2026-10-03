@@ -5,6 +5,7 @@ import { useMatchDetail } from '../live/useMatchDetail'
 import { isGoal, withRunningScore } from '../matchEvents'
 import { formatTime } from '../time'
 import { Lineups } from './Lineups'
+import { Squads } from './Squads'
 
 interface Props {
   leagueCode: string
@@ -36,15 +37,31 @@ const statLabels: Record<MatchStatType, string> = {
   Saves: 'Saves',
 }
 
-type Tab = 'lineups' | 'events' | 'stats'
+type Tab = 'lineups' | 'events' | 'stats' | 'squads'
 
-const tabLabels: Record<Tab, string> = { lineups: 'Line-ups', events: 'Events', stats: 'Statistics' }
+const tabLabels: Record<Tab, string> = { lineups: 'Line-ups', events: 'Events', stats: 'Statistics', squads: 'Squads' }
 
-/** One match on a page of its own: the scoreline, then line-ups, events and statistics as tabs. */
+/** ?tab=squads → the tab to open, so a link leads to the same view. */
+function tabFromUrl(): Tab | null {
+  const tab = new URLSearchParams(window.location.search).get('tab')
+  return tab !== null && tab in tabLabels ? (tab as Tab) : null
+}
+
+function writeTabToUrl(tab: Tab) {
+  const url = new URL(window.location.href)
+  url.searchParams.set('tab', tab)
+  window.history.replaceState(window.history.state, '', url)
+}
+
+/** One match on a page of its own: the scoreline, then line-ups, events, statistics and squads as tabs. */
 export function MatchPage({ leagueCode, matchId, leagueName, pushed, onClose }: Props) {
   const { detail, error } = useMatchDetail(leagueCode, matchId, pushed)
   // Until a tab is picked: line-ups once they are announced, otherwise events.
-  const [pickedTab, setPickedTab] = useState<Tab | null>(null)
+  const [pickedTab, setPickedTab] = useState(tabFromUrl)
+  const pickTab = (picked: Tab) => {
+    setPickedTab(picked)
+    writeTabToUrl(picked)
+  }
   const tab = pickedTab ?? (detail?.lineups ? 'lineups' : 'events')
 
   // The pushed match has the live clock; the detail's copy may be up to one refresh behind.
@@ -64,7 +81,7 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, onClose }: 
         <>
           <nav className="tabs detail__tabs" aria-label="Match sections">
             {(Object.keys(tabLabels) as Tab[]).map(t => (
-              <button key={t} className={t === tab ? 'tab tab--active' : 'tab'} onClick={() => setPickedTab(t)}>
+              <button key={t} className={t === tab ? 'tab tab--active' : 'tab'} onClick={() => pickTab(t)}>
                 {tabLabels[t]}
               </button>
             ))}
@@ -75,7 +92,8 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, onClose }: 
           {tab === 'stats' && (detail.stats.length > 0
             ? <Stats stats={detail.stats} />
             : <p className="detail__empty">Statistics appear once the match has kicked off.</p>)}
-          <p className="detail__updated">updated {formatTime(detail.lastUpdatedUtc)}</p>
+          {tab === 'squads' && <Squads match={match} />}
+          {tab !== 'squads' && <p className="detail__updated">updated {formatTime(detail.lastUpdatedUtc)}</p>}
         </>
       )}
     </main>

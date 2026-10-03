@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<MatchQueryService>();
         services.AddScoped<OnDemandScoreboardLoader>();
         services.AddScoped<MatchDetailService>();
+        services.AddScoped<SquadService>();
         services.AddSingleton<OnDemandFetchGate>();
         services.AddSingleton<LineupRater>();
 

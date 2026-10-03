@@ -40,31 +40,42 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
     public async Task<MatchDetail?> GetMatchDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default)
     {
         var url = $"{Uri.EscapeDataString(leagueCode)}/summary?event={Uri.EscapeDataString(matchId)}";
+        var response = await GetOrNullAsync<EspnSummaryResponse>(url, $"summary for match '{matchId}' in '{leagueCode}'", cancellationToken);
 
-        EspnSummaryResponse? response;
+        return response is null ? null : EspnSummaryMapper.Map(response, leagueCode);
+    }
+
+    public async Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
+    {
+        // ESPN only serves a team under a league it plays in.
+        var url = $"{Uri.EscapeDataString(leagueCode)}/teams/{Uri.EscapeDataString(teamId)}/roster";
+        var response = await GetOrNullAsync<EspnRosterResponse>(url, $"roster for team '{teamId}' in '{leagueCode}'", cancellationToken);
+
+        return response is null ? null : EspnRosterMapper.Map(response, leagueCode);
+    }
+
+    /// <returns>Null if ESPN doesn't know the resource: it answers an unknown id with 404 (and some malformed ids with 400).</returns>
+    private async Task<T?> GetOrNullAsync<T>(string url, string what, CancellationToken cancellationToken)
+        where T : class
+    {
+        T? response;
         try
         {
             using var httpResponse = await httpClient.GetAsync(url, cancellationToken);
-            // ESPN answers an unknown event id with 404 (and some malformed ids with 400).
             if (httpResponse.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
             {
                 return null;
             }
 
             httpResponse.EnsureSuccessStatusCode();
-            response = await httpResponse.Content.ReadFromJsonAsync<EspnSummaryResponse>(JsonOptions, cancellationToken);
+            response = await httpResponse.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
         }
         catch (Exception ex) when ((ex is HttpRequestException or JsonException or TaskCanceledException) && !cancellationToken.IsCancellationRequested)
         {
-            throw new FootballDataProviderException($"Failed to fetch ESPN summary for match '{matchId}' in '{leagueCode}'.", ex);
+            throw new FootballDataProviderException($"Failed to fetch ESPN {what}.", ex);
         }
 
-        if (response is null)
-        {
-            throw new FootballDataProviderException($"ESPN returned an empty summary for match '{matchId}' in '{leagueCode}'.");
-        }
-
-        return EspnSummaryMapper.Map(response, leagueCode);
+        return response ?? throw new FootballDataProviderException($"ESPN returned an empty {what}.");
     }
 
     /// <param name="espnDate">The date in ESPN's (US Eastern) calendar.</param>

@@ -70,3 +70,17 @@ internal sealed record EspnSubstitutionPartner(EspnAthlete? Athlete);
 internal sealed record EspnPlayerStat(string? Name, double? Value);
 
 internal sealed record EspnPlayerPlay(EspnClock? Clock, bool Substitution, bool RedCard);
+
+// Team roster (/teams/{id}/roster).
+
+internal sealed record EspnRosterResponse(EspnTeam? Team, IReadOnlyList<EspnRosterAthlete>? Athletes);
+
+/// <param name="Position">Abbreviation is "G", "D", "M" or "F".</param>
+/// <param name="Citizenship">Country name, e.g. "Türkiye".</param>
+internal sealed record EspnRosterAthlete(
+    string? Id,
+    string? DisplayName,
+    string? Jersey,
+    EspnPosition? Position,
+    int? Age,
+    string? Citizenship);

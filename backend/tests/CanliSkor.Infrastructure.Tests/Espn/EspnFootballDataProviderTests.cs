@@ -98,6 +98,33 @@ public class EspnFootballDataProviderTests
         await Assert.ThrowsAsync<FootballDataProviderException>(() => provider.GetMatchDetailAsync("esp.1", "1"));
     }
 
+    [Fact]
+    public async Task Requests_the_team_roster()
+    {
+        var handler = new StubHandler(_ => Json(FixtureLoader.ReadJson("roster-tur1-besiktas.json")));
+
+        var squad = await CreateProvider(handler).GetSquadAsync("tur.1", "1895");
+
+        Assert.Equal("https://espn.test/soccer/tur.1/teams/1895/roster", Assert.Single(handler.RequestUris).ToString());
+        Assert.Equal("Besiktas", squad?.TeamName);
+    }
+
+    [Fact]
+    public async Task Unknown_team_is_null()
+    {
+        var provider = CreateProvider(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
+
+        Assert.Null(await provider.GetSquadAsync("tur.1", "999999"));
+    }
+
+    [Fact]
+    public async Task Wraps_roster_server_errors_in_provider_exception()
+    {
+        var provider = CreateProvider(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)));
+
+        await Assert.ThrowsAsync<FootballDataProviderException>(() => provider.GetSquadAsync("tur.1", "1895"));
+    }
+
     private static EspnFootballDataProvider CreateProvider(HttpMessageHandler handler) =>
         new(new HttpClient(handler) { BaseAddress = BaseAddress });
 

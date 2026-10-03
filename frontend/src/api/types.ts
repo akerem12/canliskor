@@ -125,6 +125,24 @@ export interface PlayerStats {
   goalsConceded: number
 }
 
+export interface Squad {
+  teamId: string
+  teamName: string
+  /** Goalkeepers first, then defenders, midfielders and forwards; by shirt number within each. */
+  players: SquadPlayer[]
+  lastUpdatedUtc: string
+}
+
+export interface SquadPlayer {
+  id: string
+  name: string
+  jersey: string | null
+  position: PlayerPosition | null
+  age: number | null
+  /** Country name, e.g. "Türkiye". */
+  nationality: string | null
+}
+
 /** SignalR "MatchUpdated" payload. Both flags false means only the clock moved. */
 export interface MatchUpdatedMessage {
   match: Match

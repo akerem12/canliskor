@@ -158,6 +158,37 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Get_squad_returns_the_players()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/teams/432/squad");
+        var root = json.RootElement;
+
+        Assert.Equal("432", root.GetProperty("teamId").GetString());
+        Assert.Equal("Galatasaray", root.GetProperty("teamName").GetString());
+        Assert.Equal(Now, root.GetProperty("lastUpdatedUtc").GetDateTimeOffset());
+
+        var players = root.GetProperty("players");
+        Assert.Equal(3, players.GetArrayLength());
+        Assert.Equal("Icardi", players[1].GetProperty("name").GetString());
+        Assert.Equal("9", players[1].GetProperty("jersey").GetString());
+        Assert.Equal("Forward", players[1].GetProperty("position").GetString());
+        Assert.Equal(33, players[1].GetProperty("age").GetInt32());
+        Assert.Equal("Argentina", players[1].GetProperty("nationality").GetString());
+        Assert.Equal(JsonValueKind.Null, players[2].GetProperty("position").ValueKind);
+    }
+
+    [Theory]
+    [InlineData("/api/leagues/tur.1/teams/404/squad")] // unknown to the provider
+    [InlineData("/api/leagues/ger.1/teams/432/squad")] // league not followed
+    [InlineData("/api/leagues/tur.1/teams/abc/squad")] // not an ESPN id
+    public async Task Get_squad_returns_404_for_unknown_teams(string url)
+    {
+        var response = await _client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Get_leagues_returns_followed_league_codes_in_order()
     {
         using var json = await GetJson("/api/leagues");
@@ -189,7 +220,10 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 }
 
-/// <summary>Any day: one finished match for tur.1, nothing for the other leagues. Details: only match 77 of tur.1.</summary>
+/// <summary>
+/// Any day: one finished match for tur.1, nothing for the other leagues. Details: only match 77 of tur.1.
+/// Squads: only team 432 of tur.1.
+/// </summary>
 internal sealed class StubFootballDataProvider : IFootballDataProvider
 {
     public Task<MatchDetail?> GetMatchDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default) =>
@@ -209,6 +243,14 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
     private static LineupPlayer Player(string id, string name, PlayerPosition? position, int goals) =>
         new(id, name, name, Jersey: id, position, CameOnAt: null, WentOffAt: position == PlayerPosition.Forward ? "80'" : null,
             new PlayerMatchStats(goals, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+
+    public Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(leagueCode != "tur.1" || teamId != "432" ? null : new Squad(leagueCode, teamId, "Galatasaray",
+        [
+            new SquadPlayer("1", "Keeper", "1", PlayerPosition.Goalkeeper, 30, "Türkiye"),
+            new SquadPlayer("9", "Icardi", "9", PlayerPosition.Forward, 33, "Argentina"),
+            new SquadPlayer("50", "Youngster", null, null, null, null),
+        ]));
 
     public Task<LeagueScoreboard> GetScoreboardAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default) =>
         Task.FromResult(new LeagueScoreboard(new League(leagueCode, leagueCode), date, leagueCode != "tur.1" ? [] :

@@ -33,6 +33,23 @@ public static class LeagueEndpoints
         })
             .WithTags("Matches");
 
+        // A team's squad for the current season. Same rules as match details: numeric ids, followed leagues only.
+        app.MapGet("/api/leagues/{code}/teams/{teamId:regex(^[0-9]{{1,15}}$)}/squad", async Task<Results<Ok<SquadResponse>, NotFound, ProblemHttpResult>> (
+            string code, string teamId, SquadService squads, CancellationToken ct) =>
+        {
+            try
+            {
+                return await squads.GetAsync(code, teamId, ct) is { } snapshot
+                    ? TypedResults.Ok(snapshot.ToResponse())
+                    : TypedResults.NotFound();
+            }
+            catch (FootballDataProviderException)
+            {
+                return TypedResults.Problem("The squad is temporarily unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        })
+            .WithTags("Teams");
+
         return app;
     }
 }

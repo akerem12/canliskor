@@ -14,6 +14,10 @@ public interface IFootballDataProvider
     /// <returns>Null if the provider doesn't know a match with this id in this league.</returns>
     /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
     Task<MatchDetail?> GetMatchDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default);
+
+    /// <returns>Null if the provider doesn't know a team with this id in this league.</returns>
+    /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
+    Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

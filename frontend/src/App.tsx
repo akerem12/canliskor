@@ -48,6 +48,7 @@ function writeOpenMatchToUrl(open: OpenMatch | null) {
   } else {
     url.searchParams.delete('league')
     url.searchParams.delete('match')
+    url.searchParams.delete('tab')
     window.history.replaceState(null, '', url)
   }
 }

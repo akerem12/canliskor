@@ -92,6 +92,12 @@ public sealed record PlayerStatsResponse(
     int Saves,
     int GoalsConceded);
 
+/// <param name="Players">Goalkeepers first, then defenders, midfielders and forwards; by shirt number within each.</param>
+/// <param name="LastUpdatedUtc">When the squad was fetched from the data source.</param>
+public sealed record SquadResponse(string TeamId, string TeamName, IReadOnlyList<SquadPlayerResponse> Players, DateTimeOffset LastUpdatedUtc);
+
+public sealed record SquadPlayerResponse(string Id, string Name, string? Jersey, PlayerPosition? Position, int? Age, string? Nationality);
+
 /// <summary>SignalR "MatchUpdated" payload: the full new match state plus what changed (e.g. to animate a goal).</summary>
 /// <remarks>Both flags false means only the clock moved.</remarks>
 public sealed record MatchUpdatedMessage(MatchResponse Match, bool ScoreChanged, bool StatusChanged);
@@ -119,6 +125,12 @@ public static class ContractMappings
         snapshot.Detail.Events.Select(e => new MatchEventResponse(e.Type, e.Clock, e.Side, e.Player, e.RelatedPlayer)).ToList(),
         snapshot.Detail.Stats.Select(s => new MatchStatResponse(s.Type, s.Home, s.Away)).ToList(),
         snapshot.Detail.Lineups is { } lineups ? new MatchLineupsResponse(ToResponse(lineups.Home), ToResponse(lineups.Away)) : null,
+        snapshot.FetchedAtUtc);
+
+    public static SquadResponse ToResponse(this SquadSnapshot snapshot) => new(
+        snapshot.Squad.TeamId,
+        snapshot.Squad.TeamName,
+        snapshot.Squad.Players.Select(p => new SquadPlayerResponse(p.Id, p.Name, p.Jersey, p.Position, p.Age, p.Nationality)).ToList(),
         snapshot.FetchedAtUtc);
 
     public static MatchUpdatedMessage ToMessage(this MatchChange change) => new(

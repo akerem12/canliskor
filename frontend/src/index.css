@@ -137,7 +137,7 @@ h1, h2 { margin: 0; }
   font: inherit; font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 999px;
   border: 1px solid var(--border); background: var(--surface-alt); color: var(--text);
 }
-.detail__tabs { justify-content: center; margin: 16px 0 12px; }
+.detail__tabs { justify-content: center; flex-wrap: wrap; margin: 16px 0 12px; }
 .detail__heading {
   margin: 18px 0 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
 }
@@ -267,6 +267,19 @@ h1, h2 { margin: 0; }
 
 .ratings-note { margin: 14px 0 0; font-size: 0.75rem; color: var(--muted); text-align: center; }
 
+/* Squads */
+.squads { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.squad { min-width: 0; }
+.squad__team { margin: 0; font-size: 0.95rem; }
+.squad .detail__heading { margin: 12px 0 2px; }
+.squad__players { list-style: none; margin: 0; padding: 0; }
+.squad__player { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--border); }
+.squad__players > li:first-child { border-top: none; }
+.squad__number { flex: none; width: 1.8em; text-align: right; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.squad__name { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.squad__nationality { font-size: 0.75rem; color: var(--muted); }
+.squad__age { flex: none; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
 /* Player sheet */
 .sheet {
   width: min(380px, calc(100% - 32px)); padding: 0; border: 1px solid var(--border); border-radius: 12px;
@@ -299,6 +312,9 @@ h1, h2 { margin: 0; }
   .player__rating { right: -16px; }
   .player__name { font-size: 0.7rem; }
   .benches { grid-template-columns: 1fr; gap: 16px; }
+  .squads { gap: 10px; }
+  .detail__tabs { gap: 6px; }
+  .detail__tabs .tab { padding: 6px 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
