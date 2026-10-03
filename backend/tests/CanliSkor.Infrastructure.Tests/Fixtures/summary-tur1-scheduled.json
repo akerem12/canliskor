@@ -411,5 +411,53 @@
     "homeAway": "away"
    }
   ]
- }
+ },
+ "rosters": [
+  {
+   "homeAway": "home",
+   "winner": false,
+   "team": {
+    "id": "996",
+    "abbreviation": "GEN",
+    "displayName": "Genclerbirligi",
+    "color": "000000",
+    "alternateColor": "e91b23",
+    "logos": [
+     {
+      "href": "https://a.espncdn.com/i/teamlogos/soccer/500/996.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+       "full",
+       "default"
+      ],
+      "lastUpdated": "2019-08-05T22:30Z"
+     },
+     {
+      "href": "https://a.espncdn.com/i/teamlogos/soccer/500-dark/996.png",
+      "width": 500,
+      "height": 500,
+      "alt": "",
+      "rel": [
+       "full",
+       "dark"
+      ],
+      "lastUpdated": "2019-08-05T22:52Z"
+     }
+    ]
+   }
+  },
+  {
+   "homeAway": "away",
+   "winner": false,
+   "team": {
+    "id": "132335",
+    "abbreviation": "AMED",
+    "displayName": "Amed SFK",
+    "color": "000000",
+    "alternateColor": "C60000"
+   }
+  }
+ ]
 }

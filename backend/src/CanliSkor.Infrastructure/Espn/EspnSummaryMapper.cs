@@ -49,7 +49,7 @@ internal static class EspnSummaryMapper
             .OfType<MatchEvent>()
             .ToList();
 
-        return new MatchDetail(match, events, MapStats(response.Boxscore));
+        return new MatchDetail(match, events, MapStats(response.Boxscore), EspnLineupMapper.Map(response.Rosters));
     }
 
     private static MatchEvent? MapEvent(EspnKeyEvent e, Match match)

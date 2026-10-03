@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European and South American leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 8: match details — goals, cards, substitutions, statistics).
+> Status: **work in progress** (step 9: line-ups in the API — formations, bench, per-player statistics; the match page that shows them is next).
 
 ## Architecture
 
@@ -84,6 +84,15 @@ accepted, and ESPN's summary is checked to belong to the requested league (ESPN 
 The dialog reloads its detail when SignalR pushes a score or status change for that match, and every 30 s while the
 match is in play (cards and substitutions aren't pushed). The open match is kept in the URL
 (`/?league=esp.1&match=401882858`); on a phone, Back closes it.
+
+### Line-ups
+
+The same summary carries both rosters, mapped by `EspnLineupMapper`. ESPN gives every starter a position (`CD-L`,
+`DM`, `AM-R`, ...) and the team a formation (`4-2-3-1`), but not who stands where, so the rows are worked out:
+starters are ordered from defence to attack, cut into rows of the formation's sizes, and each row is ordered left to
+right. If the formation is missing or doesn't add up to the outfield players, players of the same depth form a row.
+Substitutes are all listed as `SUB`, so one who came on takes the position group of the player they replaced.
+Line-ups are `null` until both are announced, about an hour before kickoff.
 
 ## Data source
 
@@ -177,18 +186,25 @@ merged in from `/live`.
 | `GET /api/matches` | Today's matches (Istanbul date), grouped by league |
 | `GET /api/matches?date=2026-10-10` | Another day, up to 7 days back or ahead (else `400`) |
 | `GET /api/matches/live` | Matches currently in play |
-| `GET /api/leagues/{code}/matches/{id}` | One match with its events and statistics (`404` if unknown, `503` if ESPN is down and nothing is cached) |
+| `GET /api/leagues/{code}/matches/{id}` | One match with its events, statistics and line-ups (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings
 (`Scheduled`, `Live`, `HalfTime`, `Finished`, `Postponed`, `Cancelled`), and `score` is `null` before kickoff.
 Each league includes `lastUpdatedUtc` so clients can detect stale data.
 
-A match detail is `{ match, events, stats, lastUpdatedUtc }`. Events are in match order:
+A match detail is `{ match, events, stats, lineups, lastUpdatedUtc }`. Events are in match order:
 `{ type, clock, side, player, relatedPlayer }` with `type` one of `Goal`, `PenaltyGoal`, `OwnGoal`, `YellowCard`,
 `RedCard`, `Substitution`; `side` (`Home`/`Away`) is the team the event counts for, so an own goal is on the side of
 the team that benefits. `relatedPlayer` is the assist provider or the player going off. `stats` are
 `{ type, home, away }` for `Possession` (percent), `Shots`, `ShotsOnTarget`, `Corners`, `Fouls`, `Offsides`,
 `YellowCards`, `RedCards`, `Saves`; empty before kickoff.
+
+`lineups` is `{ home, away }` or `null`. Each team is `{ formation, shirtColor, rows, bench }`: `rows` is the
+starting eleven, goalkeeper's row first, then defence to attack, each row from the team's own left to right; `bench`
+is every substitute. A player is `{ id, name, shortName, jersey, position, cameOnAt, wentOffAt, stats }` with
+`position` one of `Goalkeeper`, `Defender`, `Midfielder`, `Forward` (`null` for an unused substitute) and `stats`
+`{ goals, assists, shots, shotsOnTarget, foulsCommitted, foulsSuffered, offsides, yellowCards, redCards, ownGoals,
+saves, goalsConceded }`, where `goalsConceded` counts goals conceded while the player was on the pitch.
 
 ### Real-time: SignalR hub `/hubs/live-scores`
 

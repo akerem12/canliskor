@@ -120,6 +120,27 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         Assert.Equal(Now, root.GetProperty("lastUpdatedUtc").GetDateTimeOffset());
     }
 
+    [Fact]
+    public async Task Get_match_detail_returns_lineups()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/matches/77");
+        var home = json.RootElement.GetProperty("lineups").GetProperty("home");
+
+        Assert.Equal("4-4-2", home.GetProperty("formation").GetString());
+        Assert.Equal("#fdb912", home.GetProperty("shirtColor").GetString());
+        Assert.Equal(2, home.GetProperty("rows").GetArrayLength());
+
+        var striker = home.GetProperty("rows")[1][0];
+        Assert.Equal("Icardi", striker.GetProperty("name").GetString());
+        Assert.Equal("9", striker.GetProperty("jersey").GetString());
+        Assert.Equal("Forward", striker.GetProperty("position").GetString());
+        Assert.Equal("80'", striker.GetProperty("wentOffAt").GetString());
+        Assert.Equal(1, striker.GetProperty("stats").GetProperty("goals").GetInt32());
+
+        var unused = Assert.Single(home.GetProperty("bench").EnumerateArray());
+        Assert.Equal(JsonValueKind.Null, unused.GetProperty("position").ValueKind);
+    }
+
     [Theory]
     [InlineData("/api/leagues/tur.1/matches/404")] // unknown to the provider
     [InlineData("/api/leagues/ger.1/matches/77")]  // league not followed
@@ -173,7 +194,16 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
                 new Team("436", "Fenerbahce", "Fenerbahce", null),
                 new Score(1, 0)),
             [new MatchEvent(MatchEventType.PenaltyGoal, "12'", TeamSide.Home, "Icardi", null)],
-            [new MatchStat(MatchStatType.Possession, 61.5, 38.5)]));
+            [new MatchStat(MatchStatType.Possession, 61.5, 38.5)],
+            new MatchLineups(Lineup("Icardi", "#fdb912"), Lineup("Dzeko", null))));
+
+    private static TeamLineup Lineup(string striker, string? shirtColor) => new("4-4-2", shirtColor,
+        [[Player("1", "Keeper", PlayerPosition.Goalkeeper, goals: 0)], [Player("9", striker, PlayerPosition.Forward, goals: 1)]],
+        [Player("20", "Unused", position: null, goals: 0)]);
+
+    private static LineupPlayer Player(string id, string name, PlayerPosition? position, int goals) =>
+        new(id, name, name, Jersey: id, position, CameOnAt: null, WentOffAt: position == PlayerPosition.Forward ? "80'" : null,
+            new PlayerMatchStats(goals, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
     public Task<LeagueScoreboard> GetScoreboardAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default) =>
         Task.FromResult(new LeagueScoreboard(new League(leagueCode, leagueCode), date, leagueCode != "tur.1" ? [] :

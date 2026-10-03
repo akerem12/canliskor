@@ -1,8 +1,15 @@
 namespace CanliSkor.Core.Domain;
 
-/// <summary>One match with what happened in it: goals, cards and substitutions in order, plus team statistics.</summary>
+/// <summary>
+/// One match with what happened in it: goals, cards and substitutions in order, team statistics, and who played.
+/// </summary>
 /// <param name="Stats">Empty before kickoff.</param>
-public sealed record MatchDetail(Match Match, IReadOnlyList<MatchEvent> Events, IReadOnlyList<MatchStat> Stats);
+/// <param name="Lineups">Null until the line-ups are announced (about an hour before kickoff).</param>
+public sealed record MatchDetail(
+    Match Match,
+    IReadOnlyList<MatchEvent> Events,
+    IReadOnlyList<MatchStat> Stats,
+    MatchLineups? Lineups = null);
 
 /// <param name="Clock">Match minute as displayed, e.g. "57'" or "45'+2'".</param>
 /// <param name="Side">The team the event counts for. An own goal counts for the team that benefits from it.</param>
