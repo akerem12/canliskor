@@ -1,6 +1,7 @@
 using CanliSkor.Core.Abstractions;
 using CanliSkor.Core.Domain;
 using CanliSkor.Core.Options;
+using CanliSkor.Core.Ratings;
 using CanliSkor.Core.Services;
 using CanliSkor.Core.Time;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -21,6 +22,7 @@ public class MatchDetailServiceTests
         _provider,
         _store,
         new OnDemandFetchGate(),
+        new LineupRater(new StaticOptionsMonitor<RatingOptions>(new RatingOptions())),
         TestOptions.Leagues("tur.1"),
         new StaticOptionsMonitor<PollingOptions>(TestOptions.Polling()),
         _time,

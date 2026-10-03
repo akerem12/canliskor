@@ -137,8 +137,13 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         Assert.Equal("80'", striker.GetProperty("wentOffAt").GetString());
         Assert.Equal(1, striker.GetProperty("stats").GetProperty("goals").GetInt32());
 
+        // The match is live at 20': rated on the 20 minutes so far (6.5 + 1.0 for a forward's goal).
+        Assert.Equal(20, striker.GetProperty("minutesPlayed").GetInt32());
+        Assert.Equal(7.5, striker.GetProperty("rating").GetDouble());
+
         var unused = Assert.Single(home.GetProperty("bench").EnumerateArray());
         Assert.Equal(JsonValueKind.Null, unused.GetProperty("position").ValueKind);
+        Assert.Equal(JsonValueKind.Null, unused.GetProperty("rating").ValueKind);
     }
 
     [Theory]

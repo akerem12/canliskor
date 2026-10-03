@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European and South American leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 9: line-ups in the API — formations, bench, per-player statistics; the match page that shows them is next).
+> Status: **work in progress** (step 10: line-ups and our own player ratings in the API; the match page that shows them is next).
 
 ## Architecture
 
@@ -93,6 +93,30 @@ starters are ordered from defence to attack, cut into rows of the formation's si
 right. If the formation is missing or doesn't add up to the outfield players, players of the same depth form a row.
 Substitutes are all listed as `SUB`, so one who came on takes the position group of the player they replaced.
 Line-ups are `null` until both are announced, about an hour before kickoff.
+
+### Player ratings
+
+Ratings are **our own estimate**, computed by `PlayerRatingCalculator` from the per-player statistics ESPN provides
+(goals, assists, shots on target, fouls, offsides, cards, own goals, saves, goals conceded while on the pitch). They
+are not taken from any rating provider. A rating starts at 6.5 and each event adds or subtracts its weight:
+
+| | Goalkeeper | Defender | Midfielder | Forward |
+|---|---|---|---|---|
+| Goal | +1.5 | +1.4 | +1.2 | +1.0 |
+| Goal conceded while on the pitch | −0.4 | −0.25 | −0.1 | — |
+| Clean sheet (60+ minutes) | +0.6 | +0.5 | +0.2 | — |
+
+Assist +0.8 · shot on target that wasn't a goal +0.2 · save +0.3 · foul suffered +0.1 · foul committed −0.1 ·
+offside −0.1 · yellow card −0.4 · red card −1.5 · own goal −1.2 · win +0.3 / loss −0.3 (once the match is over).
+The result is clamped to 3.0–10.0 and rounded to one decimal.
+
+Minutes played aren't in the data, so `LineupRater` works them out from when a player came on, went off or was sent
+off and how far the match is. A player with fewer than 10 minutes gets no rating. Ratings are computed when a detail
+is loaded, so they follow a live match at the same pace as the detail itself. All weights live in the `Ratings`
+section of `appsettings.json`.
+
+With so few statistics (no passes, tackles or duels) the ratings are coarse: a defender who simply had a quiet
+game in a 2-1 defeat lands around 5.7.
 
 ## Data source
 
@@ -201,10 +225,11 @@ the team that benefits. `relatedPlayer` is the assist provider or the player goi
 
 `lineups` is `{ home, away }` or `null`. Each team is `{ formation, shirtColor, rows, bench }`: `rows` is the
 starting eleven, goalkeeper's row first, then defence to attack, each row from the team's own left to right; `bench`
-is every substitute. A player is `{ id, name, shortName, jersey, position, cameOnAt, wentOffAt, stats }` with
+is every substitute. A player is `{ id, name, shortName, jersey, position, cameOnAt, wentOffAt, sentOffAt, minutesPlayed, rating, stats }` with
 `position` one of `Goalkeeper`, `Defender`, `Midfielder`, `Forward` (`null` for an unused substitute) and `stats`
 `{ goals, assists, shots, shotsOnTarget, foulsCommitted, foulsSuffered, offsides, yellowCards, redCards, ownGoals,
 saves, goalsConceded }`, where `goalsConceded` counts goals conceded while the player was on the pitch.
+`rating` (3.0–10.0) is our own estimate, `null` for anyone with fewer than 10 minutes played.
 
 ### Real-time: SignalR hub `/hubs/live-scores`
 
@@ -230,5 +255,7 @@ Recommended client flow: connect, subscribe, then load `GET /api/matches` and ap
   "ErrorRetryInterval": "00:01:00"
 }
 ```
+
+The `Ratings` section holds the rating weights described under [Player ratings](#player-ratings).
 
 Options are validated at startup; invalid values stop the app with a clear error.

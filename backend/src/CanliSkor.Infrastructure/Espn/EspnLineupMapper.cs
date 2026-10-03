@@ -188,7 +188,8 @@ internal static class EspnLineupMapper
             e.Starter || e.SubbedIn ? position : null,
             cameOnAt,
             wentOffAt,
-            MapStats(e.Stats));
+            MapStats(e.Stats),
+            SentOffAt: e.Plays?.FirstOrDefault(p => p.RedCard && !string.IsNullOrEmpty(p.Clock?.DisplayValue))?.Clock!.DisplayValue);
     }
 
     private static PlayerMatchStats MapStats(IReadOnlyList<EspnPlayerStat>? stats)

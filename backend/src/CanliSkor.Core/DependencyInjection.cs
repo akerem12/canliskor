@@ -1,5 +1,6 @@
 using CanliSkor.Core.Options;
 using CanliSkor.Core.Polling;
+using CanliSkor.Core.Ratings;
 using CanliSkor.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,11 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<RatingOptions>()
+            .Bind(configuration.GetSection(RatingOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.TryAddSingleton(TimeProvider.System);
 
         // Scoped, not singleton: it depends on IFootballDataProvider, which is a typed HttpClient.
@@ -31,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<OnDemandScoreboardLoader>();
         services.AddScoped<MatchDetailService>();
         services.AddSingleton<OnDemandFetchGate>();
+        services.AddSingleton<LineupRater>();
 
         return services;
     }

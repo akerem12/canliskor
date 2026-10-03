@@ -96,6 +96,7 @@ public class EspnLineupMapperTests
         Assert.Equal(PlayerPosition.Midfielder, cisse.Position);
         Assert.Equal("45'", cisse.CameOnAt);
         Assert.Null(cisse.WentOffAt);
+        Assert.Equal("84'", cisse.SentOffAt);
         Assert.Equal(1, cisse.Stats.RedCards);
 
         // Bülbül replaced the left back.

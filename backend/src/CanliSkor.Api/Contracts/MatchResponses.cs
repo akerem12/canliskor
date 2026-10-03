@@ -61,6 +61,9 @@ public sealed record TeamLineupResponse(
 /// <param name="Position">A substitute who came on has the position of the player they replaced; null if they stayed on the bench.</param>
 /// <param name="CameOnAt">Match minute, e.g. "76'"; null for starters and unused substitutes.</param>
 /// <param name="WentOffAt">Match minute the player was substituted off, else null.</param>
+/// <param name="SentOffAt">Match minute of the player's red card, else null.</param>
+/// <param name="MinutesPlayed">Null for a substitute who hasn't come on, and before kickoff.</param>
+/// <param name="Rating">Our own estimate from the match statistics, 3.0 to 10.0; null if played too briefly to be rated.</param>
 public sealed record LineupPlayerResponse(
     string Id,
     string Name,
@@ -69,6 +72,9 @@ public sealed record LineupPlayerResponse(
     PlayerPosition? Position,
     string? CameOnAt,
     string? WentOffAt,
+    string? SentOffAt,
+    int? MinutesPlayed,
+    double? Rating,
     PlayerStatsResponse Stats);
 
 /// <param name="GoalsConceded">Goals the team conceded while the player was on the pitch.</param>
@@ -136,6 +142,9 @@ public static class ContractMappings
         player.Position,
         player.CameOnAt,
         player.WentOffAt,
+        player.SentOffAt,
+        player.MinutesPlayed,
+        player.Rating,
         ToResponse(player.Stats));
 
     private static PlayerStatsResponse ToResponse(PlayerMatchStats s) => new(

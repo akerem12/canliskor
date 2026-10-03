@@ -69,4 +69,4 @@ internal sealed record EspnSubstitutionPartner(EspnAthlete? Athlete);
 
 internal sealed record EspnPlayerStat(string? Name, double? Value);
 
-internal sealed record EspnPlayerPlay(EspnClock? Clock, bool Substitution);
+internal sealed record EspnPlayerPlay(EspnClock? Clock, bool Substitution, bool RedCard);

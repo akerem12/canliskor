@@ -2,6 +2,7 @@ using CanliSkor.Core.Abstractions;
 using CanliSkor.Core.Domain;
 using CanliSkor.Core.Options;
 using CanliSkor.Core.Polling;
+using CanliSkor.Core.Ratings;
 using CanliSkor.Core.Time;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,13 +14,14 @@ namespace CanliSkor.Core.Services;
 /// good for depends on the match: one poll interval while it is live, so any number of viewers cost one provider
 /// call per interval; longer before kickoff and after full time. A cached detail is also stale as soon as the
 /// poller's scoreboard shows a different score or status for the match, so a pushed goal is followed by a detail
-/// that has the scorer. Shares <see cref="OnDemandFetchGate"/> with
+/// that has the scorer. Player ratings are computed once, when a detail is loaded. Shares <see cref="OnDemandFetchGate"/> with
 /// browsing, so all request-driven provider calls together still run one at a time.
 /// </summary>
 public sealed partial class MatchDetailService(
     IFootballDataProvider provider,
     IMatchStore store,
     OnDemandFetchGate gate,
+    LineupRater rater,
     IOptionsMonitor<FootballOptions> footballOptions,
     IOptionsMonitor<PollingOptions> pollingOptions,
     TimeProvider timeProvider,
@@ -73,7 +75,7 @@ public sealed partial class MatchDetailService(
                     return null;
                 }
 
-                var snapshot = new MatchDetailSnapshot(detail, timeProvider.GetUtcNow());
+                var snapshot = new MatchDetailSnapshot(rater.Rate(detail), timeProvider.GetUtcNow());
                 await store.SetDetailAsync(snapshot, cancellationToken);
                 return snapshot;
             }
