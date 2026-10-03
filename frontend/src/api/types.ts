@@ -39,6 +39,38 @@ export interface MatchDay {
   leagues: LeagueMatches[]
 }
 
+export type MatchEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'RedCard' | 'Substitution'
+
+export interface MatchEvent {
+  type: MatchEventType
+  /** e.g. "57'" or "45'+2'". */
+  clock: string
+  /** The team the event counts for; an own goal counts for the team that benefits. */
+  side: 'Home' | 'Away'
+  /** Scorer, booked player, or the player coming on. */
+  player: string | null
+  /** Assist provider, or the player going off. */
+  relatedPlayer: string | null
+}
+
+export type MatchStatType =
+  | 'Possession' | 'Shots' | 'ShotsOnTarget' | 'Corners' | 'Fouls' | 'Offsides' | 'YellowCards' | 'RedCards' | 'Saves'
+
+export interface MatchStat {
+  type: MatchStatType
+  /** Possession is a percentage; everything else a count. */
+  home: number
+  away: number
+}
+
+export interface MatchDetail {
+  match: Match
+  events: MatchEvent[]
+  /** Empty before kickoff. */
+  stats: MatchStat[]
+  lastUpdatedUtc: string
+}
+
 /** SignalR "MatchUpdated" payload. Both flags false means only the clock moved. */
 export interface MatchUpdatedMessage {
   match: Match

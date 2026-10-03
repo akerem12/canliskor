@@ -24,7 +24,7 @@ internal static class EspnScoreboardMapper
         return new LeagueScoreboard(league, date, matches);
     }
 
-    private static Match? MapEvent(EspnEvent e, string leagueCode)
+    internal static Match? MapEvent(EspnEvent e, string leagueCode)
     {
         var competitors = e.Competitions?.FirstOrDefault()?.Competitors;
         var home = competitors?.FirstOrDefault(c => c.HomeAway == "home");
@@ -73,12 +73,16 @@ internal static class EspnScoreboardMapper
         };
     }
 
-    private static Team MapTeam(EspnTeam team) => new(
-        Id: team.Id ?? string.Empty,
-        Name: team.DisplayName ?? string.Empty,
-        ShortName: team.ShortDisplayName ?? team.DisplayName ?? string.Empty,
-        // Some newly promoted teams come with logo: "" — normalize to null so clients can show a fallback.
-        LogoUrl: string.IsNullOrWhiteSpace(team.Logo) ? null : team.Logo);
+    private static Team MapTeam(EspnTeam team)
+    {
+        var logo = team.Logo ?? team.Logos?.FirstOrDefault()?.Href;
+        return new(
+            Id: team.Id ?? string.Empty,
+            Name: team.DisplayName ?? string.Empty,
+            ShortName: team.ShortDisplayName ?? team.DisplayName ?? string.Empty,
+            // Some newly promoted teams come with logo: "" — normalize to null so clients can show a fallback.
+            LogoUrl: string.IsNullOrWhiteSpace(logo) ? null : logo);
+    }
 
     private static Score? ParseScore(string? home, string? away) =>
         int.TryParse(home, CultureInfo.InvariantCulture, out var h) && int.TryParse(away, CultureInfo.InvariantCulture, out var a)

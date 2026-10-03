@@ -1,4 +1,4 @@
-import type { LeagueMatches, MatchDay } from './types'
+import type { LeagueMatches, MatchDay, MatchDetail } from './types'
 
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url)
@@ -13,3 +13,6 @@ export const getLeagues = () => getJson<string[]>('/api/leagues')
 export const getDay = (date?: string) => getJson<MatchDay>(date ? `/api/matches?date=${date}` : '/api/matches')
 /** Includes yesterday's games still running past midnight, which /api/matches doesn't. */
 export const getLive = () => getJson<LeagueMatches[]>('/api/matches/live')
+/** Goals, cards, substitutions and team statistics of one match. */
+export const getMatchDetail = (leagueCode: string, matchId: string) =>
+  getJson<MatchDetail>(`/api/leagues/${encodeURIComponent(leagueCode)}/matches/${encodeURIComponent(matchId)}`)

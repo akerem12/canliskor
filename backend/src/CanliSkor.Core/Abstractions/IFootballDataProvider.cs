@@ -10,6 +10,10 @@ public interface IFootballDataProvider
 {
     /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
     Task<LeagueScoreboard> GetScoreboardAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default);
+
+    /// <returns>Null if the provider doesn't know a match with this id in this league.</returns>
+    /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
+    Task<MatchDetail?> GetMatchDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

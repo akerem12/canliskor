@@ -30,6 +30,7 @@ internal static class TestData
 internal sealed class FakeMatchStore : IMatchStore
 {
     private readonly Dictionary<(string, DateOnly), ScoreboardSnapshot> _snapshots = new();
+    private readonly Dictionary<(string, string), MatchDetailSnapshot> _details = new();
 
     public Task<ScoreboardSnapshot?> GetAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default) =>
         Task.FromResult(_snapshots.GetValueOrDefault((leagueCode, date)));
@@ -39,17 +40,45 @@ internal sealed class FakeMatchStore : IMatchStore
         _snapshots[(snapshot.Scoreboard.League.Code, snapshot.Scoreboard.Date)] = snapshot;
         return Task.CompletedTask;
     }
+
+    public Task<MatchDetailSnapshot?> GetDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_details.GetValueOrDefault((leagueCode, matchId)));
+
+    public Task SetDetailAsync(MatchDetailSnapshot snapshot, CancellationToken cancellationToken = default)
+    {
+        _details[(snapshot.Detail.Match.LeagueCode, snapshot.Detail.Match.Id)] = snapshot;
+        return Task.CompletedTask;
+    }
 }
 
-/// <summary>Returns canned scoreboards; anything not configured is a provider failure.</summary>
+/// <summary>
+/// Returns canned scoreboards and match details. A scoreboard that isn't configured is a provider failure;
+/// a detail that isn't configured is an unknown match, unless <see cref="FailDetails"/> is set.
+/// </summary>
 internal sealed class FakeFootballDataProvider : IFootballDataProvider
 {
     private readonly Dictionary<(string, DateOnly), LeagueScoreboard> _scoreboards = new();
+    private readonly Dictionary<(string, string), MatchDetail> _details = new();
 
     public List<(string LeagueCode, DateOnly Date)> Requests { get; } = [];
 
+    public List<(string LeagueCode, string MatchId)> DetailRequests { get; } = [];
+
+    public bool FailDetails { get; set; }
+
     public void Returns(LeagueScoreboard scoreboard) =>
         _scoreboards[(scoreboard.League.Code, scoreboard.Date)] = scoreboard;
+
+    public void Returns(MatchDetail detail) =>
+        _details[(detail.Match.LeagueCode, detail.Match.Id)] = detail;
+
+    public Task<MatchDetail?> GetMatchDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default)
+    {
+        DetailRequests.Add((leagueCode, matchId));
+        return FailDetails
+            ? throw new FootballDataProviderException($"Detail of {matchId} unavailable")
+            : Task.FromResult(_details.GetValueOrDefault((leagueCode, matchId)));
+    }
 
     public Task<LeagueScoreboard> GetScoreboardAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default)
     {

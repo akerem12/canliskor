@@ -24,23 +24,35 @@ function TeamName({ team, align }: { team: Team; align: 'home' | 'away' }) {
   )
 }
 
-export function MatchRow({ match, justScored }: { match: Match; justScored: boolean }) {
+interface Props {
+  match: Match
+  justScored: boolean
+  onOpen: (match: Match) => void
+}
+
+export function MatchRow({ match, justScored, onOpen }: Props) {
   const live = isInPlay(match.status)
   const minute = match.status === 'Live' ? (match.clock ?? 'LIVE') : statusLabel[match.status]
 
   return (
-    <li className={['match', live && 'match--live', match.status !== 'Scheduled' && 'match--started', justScored && 'match--goal'].filter(Boolean).join(' ')}>
-      <span className="match__time">{formatTime(match.kickoff)}</span>
-      <span className="match__minute">
-        {match.status === 'Live' && <span className="pulse" aria-hidden />}
-        {minute}
-      </span>
-      <TeamName team={match.homeTeam} align="home" />
-      <span className="match__score" aria-label={match.score ? `${match.score.home} to ${match.score.away}` : 'not started'}>
-        {match.score ? `${match.score.home} - ${match.score.away}` : '-'}
-      </span>
-      <TeamName team={match.awayTeam} align="away" />
-      {justScored && <span className="match__goal-badge">GOAL</span>}
+    <li>
+      <button
+        className={['match', live && 'match--live', match.status !== 'Scheduled' && 'match--started', justScored && 'match--goal'].filter(Boolean).join(' ')}
+        onClick={() => onOpen(match)}
+        aria-haspopup="dialog"
+      >
+        <span className="match__time">{formatTime(match.kickoff)}</span>
+        <span className="match__minute">
+          {match.status === 'Live' && <span className="pulse" aria-hidden />}
+          {minute}
+        </span>
+        <TeamName team={match.homeTeam} align="home" />
+        <span className="match__score" aria-label={match.score ? `${match.score.home} to ${match.score.away}` : 'not started'}>
+          {match.score ? `${match.score.home} - ${match.score.away}` : '-'}
+        </span>
+        <TeamName team={match.awayTeam} align="away" />
+        {justScored && <span className="match__goal-badge">GOAL</span>}
+      </button>
     </li>
   )
 }

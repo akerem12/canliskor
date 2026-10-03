@@ -69,6 +69,35 @@ public class EspnFootballDataProviderTests
             () => provider.GetScoreboardAsync("tur.1", new DateOnly(2026, 9, 20), cts.Token));
     }
 
+    [Fact]
+    public async Task Requests_the_match_summary()
+    {
+        var handler = new StubHandler(_ => Json(FixtureLoader.ReadJson("summary-esp1-finished.json")));
+
+        var detail = await CreateProvider(handler).GetMatchDetailAsync("esp.1", "401882858");
+
+        Assert.Equal("https://espn.test/soccer/esp.1/summary?event=401882858", Assert.Single(handler.RequestUris).ToString());
+        Assert.Equal("401882858", detail?.Match.Id);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    public async Task Unknown_match_is_null(HttpStatusCode status)
+    {
+        var provider = CreateProvider(new StubHandler(_ => new HttpResponseMessage(status)));
+
+        Assert.Null(await provider.GetMatchDetailAsync("esp.1", "1"));
+    }
+
+    [Fact]
+    public async Task Wraps_summary_server_errors_in_provider_exception()
+    {
+        var provider = CreateProvider(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)));
+
+        await Assert.ThrowsAsync<FootballDataProviderException>(() => provider.GetMatchDetailAsync("esp.1", "1"));
+    }
+
     private static EspnFootballDataProvider CreateProvider(HttpMessageHandler handler) =>
         new(new HttpClient(handler) { BaseAddress = BaseAddress });
 

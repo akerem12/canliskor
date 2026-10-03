@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using CanliSkor.Core.Abstractions;
@@ -34,6 +35,36 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
             .ToList();
 
         return sameDay with { Matches = matches };
+    }
+
+    public async Task<MatchDetail?> GetMatchDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default)
+    {
+        var url = $"{Uri.EscapeDataString(leagueCode)}/summary?event={Uri.EscapeDataString(matchId)}";
+
+        EspnSummaryResponse? response;
+        try
+        {
+            using var httpResponse = await httpClient.GetAsync(url, cancellationToken);
+            // ESPN answers an unknown event id with 404 (and some malformed ids with 400).
+            if (httpResponse.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest)
+            {
+                return null;
+            }
+
+            httpResponse.EnsureSuccessStatusCode();
+            response = await httpResponse.Content.ReadFromJsonAsync<EspnSummaryResponse>(JsonOptions, cancellationToken);
+        }
+        catch (Exception ex) when ((ex is HttpRequestException or JsonException or TaskCanceledException) && !cancellationToken.IsCancellationRequested)
+        {
+            throw new FootballDataProviderException($"Failed to fetch ESPN summary for match '{matchId}' in '{leagueCode}'.", ex);
+        }
+
+        if (response is null)
+        {
+            throw new FootballDataProviderException($"ESPN returned an empty summary for match '{matchId}' in '{leagueCode}'.");
+        }
+
+        return EspnSummaryMapper.Map(response, leagueCode);
     }
 
     /// <param name="espnDate">The date in ESPN's (US Eastern) calendar.</param>

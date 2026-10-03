@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<ScoreboardPoller>();
         services.AddScoped<MatchQueryService>();
         services.AddScoped<OnDemandScoreboardLoader>();
+        services.AddScoped<MatchDetailService>();
         services.AddSingleton<OnDemandFetchGate>();
 
         return services;

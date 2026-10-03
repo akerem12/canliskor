@@ -1,8 +1,14 @@
-import type { LeagueMatches } from '../api/types'
+import type { LeagueMatches, Match } from '../api/types'
 import { formatTime } from '../time'
 import { MatchRow } from './MatchRow'
 
-export function LeagueSection({ league, recentGoals }: { league: LeagueMatches; recentGoals: ReadonlySet<string> }) {
+interface Props {
+  league: LeagueMatches
+  recentGoals: ReadonlySet<string>
+  onOpenMatch: (match: Match) => void
+}
+
+export function LeagueSection({ league, recentGoals, onOpenMatch }: Props) {
   return (
     <section className="league">
       <header className="league__header">
@@ -13,7 +19,7 @@ export function LeagueSection({ league, recentGoals }: { league: LeagueMatches; 
       </header>
       <ul className="league__matches">
         {league.matches.map(match => (
-          <MatchRow key={match.id} match={match} justScored={recentGoals.has(match.id)} />
+          <MatchRow key={match.id} match={match} justScored={recentGoals.has(match.id)} onOpen={onOpenMatch} />
         ))}
       </ul>
     </section>

@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 7: browse a week back and ahead).
+> Status: **work in progress** (step 8: match details — goals, cards, substitutions, statistics).
 
 ## Architecture
 
@@ -19,9 +19,9 @@ backend/
     CanliSkor.Core.Tests/             polling interval, poller and query logic
     CanliSkor.Infrastructure.Tests/   mapping tests against real, saved ESPN responses
     CanliSkor.Api.Tests/              in-memory integration tests of the HTTP contract
-frontend/                      React + TypeScript (Vite): today's matches, live tab, goal highlights
+frontend/                      React + TypeScript (Vite): today's matches, live tab, goal highlights, match details
   src/api/                     REST client + types mirroring the API contracts
-  src/live/                    SignalR hook + pure state reducer (unit-tested with Vitest)
+  src/live/                    SignalR hook, match detail hook + pure state reducer (unit-tested with Vitest)
 ```
 
 Dependencies point inward: `Api → Infrastructure → Core`. ESPN's API is unofficial and undocumented, so it sits behind
@@ -63,6 +63,27 @@ loaded on first request by `OnDemandScoreboardLoader` and cached in the same sto
 - if ESPN fails, the last cached copy is served.
 
 The frontend keeps the selected day in the URL (`/?date=2026-10-10`), so links can be shared.
+
+### Match details
+
+Clicking a match opens its goals (with assists, penalties and own goals), cards, substitutions and team statistics.
+They come from ESPN's match summary, loaded on request by `MatchDetailService` and cached in the store. How long
+a cached detail is used depends on the match:
+
+| Match | Refetched after |
+|---|---|
+| Live (or past kickoff) | `LiveInterval` (30 s): any number of viewers cost one ESPN call per interval |
+| Scheduled | 30 minutes |
+| Finished, postponed, cancelled | 6 hours (only late corrections can change) |
+
+A cached detail is also stale as soon as the poller's scoreboard shows a different score or status for the match
+(after a 5 s minimum, as ESPN's summary can lag its scoreboard), so a pushed goal is followed by a detail that has
+the scorer. Detail fetches share the one-at-a-time gate with browsing. Only followed leagues and numeric ids are
+accepted, and ESPN's summary is checked to belong to the requested league (ESPN serves any match under any league's URL).
+
+The dialog reloads its detail when SignalR pushes a score or status change for that match, and every 30 s while the
+match is in play (cards and substitutions aren't pushed). The open match is kept in the URL
+(`/?league=esp.1&match=401882858`); on a phone, Back closes it.
 
 ## Data source
 
@@ -152,10 +173,18 @@ merged in from `/live`.
 | `GET /api/matches` | Today's matches (Istanbul date), grouped by league |
 | `GET /api/matches?date=2026-10-10` | Another day, up to 7 days back or ahead (else `400`) |
 | `GET /api/matches/live` | Matches currently in play |
+| `GET /api/leagues/{code}/matches/{id}` | One match with its events and statistics (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings
 (`Scheduled`, `Live`, `HalfTime`, `Finished`, `Postponed`, `Cancelled`), and `score` is `null` before kickoff.
 Each league includes `lastUpdatedUtc` so clients can detect stale data.
+
+A match detail is `{ match, events, stats, lastUpdatedUtc }`. Events are in match order:
+`{ type, clock, side, player, relatedPlayer }` with `type` one of `Goal`, `PenaltyGoal`, `OwnGoal`, `YellowCard`,
+`RedCard`, `Substitution`; `side` (`Home`/`Away`) is the team the event counts for, so an own goal is on the side of
+the team that benefits. `relatedPlayer` is the assist provider or the player going off. `stats` are
+`{ type, home, away }` for `Possession` (percent), `Shots`, `ShotsOnTarget`, `Corners`, `Fouls`, `Offsides`,
+`YellowCards`, `RedCards`, `Saves`; empty before kickoff.
 
 ### Real-time: SignalR hub `/hubs/live-scores`
 

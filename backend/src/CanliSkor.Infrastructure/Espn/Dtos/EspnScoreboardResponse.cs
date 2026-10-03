@@ -23,4 +23,8 @@ internal sealed record EspnCompetition(IReadOnlyList<EspnCompetitor>? Competitor
 
 internal sealed record EspnCompetitor(string? HomeAway, string? Score, EspnTeam? Team);
 
-internal sealed record EspnTeam(string? Id, string? DisplayName, string? ShortDisplayName, string? Logo);
+/// <param name="Logo">Scoreboard responses carry a single logo URL.</param>
+/// <param name="Logos">Match summaries carry a list instead (default first, then dark variants).</param>
+internal sealed record EspnTeam(string? Id, string? DisplayName, string? ShortDisplayName, string? Logo, IReadOnlyList<EspnLogo>? Logos = null);
+
+internal sealed record EspnLogo(string? Href);

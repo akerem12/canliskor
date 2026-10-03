@@ -13,4 +13,7 @@ internal static class FixtureLoader
 
     public static EspnScoreboardResponse Deserialize(string json) =>
         JsonSerializer.Deserialize<EspnScoreboardResponse>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+
+    public static EspnSummaryResponse LoadSummary(string fileName) =>
+        JsonSerializer.Deserialize<EspnSummaryResponse>(ReadJson(fileName), new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
 }

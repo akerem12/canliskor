@@ -99,6 +99,39 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Get_match_detail_returns_events_and_stats()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/matches/77");
+        var root = json.RootElement;
+
+        Assert.Equal("77", root.GetProperty("match").GetProperty("id").GetString());
+        Assert.Equal("2026-10-09T20:00:00+03:00", root.GetProperty("match").GetProperty("kickoff").GetString());
+
+        var goal = Assert.Single(root.GetProperty("events").EnumerateArray());
+        Assert.Equal("PenaltyGoal", goal.GetProperty("type").GetString());
+        Assert.Equal("Home", goal.GetProperty("side").GetString());
+        Assert.Equal("12'", goal.GetProperty("clock").GetString());
+        Assert.Equal("Icardi", goal.GetProperty("player").GetString());
+        Assert.Equal(JsonValueKind.Null, goal.GetProperty("relatedPlayer").ValueKind);
+
+        var stat = Assert.Single(root.GetProperty("stats").EnumerateArray());
+        Assert.Equal("Possession", stat.GetProperty("type").GetString());
+        Assert.Equal(61.5, stat.GetProperty("home").GetDouble());
+        Assert.Equal(Now, root.GetProperty("lastUpdatedUtc").GetDateTimeOffset());
+    }
+
+    [Theory]
+    [InlineData("/api/leagues/tur.1/matches/404")] // unknown to the provider
+    [InlineData("/api/leagues/ger.1/matches/77")]  // league not followed
+    [InlineData("/api/leagues/tur.1/matches/abc")] // not an ESPN id
+    public async Task Get_match_detail_returns_404_for_unknown_matches(string url)
+    {
+        var response = await _client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Get_leagues_returns_followed_league_codes_in_order()
     {
         using var json = await GetJson("/api/leagues");
@@ -130,9 +163,18 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 }
 
-/// <summary>Any day: one finished match for tur.1, nothing for the other leagues.</summary>
+/// <summary>Any day: one finished match for tur.1, nothing for the other leagues. Details: only match 77 of tur.1.</summary>
 internal sealed class StubFootballDataProvider : IFootballDataProvider
 {
+    public Task<MatchDetail?> GetMatchDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(leagueCode != "tur.1" || matchId != "77" ? null : new MatchDetail(
+            new Match("77", leagueCode, new DateTimeOffset(2026, 10, 9, 17, 0, 0, TimeSpan.Zero), MatchStatus.Live, "20'",
+                new Team("432", "Galatasaray", "Galatasaray", null),
+                new Team("436", "Fenerbahce", "Fenerbahce", null),
+                new Score(1, 0)),
+            [new MatchEvent(MatchEventType.PenaltyGoal, "12'", TeamSide.Home, "Icardi", null)],
+            [new MatchStat(MatchStatType.Possession, 61.5, 38.5)]));
+
     public Task<LeagueScoreboard> GetScoreboardAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default) =>
         Task.FromResult(new LeagueScoreboard(new League(leagueCode, leagueCode), date, leagueCode != "tur.1" ? [] :
         [
