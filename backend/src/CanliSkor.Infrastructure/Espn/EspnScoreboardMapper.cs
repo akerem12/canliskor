@@ -75,7 +75,7 @@ internal static class EspnScoreboardMapper
         };
     }
 
-    private static Team MapTeam(EspnTeam team)
+    internal static Team MapTeam(EspnTeam team)
     {
         var logo = team.Logo ?? team.Logos?.FirstOrDefault()?.Href;
         return new(

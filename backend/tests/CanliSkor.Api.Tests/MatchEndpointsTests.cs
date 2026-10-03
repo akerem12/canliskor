@@ -172,6 +172,29 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Search_finds_teams_by_name_ignoring_accents()
+    {
+        using var json = await GetJson("/api/teams/search?q=besik");
+
+        var result = Assert.Single(json.RootElement.EnumerateArray());
+        Assert.Equal("Beşiktaş", result.GetProperty("team").GetProperty("name").GetString());
+        Assert.Equal("1895", result.GetProperty("team").GetProperty("id").GetString());
+        Assert.Equal("tur.1", result.GetProperty("league").GetProperty("code").GetString());
+        Assert.Equal("Turkish Super Lig", result.GetProperty("league").GetProperty("name").GetString());
+    }
+
+    [Theory]
+    [InlineData("/api/teams/search")]
+    [InlineData("/api/teams/search?q=b")]
+    [InlineData("/api/teams/search?q=zzzz")]
+    public async Task Search_without_a_usable_query_or_a_match_is_empty(string url)
+    {
+        using var json = await GetJson(url);
+
+        Assert.Equal(0, json.RootElement.GetArrayLength());
+    }
+
+    [Fact]
     public async Task Get_league_fixtures_returns_only_matches_still_to_play()
     {
         using var json = await GetJson("/api/leagues/tur.1/fixtures");
@@ -323,6 +346,10 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
         [
             new StandingsGroup("2026/2027", [new StandingsRow(1, Galatasaray, 6, 5, 1, 0, 14, 3, 11, 16, "Champions League", "#81d6ac")]),
         ]));
+
+    public Task<LeagueTeams?> GetLeagueTeamsAsync(string leagueCode, CancellationToken cancellationToken = default) =>
+        Task.FromResult(leagueCode != "tur.1" ? null : new LeagueTeams(leagueCode,
+            [Galatasaray, new Team("1895", "Beşiktaş", "Beşiktaş", null)]));
 
     public Task<LeagueFixtures?> GetLeagueFixturesAsync(string leagueCode, DateOnly from, CancellationToken cancellationToken = default) =>
         Task.FromResult(leagueCode != "tur.1" ? null : new LeagueFixtures(leagueCode, "Turkish Super Lig",

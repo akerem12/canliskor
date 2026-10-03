@@ -32,6 +32,9 @@ public sealed partial class LeagueInfoService(
     /// <summary>A match that kicked off this long ago still counts as coming up, so one in play doesn't vanish from the list.</summary>
     public static readonly TimeSpan UpcomingGrace = TimeSpan.FromHours(3);
 
+    /// <summary>Who plays in a league changes once a season.</summary>
+    public static readonly TimeSpan TeamsRefreshAfter = TimeSpan.FromHours(24);
+
     /// <summary>Followed leagues in display order, with the names the provider gave on today's scoreboards.</summary>
     public async Task<IReadOnlyList<League>> GetLeaguesAsync(CancellationToken cancellationToken = default)
     {
@@ -45,6 +48,39 @@ public sealed partial class LeagueInfoService(
         }
 
         return leagues;
+    }
+
+    /// <summary>
+    /// Teams of the followed leagues whose name contains <paramref name="query"/>. The first search loads every
+    /// league's team list (one provider call each, kept for a day); after that searching costs nothing.
+    /// A league whose list can't be loaded is left out rather than failing the search.
+    /// </summary>
+    public async Task<IReadOnlyList<TeamSearchResult>> SearchTeamsAsync(string? query, CancellationToken cancellationToken = default)
+    {
+        if (TeamSearch.Normalize(query).Length < TeamSearch.MinQueryLength)
+        {
+            return [];
+        }
+
+        var leagues = new List<(League, IReadOnlyList<Team>)>();
+        foreach (var league in await GetLeaguesAsync(cancellationToken))
+        {
+            try
+            {
+                var teams = await GetAsync(
+                    $"teams:{league.Code}", league.Code, TeamsRefreshAfter, ct => provider.GetLeagueTeamsAsync(league.Code, ct), cancellationToken);
+                if (teams is not null)
+                {
+                    leagues.Add((league, teams.Value.Teams));
+                }
+            }
+            catch (FootballDataProviderException ex)
+            {
+                LogLoadFailed(ex, $"teams:{league.Code}");
+            }
+        }
+
+        return TeamSearch.Find(query, leagues);
     }
 
     /// <returns>Null if the league isn't followed or the provider doesn't know it.</returns>
@@ -132,6 +168,6 @@ public sealed partial class LeagueInfoService(
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Loading {Key} failed; serving the cached copy")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Loading {Key} failed; going on with what is cached, if anything")]
     private partial void LogLoadFailed(Exception exception, string key);
 }

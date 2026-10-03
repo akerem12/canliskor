@@ -4,6 +4,7 @@ import { FavoriteButton } from '../favorites/FavoriteButton'
 import type { Route } from '../route'
 import { EmptyState, Skeleton } from './common'
 import { StandingsTable } from './StandingsTable'
+import { TeamSearchBox } from './TeamSearchBox'
 
 /** Every followed competition; each leads to its table, and from there to its teams. */
 export function LeaguesPage({ onNavigate }: { onNavigate: (route: Route) => void }) {
@@ -12,7 +13,8 @@ export function LeaguesPage({ onNavigate }: { onNavigate: (route: Route) => void
   return (
     <main className="page" aria-label="Leagues">
       <h2 className="page__title">Leagues</h2>
-      <p className="page__intro">Pick a competition to see its table and teams, also on days without matches.</p>
+      <TeamSearchBox onNavigate={onNavigate} />
+      <p className="page__intro">Or pick a competition to see its table and teams, also on days without matches.</p>
 
       {competitions.loading && <Skeleton rows={8} height={44} />}
       {competitions.error && <EmptyState icon="🏆" title="The leagues can't be loaded right now." onRetry={competitions.retry} />}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { TeamAlertsSwitch } from '../alerts/AlertControls'
 import { getCompetitions, getLeagueFixtures, getTeam } from '../api/http'
 import type { LeagueFixtures, Team, TeamProfile } from '../api/types'
 import { isInPlay } from '../api/types'
@@ -113,6 +114,8 @@ export function FavoritesPage({ onNavigate }: { onNavigate: (route: Route) => vo
   return (
     <main className="page" aria-label="Favourites">
       <h2 className="page__title">Favourites</h2>
+
+      <TeamAlertsSwitch teamCount={favorites.teams.length} />
 
       <QuickBar favorites={favorites} filter={activeFilter} onPick={pick} onNavigate={onNavigate} />
 

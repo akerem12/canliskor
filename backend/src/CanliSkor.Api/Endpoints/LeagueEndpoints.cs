@@ -38,6 +38,11 @@ public static class LeagueEndpoints
             (await leagues.GetLeaguesAsync(ct)).Select(l => new LeagueResponse(l.Code, l.Name)).ToList())
             .WithTags("Leagues");
 
+        // Teams of the followed leagues by name: ?q=gala. Fewer than two characters finds nothing.
+        app.MapGet("/api/teams/search", async (string? q, LeagueInfoService leagues, CancellationToken ct) =>
+            (await leagues.SearchTeamsAsync(q, ct)).Select(r => r.ToResponse()).ToList())
+            .WithTags("Teams");
+
         // The league table. Competitions without one (friendlies) answer with no groups.
         app.MapGet("/api/leagues/{code}/standings", async Task<Results<Ok<StandingsResponse>, NotFound, ProblemHttpResult>> (
             string code, LeagueInfoService leagues, CancellationToken ct) =>

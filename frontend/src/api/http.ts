@@ -1,4 +1,4 @@
-import type { Competition, LeagueFixtures, LeagueMatches, MatchDay, MatchDetail, Squad, Standings, TeamProfile } from './types'
+import type { Competition, LeagueFixtures, LeagueMatches, MatchDay, MatchDetail, Squad, Standings, TeamProfile, TeamSearchResult } from './types'
 
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url)
@@ -30,3 +30,5 @@ export const getTeam = (leagueCode: string, teamId: string) =>
 /** A competition's matches still to be played, this month and next. */
 export const getLeagueFixtures = (leagueCode: string) =>
   getJson<LeagueFixtures>(`/api/leagues/${encodeURIComponent(leagueCode)}/fixtures`)
+/** Teams of the followed leagues whose name contains the query (at least two characters). */
+export const searchTeams = (query: string) => getJson<TeamSearchResult[]>(`/api/teams/search?q=${encodeURIComponent(query)}`)

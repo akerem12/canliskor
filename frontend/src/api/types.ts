@@ -178,6 +178,12 @@ export interface TeamProfile {
   lastUpdatedUtc: string
 }
 
+/** A team found by name, with the league it was found in (its page opens under that one). */
+export interface TeamSearchResult {
+  league: Competition
+  team: Team
+}
+
 export interface LeagueFixtures {
   leagueCode: string
   leagueName: string

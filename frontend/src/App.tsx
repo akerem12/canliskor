@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { isInPlay } from './api/types'
 import { Skeleton, EmptyState } from './components/common'
 import { ConnectionBadge } from './components/ConnectionBadge'
@@ -6,8 +6,11 @@ import { DateNav, MaxDaysAway } from './components/DateNav'
 import { LeaguePage, LeaguesPage } from './components/LeaguePages'
 import { LeagueSection } from './components/LeagueSection'
 import { MatchPage } from './components/MatchPage'
+import { MatchRow } from './components/MatchRow'
 import { TeamPage } from './components/TeamPage'
+import { AlertsContext, useAlertsController } from './alerts/useAlerts'
 import { FavoritesPage } from './favorites/FavoritesPage'
+import { pinFavorites } from './favorites/pinned'
 import { useFavorites } from './favorites/useFavorites'
 import { useLiveScores } from './live/useLiveScores'
 import type { Route } from './route'
@@ -74,16 +77,21 @@ export default function App() {
     setDayOffsetState(offset)
     writeOffsetToUrl(offset)
   }
-  const { leagues, loaded, status, date, recentGoals, error, watchMatch } = useLiveScores(dayOffset)
   const [filter, setFilter] = useState<Filter>('all')
   const { route, navigate, back } = useRoute()
 
   const { favorites } = useFavorites()
   const favoriteCount = favorites.teams.length + favorites.leagues.length
+  const favoriteTeamIds = useMemo(() => new Set(favorites.teams.map(t => t.teamId)), [favorites.teams])
+
+  // Alerts listen to every live update; a click on one opens the match.
+  const alerts = useAlertsController(favoriteTeamIds, match => navigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id }))
+  const { leagues, loaded, status, date, recentGoals, error, watchMatch } = useLiveScores(dayOffset, alerts.handleUpdate)
 
   const leagueOf = (code: string) => leagues.find(l => l.code === code)
 
   return (
+    <AlertsContext.Provider value={alerts.value}>
     <div className="app">
       <header className="topbar">
         <div className="topbar__title">
@@ -161,6 +169,7 @@ export default function App() {
 
       <footer className="footer">Times in Istanbul time · Data: ESPN</footer>
     </div>
+    </AlertsContext.Provider>
   )
 }
 
@@ -187,7 +196,10 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
     .map(l => ({ ...l, matches: l.matches.filter(m => isInPlay(m.status)) }))
     .filter(l => l.matches.length > 0)
   const liveCount = liveLeagues.reduce((n, l) => n + l.matches.length, 0)
-  const shown = effectiveFilter === 'live' ? liveLeagues : leagues
+  // Favourite teams' matches on top, favourite leagues first.
+  const { favorites } = useFavorites()
+  const pinned = pinFavorites(effectiveFilter === 'live' ? liveLeagues : leagues, favorites)
+  const shown = pinned.leagues
 
   const emptyTitle = effectiveFilter === 'live'
     ? 'No matches in play right now.'
@@ -224,9 +236,28 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
             />
           </div>
         ) : (
-          shown.map(league => (
-            <LeagueSection key={league.code} league={league} recentGoals={recentGoals} onNavigate={onNavigate} />
-          ))
+          <>
+            {pinned.teamMatches.length > 0 && (
+              <section className="league league--pinned" aria-label="Your teams">
+                <header className="league__header">
+                  <h2>★ Your teams</h2>
+                </header>
+                <ul className="league__matches">
+                  {pinned.teamMatches.map(match => (
+                    <MatchRow
+                      key={match.id}
+                      match={match}
+                      justScored={recentGoals.has(match.id)}
+                      onOpen={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
+            {shown.map(league => (
+              <LeagueSection key={league.code} league={league} recentGoals={recentGoals} onNavigate={onNavigate} />
+            ))}
+          </>
         )}
       </main>
     </>

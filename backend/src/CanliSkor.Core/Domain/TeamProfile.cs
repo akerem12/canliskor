@@ -44,6 +44,9 @@ public sealed record TeamProfile(
 /// <summary>A competition's matches around now: the ones this month and next, in kickoff order.</summary>
 public sealed record LeagueFixtures(string LeagueCode, string LeagueName, IReadOnlyList<Match> Matches);
 
+/// <summary>Every team that takes part in a competition this season.</summary>
+public sealed record LeagueTeams(string LeagueCode, IReadOnlyList<Team> Teams);
+
 /// <summary>Something loaded from the provider plus when we fetched it.</summary>
 public sealed record Timestamped<T>(T Value, DateTimeOffset FetchedAtUtc)
     where T : class;

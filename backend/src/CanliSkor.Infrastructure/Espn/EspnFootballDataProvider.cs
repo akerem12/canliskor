@@ -25,6 +25,9 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
     /// <summary>More than any league plays in a month; ESPN's default would cut a busy month short.</summary>
     private const int MonthLimit = 300;
 
+    /// <summary>More than any competition has teams (international friendlies: about 200).</summary>
+    private const int TeamsLimit = 500;
+
     /// <summary>
     /// ESPN files matches under their US Eastern date, so a 02:00 Istanbul kickoff (e.g. an evening game in Brazil)
     /// is listed under the previous day. An Istanbul day always lies within the previous and the same Eastern day,
@@ -68,6 +71,23 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         var response = await GetOrNullAsync<EspnStandingsResponse>(url, $"standings for '{leagueCode}'", cancellationToken);
 
         return response is null ? null : EspnTeamMapper.MapStandings(response, leagueCode);
+    }
+
+    public async Task<LeagueTeams?> GetLeagueTeamsAsync(string leagueCode, CancellationToken cancellationToken = default)
+    {
+        var url = $"{Uri.EscapeDataString(leagueCode)}/teams?limit={TeamsLimit}";
+        var response = await GetOrNullAsync<EspnTeamsResponse>(url, $"teams of '{leagueCode}'", cancellationToken);
+        if (response is null)
+        {
+            return null;
+        }
+
+        var teams = (response.Sports?.FirstOrDefault()?.Leagues?.FirstOrDefault()?.Teams ?? [])
+            .Where(t => !string.IsNullOrEmpty(t.Team?.Id) && !string.IsNullOrEmpty(t.Team.DisplayName))
+            .Select(t => EspnScoreboardMapper.MapTeam(t.Team!))
+            .ToList();
+
+        return new LeagueTeams(leagueCode, teams);
     }
 
     public async Task<LeagueFixtures?> GetLeagueFixturesAsync(string leagueCode, DateOnly from, CancellationToken cancellationToken = default)

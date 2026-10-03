@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig, major European and South American leagues, the UEFA Nations League and international friendlies.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 15: favourite teams and leagues).
+> Status: **work in progress** (step 16: match alerts, pinned favourites and team search).
 
 ## Architecture
 
@@ -141,9 +141,37 @@ both teams with crests, the stadium, and links to the match and to both teams. A
 favourite, narrows the list to that team or league. Without favourites the page explains how to pick some; if one
 favourite fails to load, the others are still shown and the page says which one is missing, with a retry.
 
+On the day's match list the matches of favourite teams are collected in a "Your teams" section on top, and
+favourite leagues come before the others (`pinned.ts`).
+
 The code is in `frontend/src/favorites`: `favorites.ts` (data and pure operations), `FavoritesProvider.tsx` and
 `useFavorites.ts` (state and storage), `FavoriteButton.tsx` (the star), `feed.ts` (merging and filtering matches)
 and `FavoritesPage.tsx`.
+
+### Match alerts
+
+Browser notifications for goals, kick-off, half time, the second half and full time (and a goal ruled out, a match
+postponed or cancelled). Two ways to get them:
+
+- **Favourite teams:** one switch on the Favourites page turns alerts on for every match of every favourite team.
+  Favourite leagues never alert, as that would be every goal of a league.
+- **A single match:** the bell on a match's page ("Notify me") turns alerts on for that match only, whoever plays.
+  It is forgotten a day after kickoff.
+
+Alerts are made in the browser from the `MatchUpdated` messages the page already receives over SignalR
+(`frontend/src/alerts`: `alerts.ts` decides what is news and words it, `useAlerts.ts` holds the settings in
+`localStorage` and shows the notification, `AlertControls.tsx` has the switch and the bell). So they need the
+browser's permission, which is asked for on first use, and they work while the site is open in a tab, also in the
+background, but not once the tab or the browser is closed: that would take a service worker and Web Push.
+Clicking a notification opens the match.
+
+### Team search
+
+"Leagues & teams" has a search box that finds any team of the followed leagues by name, ignoring case and accents
+("besik" finds Beşiktaş, "sao" finds São Paulo). `GET /api/teams/search?q=` answers from each league's team list
+(ESPN's `/{league}/teams`, one call per league on the first search, then cached for a day); a league whose list
+can't be loaded is left out. A club that plays in several followed competitions is listed once, under its domestic
+league, so its page opens with its league table. Names that start with the query come first; at most 20 results.
 
 ## Data source
 
@@ -245,6 +273,7 @@ merged in from `/live`.
 | `GET /api/leagues/{code}/matches/{id}` | One match with its events, statistics and line-ups (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 | `GET /api/competitions` | Followed leagues with their names: `[{ code, name }]` |
 | `GET /api/leagues/{code}/standings` | The league table: `{ leagueCode, leagueName, groups, lastUpdatedUtc }`; each group `{ name, rows }`, each row `{ rank, team, played, wins, draws, losses, goalsFor, goalsAgainst, goalDifference, points, note, noteColor }`. No groups if the competition has no table |
+| `GET /api/teams/search?q=gala` | Teams whose name contains the query (two characters or more): `[{ league: { code, name }, team }]` |
 | `GET /api/leagues/{code}/fixtures` | The league's matches still to be played, this month and next, soonest first: `{ leagueCode, leagueName, matches, lastUpdatedUtc }` (cached 30 minutes) |
 | `GET /api/leagues/{code}/teams/{teamId}` | A team: `{ team, isNationalTeam, standingSummary, stadium, stadiumCity, recentMatches, upcomingMatches, competitions, lastUpdatedUtc }`. Matches have the same shape as in `/api/matches` and cover every competition the team plays in; `competitions` names them (`[{ code, name }]`) |
 | `GET /api/leagues/{code}/teams/{teamId}/squad` | A team's squad: `{ teamId, teamName, players, lastUpdatedUtc }`, each player `{ id, name, jersey, position, age, nationality }` (`404` if unknown, `503` if ESPN is down and nothing is cached) |

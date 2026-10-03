@@ -1,4 +1,5 @@
 using CanliSkor.Core.Domain;
+using CanliSkor.Core.Services;
 using CanliSkor.Core.Time;
 
 namespace CanliSkor.Api.Contracts;
@@ -100,6 +101,9 @@ public sealed record SquadPlayerResponse(string Id, string Name, string? Jersey,
 
 public sealed record LeagueResponse(string Code, string Name);
 
+/// <param name="League">The league the team was found in; its page opens under this one.</param>
+public sealed record TeamSearchResultResponse(LeagueResponse League, TeamResponse Team);
+
 /// <param name="Groups">One for a plain league, several for group stages, none if the competition has no table.</param>
 /// <param name="LastUpdatedUtc">When the table was fetched from the data source.</param>
 public sealed record StandingsResponse(string LeagueCode, string LeagueName, IReadOnlyList<StandingsGroupResponse> Groups, DateTimeOffset LastUpdatedUtc);
@@ -187,6 +191,10 @@ public static class ContractMappings
                 r.Rank, ToResponse(r.Team), r.Played, r.Wins, r.Draws, r.Losses,
                 r.GoalsFor, r.GoalsAgainst, r.GoalDifference, r.Points, r.Note, r.NoteColor)).ToList())).ToList(),
         entry.FetchedAtUtc);
+
+    public static TeamSearchResultResponse ToResponse(this TeamSearchResult result) => new(
+        new LeagueResponse(result.League.Code, result.League.Name),
+        ToResponse(result.Team));
 
     public static LeagueFixturesResponse ToResponse(this Timestamped<LeagueFixtures> entry) => new(
         entry.Value.LeagueCode,

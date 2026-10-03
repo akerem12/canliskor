@@ -2,7 +2,7 @@ import { HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/s
 import type { HubConnection } from '@microsoft/signalr'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { getDay, getLeagues, getLive } from '../api/http'
-import type { MatchDetail, MatchUpdatedMessage } from '../api/types'
+import type { Match, MatchDetail, MatchUpdatedMessage } from '../api/types'
 import { addDays, istanbulToday } from '../time'
 import { initialState, mergeLeagues, scoresReducer } from './matchState'
 
@@ -21,6 +21,9 @@ const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e)
  */
 export type WatchMatch = (leagueCode: string, matchId: string, onDetail: (detail: MatchDetail) => void) => () => void
 
+/** Called for every pushed update, with the match as it was known before it (if it was). */
+export type UpdateListener = (message: MatchUpdatedMessage, previous: Match | undefined) => void
+
 interface WatchedMatch {
   leagueCode: string
   matchId: string
@@ -34,8 +37,9 @@ interface WatchedMatch {
  * Flow per (re)connect: subscribe to every league first, then load over REST — so no update can be missed
  * in between (updates that arrive during a load are buffered by the reducer). Changing the day only reloads.
  * The same connection also carries the detail of the one match whose page is open (see {@link WatchMatch}).
+ * @param onUpdate Told about every pushed update, whichever day is shown (match alerts hang off this).
  */
-export function useLiveScores(dayOffset: number) {
+export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
   const [state, dispatch] = useReducer(scoresReducer, initialState)
   const [status, setStatus] = useState<ConnectionStatus>('connecting')
   const [date, setDate] = useState(() => addDays(istanbulToday(), dayOffset))
@@ -47,6 +51,16 @@ export function useLiveScores(dayOffset: number) {
   const loadRef = useRef<(() => Promise<void>) | null>(null)
   const connectionRef = useRef<HubConnection | null>(null)
   const watchedRef = useRef<WatchedMatch | null>(null)
+
+  // Every match seen so far, so a listener can compare an update with what was known before it.
+  const knownRef = useRef(new Map<string, Match>())
+  const onUpdateRef = useRef(onUpdate)
+  useEffect(() => {
+    onUpdateRef.current = onUpdate
+    for (const match of state.leagues.flatMap(l => l.matches)) {
+      knownRef.current.set(match.id, match)
+    }
+  })
 
   useEffect(() => {
     let disposed = false
@@ -71,6 +85,10 @@ export function useLiveScores(dayOffset: number) {
     })
 
     connection.on('MatchUpdated', (message: MatchUpdatedMessage) => {
+      const previous = knownRef.current.get(message.match.id)
+      knownRef.current.set(message.match.id, message.match)
+      onUpdateRef.current?.(message, previous)
+
       dispatch({ type: 'update', message })
       if (message.scoreChanged) {
         highlightGoal(message.match.id)

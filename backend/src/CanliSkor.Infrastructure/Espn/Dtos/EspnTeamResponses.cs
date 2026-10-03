@@ -40,3 +40,13 @@ internal sealed record EspnStandingsNote(string? Color, string? Description);
 
 /// <param name="Name">"rank", "gamesPlayed", "wins", "ties", "losses", "pointsFor", "pointsAgainst", "pointDifferential", "points", ...</param>
 internal sealed record EspnStandingsStat(string? Name, double? Value);
+
+// A league's teams (/{league}/teams): sports[0].leagues[0].teams[].team.
+
+internal sealed record EspnTeamsResponse(IReadOnlyList<EspnTeamsSport>? Sports);
+
+internal sealed record EspnTeamsSport(IReadOnlyList<EspnTeamsLeague>? Leagues);
+
+internal sealed record EspnTeamsLeague(IReadOnlyList<EspnTeamsEntry>? Teams);
+
+internal sealed record EspnTeamsEntry(EspnTeam? Team);

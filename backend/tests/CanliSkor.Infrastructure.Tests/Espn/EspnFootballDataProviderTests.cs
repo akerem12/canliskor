@@ -1,5 +1,6 @@
 using System.Net;
 using CanliSkor.Core.Abstractions;
+using CanliSkor.Core.Domain;
 using CanliSkor.Infrastructure.Espn;
 
 namespace CanliSkor.Infrastructure.Tests.Espn;
@@ -155,6 +156,26 @@ public class EspnFootballDataProviderTests
         Assert.Equal(fixtures!.Matches.Select(m => m.Id).Distinct(), fixtures.Matches.Select(m => m.Id));
         Assert.Equal(fixtures.Matches.OrderBy(m => m.KickoffUtc), fixtures.Matches);
         Assert.NotEmpty(fixtures.Matches);
+    }
+
+    [Fact]
+    public async Task Requests_the_teams_of_a_league()
+    {
+        const string body = """
+            {"sports":[{"leagues":[{"teams":[
+              {"team":{"id":"432","displayName":"Galatasaray","shortDisplayName":"Galatasaray","logos":[{"href":"https://logo.test/432.png"}]}},
+              {"team":{"id":"132335","displayName":"Amed SFK","shortDisplayName":"Amed SFK"}},
+              {"team":{"displayName":"No id"}}
+            ]}]}]}
+            """;
+        var handler = new StubHandler(_ => Json(body));
+
+        var teams = await CreateProvider(handler).GetLeagueTeamsAsync("tur.1");
+
+        Assert.Equal("https://espn.test/soccer/tur.1/teams?limit=500", Assert.Single(handler.RequestUris).ToString());
+        Assert.Equal(
+            [new Team("432", "Galatasaray", "Galatasaray", "https://logo.test/432.png"), new Team("132335", "Amed SFK", "Amed SFK", null)],
+            teams?.Teams);
     }
 
     [Fact]

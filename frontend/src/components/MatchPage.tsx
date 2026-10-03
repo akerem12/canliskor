@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Match, MatchEvent, MatchStat, MatchStatType, Score, Team } from '../api/types'
 import { isInPlay } from '../api/types'
+import { MatchAlertButton } from '../alerts/AlertControls'
 import type { WatchMatch } from '../live/useLiveScores'
 import { useMatchDetail } from '../live/useMatchDetail'
 import { isGoal, withRunningScore } from '../matchEvents'
@@ -76,7 +77,10 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
     <main className="detail" aria-label={match ? `${match.homeTeam.name} vs ${match.awayTeam.name}` : 'Match details'}>
       <header className="detail__top">
         <button className="page__back" onClick={onClose}>← Back</button>
-        <button className="page__crumb" onClick={() => onNavigate({ view: 'league', leagueCode })}>{leagueName ?? leagueCode}</button>
+        <span className="detail__actions">
+          {match && <MatchAlertButton match={match} />}
+          <button className="page__crumb" onClick={() => onNavigate({ view: 'league', leagueCode })}>{leagueName ?? leagueCode}</button>
+        </span>
       </header>
 
       {match

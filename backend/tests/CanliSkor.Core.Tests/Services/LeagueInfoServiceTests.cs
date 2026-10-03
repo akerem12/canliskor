@@ -166,4 +166,37 @@ public class LeagueInfoServiceTests
 
         Assert.Equal(["tomorrow"], later?.Value.Matches.Select(m => m.Id));
     }
+
+    [Fact]
+    public async Task Search_loads_each_leagues_teams_once_and_then_answers_from_the_cache()
+    {
+        _provider.Returns(new LeagueTeams("tur.1", [Besiktas, new Team("432", "Galatasaray", "Galatasaray", null)]));
+        _provider.Returns(new LeagueTeams("eng.1", [new Team("360", "Manchester United", "Man United", null)]));
+        var service = CreateService();
+
+        var first = await service.SearchTeamsAsync("gala");
+        var second = await service.SearchTeamsAsync("united");
+
+        Assert.Equal("Galatasaray", Assert.Single(first).Team.Name);
+        Assert.Equal("eng.1", Assert.Single(second).League.Code);
+        Assert.Equal(["teams:tur.1", "teams:eng.1"], _provider.InfoRequests);
+    }
+
+    [Fact]
+    public async Task Search_leaves_out_a_league_that_cannot_be_loaded()
+    {
+        _provider.Returns(new LeagueTeams("eng.1", [new Team("360", "Manchester United", "Man United", null)]));
+        _provider.FailTeamsOf.Add("tur.1");
+
+        var results = await CreateService().SearchTeamsAsync("man");
+
+        Assert.Equal("Manchester United", Assert.Single(results).Team.Name);
+    }
+
+    [Fact]
+    public async Task Search_with_a_query_too_short_never_reaches_the_provider()
+    {
+        Assert.Empty(await CreateService().SearchTeamsAsync("g"));
+        Assert.Empty(_provider.InfoRequests);
+    }
 }
