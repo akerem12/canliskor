@@ -8,4 +8,7 @@ namespace CanliSkor.Core.Abstractions;
 public interface IMatchUpdatePublisher
 {
     Task PublishAsync(IReadOnlyList<MatchChange> changes, CancellationToken cancellationToken = default);
+
+    /// <summary>Sends a freshly loaded match detail to the clients that have that match open.</summary>
+    Task PublishDetailAsync(MatchDetailSnapshot snapshot, CancellationToken cancellationToken = default);
 }

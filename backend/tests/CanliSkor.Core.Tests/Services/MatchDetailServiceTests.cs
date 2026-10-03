@@ -153,4 +153,31 @@ public class MatchDetailServiceTests
 
         await Assert.ThrowsAsync<FootballDataProviderException>(() => CreateService().GetAsync("tur.1", "1"));
     }
+
+    [Fact]
+    public async Task Refresh_loads_a_new_detail_even_if_the_cached_one_is_still_good()
+    {
+        var detail = Detail(MatchStatus.Finished, Now.AddHours(-3));
+        var service = CreateService();
+        var first = await service.GetAsync("tur.1", detail.Match.Id);
+
+        _time.Advance(MatchDetailService.MinRefreshInterval);
+        var refreshed = await service.RefreshAsync("tur.1", detail.Match.Id);
+
+        Assert.NotSame(first, refreshed);
+        Assert.Equal(2, _provider.DetailRequests.Count);
+    }
+
+    [Fact]
+    public async Task Refresh_right_after_a_load_reuses_it()
+    {
+        var detail = Detail(MatchStatus.Live, Now.AddMinutes(-30));
+        var service = CreateService();
+        var first = await service.GetAsync("tur.1", detail.Match.Id);
+
+        _time.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.Same(first, await service.RefreshAsync("tur.1", detail.Match.Id));
+        Assert.Single(_provider.DetailRequests);
+    }
 }

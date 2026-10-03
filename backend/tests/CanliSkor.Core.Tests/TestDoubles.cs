@@ -139,6 +139,8 @@ internal sealed class FakeMatchUpdatePublisher : IMatchUpdatePublisher
 {
     public List<MatchChange> Published { get; } = [];
 
+    public List<MatchDetailSnapshot> PublishedDetails { get; } = [];
+
     public bool Fail { get; set; }
 
     public Task PublishAsync(IReadOnlyList<MatchChange> changes, CancellationToken cancellationToken = default)
@@ -149,6 +151,17 @@ internal sealed class FakeMatchUpdatePublisher : IMatchUpdatePublisher
         }
 
         Published.AddRange(changes);
+        return Task.CompletedTask;
+    }
+
+    public Task PublishDetailAsync(MatchDetailSnapshot snapshot, CancellationToken cancellationToken = default)
+    {
+        if (Fail)
+        {
+            throw new InvalidOperationException("Push transport is down");
+        }
+
+        PublishedDetails.Add(snapshot);
         return Task.CompletedTask;
     }
 }

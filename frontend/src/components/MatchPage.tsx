@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Match, MatchEvent, MatchStat, MatchStatType, Score, Team } from '../api/types'
 import { isInPlay } from '../api/types'
+import type { WatchMatch } from '../live/useLiveScores'
 import { useMatchDetail } from '../live/useMatchDetail'
 import { isGoal, withRunningScore } from '../matchEvents'
 import { formatTime } from '../time'
@@ -13,6 +14,7 @@ interface Props {
   leagueName: string | undefined
   /** The match as kept current over SignalR (live clock, score), if it is on the day being shown. */
   pushed: Match | undefined
+  watchMatch: WatchMatch
   onClose: () => void
 }
 
@@ -54,8 +56,8 @@ function writeTabToUrl(tab: Tab) {
 }
 
 /** One match on a page of its own: the scoreline, then line-ups, events, statistics and squads as tabs. */
-export function MatchPage({ leagueCode, matchId, leagueName, pushed, onClose }: Props) {
-  const { detail, error } = useMatchDetail(leagueCode, matchId, pushed)
+export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch, onClose }: Props) {
+  const { detail, error } = useMatchDetail(leagueCode, matchId, pushed, watchMatch)
   // Until a tab is picked: line-ups once they are announced, otherwise events.
   const [pickedTab, setPickedTab] = useState(tabFromUrl)
   const pickTab = (picked: Tab) => {

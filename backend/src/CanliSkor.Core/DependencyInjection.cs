@@ -39,6 +39,8 @@ public static class DependencyInjection
         services.AddScoped<SquadService>();
         services.AddSingleton<OnDemandFetchGate>();
         services.AddSingleton<LineupRater>();
+        services.AddSingleton<MatchViewerRegistry>();
+        services.AddScoped<LiveDetailRefresher>();
 
         return services;
     }

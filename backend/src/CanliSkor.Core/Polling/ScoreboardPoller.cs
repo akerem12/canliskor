@@ -8,13 +8,15 @@ using Microsoft.Extensions.Options;
 namespace CanliSkor.Core.Polling;
 
 /// <summary>
-/// One polling round: fetch every followed league, update the store, and decide when to poll next.
+/// One polling round: fetch every followed league, update the store, push what changed, refresh the details of
+/// watched live matches, and decide when to poll next.
 /// Kept separate from the hosted service so it can be unit-tested without timers or a host.
 /// </summary>
 public sealed partial class ScoreboardPoller(
     IFootballDataProvider provider,
     IMatchStore store,
     IMatchUpdatePublisher publisher,
+    LiveDetailRefresher detailRefresher,
     IOptionsMonitor<FootballOptions> footballOptions,
     IOptionsMonitor<PollingOptions> pollingOptions,
     TimeProvider timeProvider,
@@ -53,6 +55,9 @@ public sealed partial class ScoreboardPoller(
                 }
             }
         }
+
+        // After the scoreboards, so the details pushed to open match pages are never behind the scores.
+        await detailRefresher.RefreshAsync(knownMatches, cancellationToken);
 
         var delay = PollingIntervalCalculator.Calculate(knownMatches, timeProvider.GetUtcNow(), options);
         if (anyFailed && delay > options.ErrorRetryInterval)

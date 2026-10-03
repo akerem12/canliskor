@@ -59,7 +59,7 @@ export default function App() {
     setDayOffsetState(offset)
     writeOffsetToUrl(offset)
   }
-  const { leagues, loaded, status, date, recentGoals, error } = useLiveScores(dayOffset)
+  const { leagues, loaded, status, date, recentGoals, error, watchMatch } = useLiveScores(dayOffset)
   const [filter, setFilter] = useState<Filter>('all')
   const [openMatch, setOpenMatch] = useState(openMatchFromUrl)
 
@@ -117,6 +117,7 @@ export default function App() {
           matchId={openMatch.matchId}
           leagueName={openLeague?.name}
           pushed={openLeague?.matches.find(m => m.id === openMatch.matchId)}
+          watchMatch={watchMatch}
           onClose={closeMatch}
         />
       ) : (

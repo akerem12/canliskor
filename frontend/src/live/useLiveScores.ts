@@ -1,7 +1,8 @@
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
-import { useEffect, useReducer, useRef, useState } from 'react'
+import type { HubConnection } from '@microsoft/signalr'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { getDay, getLeagues, getLive } from '../api/http'
-import type { MatchUpdatedMessage } from '../api/types'
+import type { MatchDetail, MatchUpdatedMessage } from '../api/types'
 import { addDays, istanbulToday } from '../time'
 import { initialState, mergeLeagues, scoresReducer } from './matchState'
 
@@ -15,11 +16,24 @@ const DayCheckIntervalMs = 60_000
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
 /**
+ * Tells the server a match page is open, so it pushes that match's detail while it is in play.
+ * @returns A function that stops watching.
+ */
+export type WatchMatch = (leagueCode: string, matchId: string, onDetail: (detail: MatchDetail) => void) => () => void
+
+interface WatchedMatch {
+  leagueCode: string
+  matchId: string
+  onDetail: (detail: MatchDetail) => void
+}
+
+/**
  * One day's matches, kept current over SignalR.
  * @param dayOffset Days from today (Istanbul): 0 = today, -1 = yesterday. Relative on purpose, so "today" moves on at midnight.
  *
  * Flow per (re)connect: subscribe to every league first, then load over REST — so no update can be missed
  * in between (updates that arrive during a load are buffered by the reducer). Changing the day only reloads.
+ * The same connection also carries the detail of the one match whose page is open (see {@link WatchMatch}).
  */
 export function useLiveScores(dayOffset: number) {
   const [state, dispatch] = useReducer(scoresReducer, initialState)
@@ -31,6 +45,8 @@ export function useLiveScores(dayOffset: number) {
   // The connection lives for the whole page, so its callbacks read the current day through refs.
   const dayOffsetRef = useRef(dayOffset)
   const loadRef = useRef<(() => Promise<void>) | null>(null)
+  const connectionRef = useRef<HubConnection | null>(null)
+  const watchedRef = useRef<WatchedMatch | null>(null)
 
   useEffect(() => {
     let disposed = false
@@ -45,6 +61,14 @@ export function useLiveScores(dayOffset: number) {
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build()
+    connectionRef.current = connection
+
+    connection.on('MatchDetailUpdated', (detail: MatchDetail) => {
+      const watched = watchedRef.current
+      if (watched && watched.leagueCode === detail.match.leagueCode && watched.matchId === detail.match.id) {
+        watched.onDetail(detail)
+      }
+    })
 
     connection.on('MatchUpdated', (message: MatchUpdatedMessage) => {
       dispatch({ type: 'update', message })
@@ -70,6 +94,13 @@ export function useLiveScores(dayOffset: number) {
     async function subscribe() {
       leagues = await getLeagues()
       await Promise.all(leagues.map(code => connection.invoke('SubscribeToLeague', code)))
+
+      // A match page opened before we were connected, or still open after a reconnect. A link to a match the
+      // server rejects must not take the scores down with it, so failures are ignored.
+      const watched = watchedRef.current
+      if (watched) {
+        await connection.invoke('SubscribeToMatch', watched.leagueCode, watched.matchId).catch(() => {})
+      }
     }
 
     async function load() {
@@ -146,6 +177,7 @@ export function useLiveScores(dayOffset: number) {
     return () => {
       disposed = true
       loadRef.current = null
+      connectionRef.current = null
       clearTimeout(restartTimer)
       clearInterval(dayTimer)
       goalTimers.forEach(clearTimeout)
@@ -162,5 +194,24 @@ export function useLiveScores(dayOffset: number) {
     }
   }, [dayOffset, status])
 
-  return { leagues: state.leagues, loaded: state.loaded, status, date, recentGoals, error }
+  const watchMatch = useCallback<WatchMatch>((leagueCode, matchId, onDetail) => {
+    const watched = { leagueCode, matchId, onDetail }
+    watchedRef.current = watched
+
+    // Not connected yet: subscribe() does it once we are.
+    const invoke = (method: string) => {
+      const connection = connectionRef.current
+      if (connection?.state === HubConnectionState.Connected) {
+        connection.invoke(method, leagueCode, matchId).catch(() => {})
+      }
+    }
+    invoke('SubscribeToMatch')
+
+    return () => {
+      if (watchedRef.current === watched) watchedRef.current = null
+      invoke('UnsubscribeFromMatch')
+    }
+  }, [])
+
+  return { leagues: state.leagues, loaded: state.loaded, status, date, recentGoals, error, watchMatch }
 }

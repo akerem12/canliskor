@@ -2,6 +2,7 @@ using System.Text.Json;
 using CanliSkor.Api.Hubs;
 using CanliSkor.Core.Abstractions;
 using CanliSkor.Core.Domain;
+using CanliSkor.Core.Polling;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -33,6 +34,11 @@ public class LiveScoresHubTests(MatchEndpointsTests.Factory factory) : IClassFix
             .Build();
 
         _connection.On<JsonElement>(nameof(ILiveScoresClient.MatchUpdated), message =>
+        {
+            lock (_received) _received.Add(message);
+            _receivedSignal.Release();
+        });
+        _connection.On<JsonElement>(nameof(ILiveScoresClient.MatchDetailUpdated), message =>
         {
             lock (_received) _received.Add(message);
             _receivedSignal.Release();
@@ -82,6 +88,45 @@ public class LiveScoresHubTests(MatchEndpointsTests.Factory factory) : IClassFix
 
         Assert.Contains("Unknown league", ex.Message);
     }
+
+    [Fact]
+    public async Task Match_subscriber_receives_the_detail_of_its_match_only()
+    {
+        await _connection.InvokeAsync(nameof(LiveScoresHub.SubscribeToMatch), "tur.1", "42");
+        var viewers = factory.Services.GetRequiredService<MatchViewerRegistry>();
+        Assert.Contains(("tur.1", "42"), viewers.Watched());
+
+        // In order on one connection: if 42 is the first one we get, 41 was never delivered.
+        await PublishDetailAsync("41");
+        await PublishDetailAsync("42");
+
+        var detail = await NextMessageAsync();
+        Assert.Equal("42", detail.GetProperty("match").GetProperty("id").GetString());
+        Assert.Equal("YellowCard", detail.GetProperty("events")[0].GetProperty("type").GetString()); // same shape as REST
+        Assert.Equal(JsonValueKind.Null, detail.GetProperty("lineups").ValueKind);
+
+        await _connection.InvokeAsync(nameof(LiveScoresHub.UnsubscribeFromMatch), "tur.1", "42");
+        Assert.DoesNotContain(("tur.1", "42"), viewers.Watched());
+    }
+
+    [Theory]
+    [InlineData("xyz.9", "42")]  // league not followed
+    [InlineData("tur.1", "abc")] // not an ESPN id
+    public async Task Subscribing_to_an_unknown_match_fails(string leagueCode, string matchId)
+    {
+        var ex = await Assert.ThrowsAsync<HubException>(
+            () => _connection.InvokeAsync(nameof(LiveScoresHub.SubscribeToMatch), leagueCode, matchId));
+
+        Assert.Contains("Unknown match", ex.Message);
+    }
+
+    private Task PublishDetailAsync(string matchId) =>
+        factory.Services.GetRequiredService<IMatchUpdatePublisher>().PublishDetailAsync(new MatchDetailSnapshot(
+            new MatchDetail(
+                Change("tur.1", matchId, MatchChangeKind.None).Match,
+                [new MatchEvent(MatchEventType.YellowCard, "12'", TeamSide.Home, "Player", null)],
+                []),
+            DateTimeOffset.UtcNow));
 
     private Task PublishAsync(MatchChange change) =>
         factory.Services.GetRequiredService<IMatchUpdatePublisher>().PublishAsync([change]);

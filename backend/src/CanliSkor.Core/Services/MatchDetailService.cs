@@ -44,7 +44,17 @@ public sealed partial class MatchDetailService(
     /// or the provider doesn't know the match.
     /// </returns>
     /// <exception cref="FootballDataProviderException">Loading failed and nothing is cached.</exception>
-    public async Task<MatchDetailSnapshot?> GetAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default)
+    public Task<MatchDetailSnapshot?> GetAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default) =>
+        LoadAsync(leagueCode, matchId, refresh: false, cancellationToken);
+
+    /// <summary>
+    /// Like <see cref="GetAsync"/>, but loads a new detail even if the cached one is still good, unless that one
+    /// is younger than <see cref="MinRefreshInterval"/>. For the poller, which keeps watched live matches current.
+    /// </summary>
+    public Task<MatchDetailSnapshot?> RefreshAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default) =>
+        LoadAsync(leagueCode, matchId, refresh: true, cancellationToken);
+
+    private async Task<MatchDetailSnapshot?> LoadAsync(string leagueCode, string matchId, bool refresh, CancellationToken cancellationToken)
     {
         // Only followed leagues: requests can't make us fetch anything else from the provider.
         if (!footballOptions.CurrentValue.Leagues.Contains(leagueCode))
@@ -53,7 +63,7 @@ public sealed partial class MatchDetailService(
         }
 
         var cached = await store.GetDetailAsync(leagueCode, matchId, cancellationToken);
-        if (cached is not null && await IsFreshAsync(cached, cancellationToken))
+        if (cached is not null && await IsFreshAsync(cached, refresh, cancellationToken))
         {
             return cached;
         }
@@ -62,7 +72,7 @@ public sealed partial class MatchDetailService(
         {
             // Another request may have loaded it while we waited (typical for a live match with many viewers).
             cached = await store.GetDetailAsync(leagueCode, matchId, cancellationToken);
-            if (cached is not null && await IsFreshAsync(cached, cancellationToken))
+            if (cached is not null && await IsFreshAsync(cached, refresh, cancellationToken))
             {
                 return cached;
             }
@@ -87,11 +97,16 @@ public sealed partial class MatchDetailService(
         }
     }
 
-    private async Task<bool> IsFreshAsync(MatchDetailSnapshot snapshot, CancellationToken cancellationToken)
+    private async Task<bool> IsFreshAsync(MatchDetailSnapshot snapshot, bool refresh, CancellationToken cancellationToken)
     {
         var match = snapshot.Detail.Match;
         var now = timeProvider.GetUtcNow();
         var age = now - snapshot.FetchedAtUtc;
+        if (refresh)
+        {
+            return age < MinRefreshInterval;
+        }
+
         if (age >= MinRefreshInterval && await ScoreboardIsAheadAsync(match, snapshot.FetchedAtUtc, cancellationToken))
         {
             return false;

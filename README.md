@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European and South American leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 12: squads on the match page).
+> Status: **work in progress** (step 13: live match page — details pushed over SignalR).
 
 ## Architecture
 
@@ -82,9 +82,13 @@ A cached detail is also stale as soon as the poller's scoreboard shows a differe
 the scorer. Detail fetches share the one-at-a-time gate with browsing. Only followed leagues and numeric ids are
 accepted, and ESPN's summary is checked to belong to the requested league (ESPN serves any match under any league's URL).
 
-The match page reloads its detail when SignalR pushes a score or status change for that match, and every 30 s
-while the match is in play (cards and substitutions aren't pushed). The open match is kept in the URL
-(`/?league=esp.1&match=401882858`); Back returns to the match list.
+An open match page is kept current by the server. The page subscribes to its match on the SignalR hub;
+`MatchViewerRegistry` remembers which matches have viewers, and after each scoreboard poll `LiveDetailRefresher`
+reloads the detail of every watched match that is in play and pushes it to that match's group. So cards,
+substitutions, statistics and ratings arrive within one poll interval without the page asking, any number of viewers
+cost one ESPN call per match per poll, and matches nobody is looking at cost none. The page also reloads its detail
+when a score or status change is pushed, which covers kickoff and full time. The open match and tab are kept in the
+URL (`/?league=esp.1&match=401882858&tab=squads`); Back returns to the match list.
 
 ### Line-ups
 
@@ -251,6 +255,9 @@ saves, goalsConceded }`, where `goalsConceded` counts goals conceded while the p
 | client → server | `SubscribeToLeague(leagueCode)` | e.g. `"tur.1"`; unknown leagues are rejected |
 | client → server | `UnsubscribeFromLeague(leagueCode)` | |
 | server → client | `MatchUpdated` | `{ match, scoreChanged, statusChanged }` |
+| client → server | `SubscribeToMatch(leagueCode, matchId)` | The client has this match's page open (at most 4 per connection) |
+| client → server | `UnsubscribeFromMatch(leagueCode, matchId)` | |
+| server → client | `MatchDetailUpdated` | The full match detail, same shape as `GET /api/leagues/{code}/matches/{id}`; sent after each poll while the match is in play |
 
 `match` has the same shape as in the REST API. Both flags `false` means only the clock moved.
 Recommended client flow: connect, subscribe, then load `GET /api/matches` and apply updates on top.

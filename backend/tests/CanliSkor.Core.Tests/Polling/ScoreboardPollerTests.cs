@@ -1,5 +1,8 @@
 using CanliSkor.Core.Domain;
+using CanliSkor.Core.Options;
 using CanliSkor.Core.Polling;
+using CanliSkor.Core.Ratings;
+using CanliSkor.Core.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using static CanliSkor.Core.Tests.TestData;
@@ -18,12 +21,28 @@ public class ScoreboardPollerTests
     private readonly FakeMatchUpdatePublisher _publisher = new();
     private readonly FakeTimeProvider _time = new(Now);
 
+    private readonly MatchViewerRegistry _viewers = new();
+
     private ScoreboardPoller CreatePoller(params string[] leagues) => new(
         _provider,
         _store,
         _publisher,
+        new LiveDetailRefresher(
+            _viewers,
+            new MatchDetailService(
+                _provider,
+                _store,
+                new OnDemandFetchGate(),
+                new LineupRater(new StaticOptionsMonitor<RatingOptions>(new RatingOptions())),
+                TestOptions.Leagues(leagues),
+                new StaticOptionsMonitor<PollingOptions>(TestOptions.Polling()),
+                _time,
+                NullLogger<MatchDetailService>.Instance),
+            _store,
+            _publisher,
+            NullLogger<LiveDetailRefresher>.Instance),
         TestOptions.Leagues(leagues),
-        new StaticOptionsMonitor<CanliSkor.Core.Options.PollingOptions>(TestOptions.Polling()),
+        new StaticOptionsMonitor<PollingOptions>(TestOptions.Polling()),
         _time,
         NullLogger<ScoreboardPoller>.Instance);
 
@@ -153,5 +172,52 @@ public class ScoreboardPollerTests
         await CreatePoller("uefa.champions").PollAsync(CancellationToken.None);
 
         Assert.Equal([("uefa.champions", Today)], _provider.Requests);
+    }
+
+    [Fact]
+    public async Task Watched_live_match_gets_its_detail_refreshed_and_pushed()
+    {
+        var live = Match(MatchStatus.Live, Now.AddMinutes(-30), score: new Score(1, 0));
+        _provider.Returns(Scoreboard("tur.1", Today, live));
+        _provider.Returns(Scoreboard("tur.1", Yesterday));
+        _provider.Returns(new MatchDetail(live, [new MatchEvent(MatchEventType.YellowCard, "12'", TeamSide.Home, "Player", null)], []));
+        _viewers.Watch("connection", "tur.1", live.Id);
+
+        await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+
+        var pushed = Assert.Single(_publisher.PublishedDetails);
+        Assert.Equal(live.Id, pushed.Detail.Match.Id);
+        Assert.Single(pushed.Detail.Events);
+        Assert.Same(pushed, await _store.GetDetailAsync("tur.1", live.Id));
+    }
+
+    [Fact]
+    public async Task Details_are_only_refreshed_for_matches_someone_is_watching_and_that_are_in_play()
+    {
+        var live = Match(MatchStatus.Live, Now.AddMinutes(-30), score: new Score(1, 0));
+        var finished = Match(MatchStatus.Finished, Now.AddHours(-3), score: new Score(2, 2));
+        _provider.Returns(Scoreboard("tur.1", Today, live, finished));
+        _provider.Returns(Scoreboard("tur.1", Yesterday));
+        _viewers.Watch("connection", "tur.1", finished.Id);
+
+        await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+
+        Assert.Empty(_provider.DetailRequests);
+        Assert.Empty(_publisher.PublishedDetails);
+    }
+
+    [Fact]
+    public async Task Failing_detail_refresh_does_not_fail_the_poll()
+    {
+        var live = Match(MatchStatus.Live, Now.AddMinutes(-30), score: new Score(1, 0));
+        _provider.Returns(Scoreboard("tur.1", Today, live));
+        _provider.Returns(Scoreboard("tur.1", Yesterday));
+        _provider.FailDetails = true;
+        _viewers.Watch("connection", "tur.1", live.Id);
+
+        var delay = await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+
+        Assert.Equal(TimeSpan.FromSeconds(30), delay);
+        Assert.Empty(_publisher.PublishedDetails);
     }
 }
