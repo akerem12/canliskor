@@ -132,6 +132,7 @@ h1, h2 { margin: 0; }
 .notice--error { color: var(--live); padding: 12px; margin-bottom: 14px; }
 
 .footer { margin-top: 24px; text-align: center; font-size: 0.75rem; color: var(--muted); }
+.footer__note { display: block; max-width: 34rem; margin: 4px auto 0; opacity: 0.8; }
 
 @media (max-width: 520px) {
   /* One status column: kickoff time before the match, minute/FT once it has started. */

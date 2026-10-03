@@ -1,0 +1,14 @@
+# Render blueprint: one free web service built from the Dockerfile in this repo.
+# In Render: New > Blueprint > pick this repository > Apply. Every push to main redeploys.
+services:
+  - type: web
+    name: canliskor
+    runtime: docker
+    plan: free
+    region: frankfurt
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # The port the container listens on (the ASP.NET base image's default); Render routes traffic to it.
+      - key: PORT
+        value: "8080"

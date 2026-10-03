@@ -167,7 +167,13 @@ export default function App() {
         )}
       </div>
 
-      <footer className="footer">Times in Istanbul time · Data: ESPN</footer>
+      <footer className="footer">
+        Times in Istanbul time · Data: ESPN
+        <span className="footer__note">
+          An unofficial, non-commercial hobby project. Not affiliated with ESPN or with any club, league or federation;
+          names and crests belong to their owners.
+        </span>
+      </footer>
     </div>
     </AlertsContext.Provider>
   )

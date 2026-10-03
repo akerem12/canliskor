@@ -178,6 +178,11 @@ league, so its page opens with its league table. Names that start with the query
 ESPN's public JSON API (no key required), e.g.
 `https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1/scoreboard?dates=YYYYMMDD`.
 
+This is an unofficial, non-commercial hobby project. It is not affiliated with or endorsed by ESPN or by any club,
+league or federation; team names and crests belong to their owners and are shown straight from ESPN's servers. The
+API is undocumented and not offered for third-party use, so the app is deliberately gentle with it (everything is
+cached, requests run one at a time) and will be taken down on request.
+
 | League | Code |
 |---|---|
 | Turkish Süper Lig | `tur.1` |
@@ -235,6 +240,13 @@ UI, REST API and SignalR hub share one origin, so production needs no CORS eithe
 `/assets` are cached for a year (`immutable`); `index.html` is served with `no-cache`, so a new deploy is picked up
 on the next page load. `GET /health` is available for container orchestrators and load balancers.
 Settings can be overridden with environment variables, e.g. `Polling__LiveInterval=00:00:20`.
+
+### Hosting on Render (free plan)
+
+`render.yaml` describes one free web service built from the Dockerfile. In Render: sign in with GitHub, then
+**New > Blueprint**, pick this repository and **Apply**. Every push to `main` redeploys. A free service is stopped
+after about 15 minutes without visitors and needs up to a minute to start again on the next visit; while stopped it
+doesn't poll, so the first page after a wake-up fills in as the first poll completes.
 
 Without Docker: `npm run build` in `frontend/`, copy `frontend/dist/*` into `backend/src/CanliSkor.Api/wwwroot/`,
 then `dotnet publish backend/src/CanliSkor.Api -c Release`. Start from an empty `dist`/`wwwroot`, because stale
