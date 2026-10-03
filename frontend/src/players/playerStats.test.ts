@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest'
+import type { PlayerCompetitionStats } from '../api/types'
+import { competitionLabel, statLines } from './playerStats'
+
+const outfield: PlayerCompetitionStats = {
+  name: '2026-27 Turkish Super Lig', leagueCode: 'tur.1', teamName: 'Galatasaray',
+  starts: 3, substituteAppearances: 3, goals: 2, assists: 1, shots: 8, shotsOnTarget: 3,
+  yellowCards: 1, redCards: 0, foulsCommitted: 2, foulsSuffered: 6, offsides: 0,
+  cleanSheets: null, saves: null, goalsConceded: null,
+}
+
+const labels = (stats: PlayerCompetitionStats) => statLines(stats).map(line => line.label)
+const valueOf = (stats: PlayerCompetitionStats, label: string) => statLines(stats).find(line => line.label === label)?.value
+
+describe('statLines', () => {
+  it('adds starts and substitute appearances up to matches played', () => {
+    expect(valueOf(outfield, 'Matches played')).toBe(6)
+    expect(valueOf(outfield, 'Starts')).toBe(3)
+    expect(valueOf(outfield, 'Substitute appearances')).toBe(3)
+  })
+
+  it('leaves matches played out where substitute appearances are unknown', () => {
+    const cup = { ...outfield, substituteAppearances: null }
+
+    expect(labels(cup)).not.toContain('Matches played')
+    expect(labels(cup)[0]).toBe('Starts')
+  })
+
+  it('shows an outfield player no goalkeeping numbers, and zeros of the rest', () => {
+    expect(labels(outfield)).not.toContain('Saves')
+    expect(valueOf(outfield, 'Offsides')).toBe(0)
+  })
+
+  it('shows a goalkeeper clean sheets, saves and goals conceded instead of empty attacking numbers', () => {
+    const keeper = { ...outfield, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, cleanSheets: 2, saves: 8, goalsConceded: 8 }
+
+    expect(valueOf(keeper, 'Clean sheets')).toBe(2)
+    expect(valueOf(keeper, 'Saves')).toBe(8)
+    expect(labels(keeper)).not.toContain('Goals')
+    expect(labels(keeper)).not.toContain('Shots')
+  })
+
+  it('keeps the goal of a goalkeeper who scored', () => {
+    expect(valueOf({ ...outfield, saves: 4, goals: 1 }, 'Goals')).toBe(1)
+  })
+})
+
+describe('competitionLabel', () => {
+  it('drops the season', () => {
+    expect(competitionLabel('2026-27 Turkish Super Lig')).toBe('Turkish Super Lig')
+    expect(competitionLabel('2026 FIFA World Cup')).toBe('FIFA World Cup')
+  })
+
+  it('leaves a name without a season alone', () => {
+    expect(competitionLabel('Champions League')).toBe('Champions League')
+  })
+})

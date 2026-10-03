@@ -4,11 +4,13 @@ import { isInPlay } from '../api/types'
 import { MatchAlertButton } from '../alerts/AlertControls'
 import type { WatchMatch } from '../live/useLiveScores'
 import { useMatchDetail } from '../live/useMatchDetail'
-import { isGoal, withRunningScore } from '../matchEvents'
+import { assistOf, isGoal, withRunningScore } from '../matchEvents'
+import { PlayerName } from '../players/PlayerName'
 import { formatTime } from '../time'
 import type { Route } from '../route'
 import { EmptyState, Skeleton, TeamLogo } from './common'
 import { Lineups } from './Lineups'
+import { OddsBoard } from './Odds'
 import { Squads } from './Squads'
 
 interface Props {
@@ -86,6 +88,7 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
       {match
         ? <Scoreline match={match} onOpenTeam={teamId => onNavigate({ view: 'team', leagueCode, teamId })} />
         : !error && <Skeleton rows={4} height={22} />}
+      {match?.odds && <OddsBoard odds={match.odds} match={match} />}
       {match && !detail && !error && <Skeleton rows={6} />}
       {error && !detail && (
         <EmptyState icon="⚠️" title="This match can't be loaded right now." hint="The data source may be busy, or the link is wrong." />
@@ -159,14 +162,14 @@ function Events({ events, match }: { events: MatchEvent[]; match: Match }) {
     <section aria-label="Match events">
       <ol className="events">
         {withRunningScore(events).map(({ event, score }, i) => (
-          <EventRow key={i} event={event} score={score} />
+          <EventRow key={i} event={event} score={score} leagueCode={match.leagueCode} />
         ))}
       </ol>
     </section>
   )
 }
 
-function EventRow({ event, score }: { event: MatchEvent; score: Score }) {
+function EventRow({ event, score, leagueCode }: { event: MatchEvent; score: Score; leagueCode: string }) {
   const side = event.side === 'Home' ? 'home' : 'away'
   return (
     <li className={`event event--${side}${isGoal(event) ? ' event--goal' : ''}`}>
@@ -174,7 +177,7 @@ function EventRow({ event, score }: { event: MatchEvent; score: Score }) {
       <span className="event__content">
         <EventIcon type={event.type} />
         <span className="event__text">
-          <EventText event={event} />
+          <EventText event={event} leagueCode={leagueCode} />
         </span>
         {isGoal(event) && <span className="event__score">{score.home} - {score.away}</span>}
       </span>
@@ -195,14 +198,20 @@ function EventIcon({ type }: { type: MatchEvent['type'] }) {
   }
 }
 
-function EventText({ event }: { event: MatchEvent }) {
-  const player = event.player ?? 'Unknown player'
+function EventText({ event, leagueCode }: { event: MatchEvent; leagueCode: string }) {
+  const player = <PlayerName leagueCode={leagueCode} playerId={event.playerId} name={event.player ?? 'Unknown player'} />
+  const assist = assistOf(event)
+
   switch (event.type) {
     case 'Substitution':
       return (
         <>
           <span className="event__in">▲ {player}</span>
-          {event.relatedPlayer && <span className="event__out">▼ {event.relatedPlayer}</span>}
+          {event.relatedPlayer && (
+            <span className="event__out">
+              ▼ <PlayerName leagueCode={leagueCode} playerId={event.relatedPlayerId} name={event.relatedPlayer} />
+            </span>
+          )}
         </>
       )
     case 'PenaltyGoal':
@@ -213,7 +222,12 @@ function EventText({ event }: { event: MatchEvent }) {
       return (
         <>
           <span className="event__player">{player}</span>
-          {event.relatedPlayer && <span className="event__note">assist: {event.relatedPlayer}</span>}
+          {assist && (
+            <span className="event__assist">
+              <span className="assist-badge" role="img" aria-label="Assist" title="Assist">A</span>
+              <PlayerName leagueCode={leagueCode} playerId={assist.playerId} name={assist.name} />
+            </span>
+          )}
         </>
       )
     default:

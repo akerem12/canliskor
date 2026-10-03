@@ -1,6 +1,7 @@
 import { getSquad } from '../api/http'
 import type { Match, PlayerPosition, SquadPlayer, Team } from '../api/types'
 import { useFetch } from '../api/useFetch'
+import { PlayerName } from '../players/PlayerName'
 import { EmptyState, Skeleton } from './common'
 
 const groups: { position: PlayerPosition | null; label: string }[] = [
@@ -38,7 +39,7 @@ export function TeamSquad({ leagueCode, team, showName = true }: { leagueCode: s
           <div key={label}>
             <h4 className="detail__heading">{label}</h4>
             <ul className="squad__players">
-              {players.map(player => <SquadRow key={player.id} player={player} />)}
+              {players.map(player => <SquadRow key={player.id} player={player} leagueCode={leagueCode} />)}
             </ul>
           </div>
         )
@@ -47,12 +48,12 @@ export function TeamSquad({ leagueCode, team, showName = true }: { leagueCode: s
   )
 }
 
-function SquadRow({ player }: { player: SquadPlayer }) {
+function SquadRow({ player, leagueCode }: { player: SquadPlayer; leagueCode: string }) {
   return (
     <li className="squad__player">
       <span className="squad__number">{player.jersey ?? '–'}</span>
       <span className="squad__name">
-        {player.name}
+        <PlayerName leagueCode={leagueCode} playerId={player.id} name={player.name} />
         {player.nationality && <span className="squad__nationality">{player.nationality}</span>}
       </span>
       {player.age !== null && <span className="squad__age">{player.age} yrs</span>}

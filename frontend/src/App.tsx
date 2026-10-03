@@ -93,6 +93,7 @@ export default function App() {
   return (
     <AlertsContext.Provider value={alerts.value}>
     <div className="app">
+      <div className="appbar">
       <header className="topbar">
         <div className="topbar__title">
           <h1>
@@ -123,6 +124,7 @@ export default function App() {
           ★ Favourites{favoriteCount > 0 && <span className="mainnav__count">{favoriteCount}</span>}
         </button>
       </nav>
+      </div>
 
       {/* Keyed by page, so each one fades in and starts with its own state. */}
       <div className="page-enter" key={JSON.stringify(route)}>

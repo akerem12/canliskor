@@ -4,6 +4,7 @@ import { getCompetitions, getLeagueFixtures, getTeam } from '../api/http'
 import type { LeagueFixtures, Team, TeamProfile } from '../api/types'
 import { isInPlay } from '../api/types'
 import { useFetch } from '../api/useFetch'
+import { OddsStrip } from '../components/Odds'
 import { EmptyState, Skeleton, TeamLogo } from '../components/common'
 import type { Route } from '../route'
 import { formatMatchDate, formatTime } from '../time'
@@ -271,6 +272,7 @@ function FeedCard({ item, teamLeague, canOpenMatch, onNavigate }: {
         </span>
         {side(match.awayTeam, 'away')}
       </div>
+      {match.status === 'Scheduled' && match.odds && <OddsStrip odds={match.odds} className="feed__odds" />}
       <div className="feed__foot">
         <span className="feed__venue">{match.venue ? `📍 ${match.venue}` : ''}</span>
         {canOpenMatch && (

@@ -1,6 +1,7 @@
 import type { Match, Team } from '../api/types'
 import { isInPlay } from '../api/types'
 import { formatTime } from '../time'
+import { OddsStrip } from './Odds'
 
 const statusLabel: Record<Match['status'], string> = {
   Scheduled: '',
@@ -50,6 +51,8 @@ export function MatchRow({ match, justScored, onOpen }: Props) {
           {match.score ? `${match.score.home} - ${match.score.away}` : '-'}
         </span>
         <TeamName team={match.awayTeam} align="away" />
+        {/* Prices are for what is still to come: once the match has kicked off they are history. */}
+        {match.status === 'Scheduled' && match.odds && <OddsStrip odds={match.odds} className="match__odds" />}
         {justScored && <span className="match__goal-badge">GOAL</span>}
       </button>
     </li>

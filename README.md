@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig, major European and South American leagues, the UEFA Nations League and international friendlies.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 16: match alerts, pinned favourites and team search).
+> Status: **work in progress** (step 17: match odds, player profiles, assists on goals and a dark navy theme).
 
 ## Architecture
 
@@ -165,6 +165,31 @@ browser's permission, which is asked for on first use, and they work while the s
 background, but not once the tab or the browser is closed: that would take a service worker and Web Push.
 Clicking a notification opens the match.
 
+### Match odds
+
+Matches that haven't kicked off show the bookmaker's 1X2 prices (home win, draw, away win) as decimal odds on the
+match list, on the Favourites feed and on the match page, with the favourite marked in gold. ESPN carries one
+bookmaker's lines for every followed league, on the scoreboard (`odds`) and in the match summary (`pickcenter`),
+so there is no second data source and no API key. ESPN quotes American odds; `EspnOddsMapper` converts them
+(-450 → 1.22, +950 → 10.50). A match without posted odds simply shows none. The odds are information, not advice.
+
+### Player profiles
+
+Any player's name (in the squads, the line-up sheet, the match events) opens a profile dialog: name, number,
+position, nationality with flag, age, height, club, and this season's numbers with one tab per competition
+(league, cups, internationals). `GET /api/leagues/{code}/players/{id}` answers from ESPN's athlete page and its
+overview, cached for 30 minutes. What ESPN doesn't have is left out rather than made up: there are no minutes
+played and no passing figures for footballers, substitute appearances are only known for the player's main league,
+and very few players have a portrait (everyone else gets a silhouette).
+
+### Assists
+
+A goal names who set it up, with an "A" badge; penalties and own goals never do. For some leagues (the Süper Lig
+among them) ESPN's events name only the scorer, while the line-ups say how many assists each player had in the
+match. `AssistAttribution` fills the gap where that leaves no doubt: a player with one assist who could have set up
+exactly one of the team's goals (on the pitch at the time, not the scorer) set up that one. Anything ambiguous stays
+open; the line-ups still mark every player who assisted.
+
 ### Team search
 
 "Leagues & teams" has a search box that finds any team of the followed leagues by name, ignoring case and accents
@@ -288,6 +313,7 @@ merged in from `/live`.
 | `GET /api/teams/search?q=gala` | Teams whose name contains the query (two characters or more): `[{ league: { code, name }, team }]` |
 | `GET /api/leagues/{code}/fixtures` | The league's matches still to be played, this month and next, soonest first: `{ leagueCode, leagueName, matches, lastUpdatedUtc }` (cached 30 minutes) |
 | `GET /api/leagues/{code}/teams/{teamId}` | A team: `{ team, isNationalTeam, standingSummary, stadium, stadiumCity, recentMatches, upcomingMatches, competitions, lastUpdatedUtc }`. Matches have the same shape as in `/api/matches` and cover every competition the team plays in; `competitions` names them (`[{ code, name }]`) |
+| `GET /api/leagues/{code}/players/{playerId}` | A player: `{ id, name, jersey, position, nationality, flagUrl, age, heightCm, photoUrl, team, competitions, lastUpdatedUtc }`; each competition `{ name, leagueCode, teamName, starts, substituteAppearances, goals, assists, shots, shotsOnTarget, yellowCards, redCards, foulsCommitted, foulsSuffered, offsides, cleanSheets, saves, goalsConceded }` (the last three for goalkeepers only; `404` if unknown) |
 | `GET /api/leagues/{code}/teams/{teamId}/squad` | A team's squad: `{ teamId, teamName, players, lastUpdatedUtc }`, each player `{ id, name, jersey, position, age, nationality }` (`404` if unknown, `503` if ESPN is down and nothing is cached) |
 
 Kickoff times are returned in Istanbul time (`2026-10-09T20:00:00+03:00`), statuses as strings

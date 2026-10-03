@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { LineupPlayer, Match, MatchLineups, PlayerStats, Team, TeamLineup } from '../api/types'
 import type { Shirt } from '../lineups'
 import { pitchName, pitchRows, shirtColors } from '../lineups'
+import { usePlayerProfile } from '../players/usePlayerProfile'
 import { formatTime } from '../time'
 
 interface Props {
@@ -59,7 +60,7 @@ export function Lineups({ lineups, match }: Props) {
         ))}
       </div>
 
-      {selected && <PlayerSheet {...selected} onClose={() => setSelected(null)} />}
+      {selected && <PlayerSheet {...selected} leagueCode={match.leagueCode} onClose={() => setSelected(null)} />}
     </section>
   )
 }
@@ -104,14 +105,19 @@ function Bench({ lineup, team, shirt, onSelect }: {
   )
 }
 
-/** Goals and cards next to a player. */
+/** Goals, assists and cards next to a player. */
 function PlayerMarks({ player, className }: { player: LineupPlayer; className?: string }) {
-  const { goals, ownGoals, yellowCards, redCards } = player.stats
-  if (goals + ownGoals + yellowCards + redCards === 0) return null
+  const { goals, assists, ownGoals, yellowCards, redCards } = player.stats
+  if (goals + assists + ownGoals + yellowCards + redCards === 0) return null
 
   return (
     <span className={className ? `marks ${className}` : 'marks'}>
       {goals > 0 && <span role="img" aria-label={`${goals} goal${goals > 1 ? 's' : ''}`}>⚽{goals > 1 ? goals : ''}</span>}
+      {assists > 0 && (
+        <span className="assist-badge" role="img" aria-label={`${assists} assist${assists > 1 ? 's' : ''}`} title="Assist">
+          A{assists > 1 ? assists : ''}
+        </span>
+      )}
       {ownGoals > 0 && <span className="marks__own-goal" role="img" aria-label="Own goal">⚽</span>}
       {yellowCards > 0 && redCards === 0 && <span className="card card--yellow" role="img" aria-label="Yellow card" />}
       {redCards > 0 && <span className="card card--red" role="img" aria-label="Red card" />}
@@ -135,8 +141,9 @@ const statLabels: [keyof PlayerStats, string][] = [
 ]
 
 /** One player's match: minutes and statistics. A modal dialog: Esc or a click outside closes it. */
-function PlayerSheet({ player, team, shirt, onClose }: Selected & { onClose: () => void }) {
+function PlayerSheet({ player, team, shirt, leagueCode, onClose }: Selected & { leagueCode: string; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const openPlayer = usePlayerProfile()
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -198,6 +205,17 @@ function PlayerSheet({ player, team, shirt, onClose }: Selected & { onClose: () 
         ) : (
           <p className="sheet__empty">{player.position ? 'The match has not started.' : 'Has not played in this match.'}</p>
         )}
+
+        <button
+          className="more"
+          onClick={() => {
+            // One dialog at a time: this one makes way for the profile.
+            dialogRef.current?.close()
+            openPlayer({ leagueCode, playerId: player.id, name: player.name })
+          }}
+        >
+          Profile &amp; season statistics ›
+        </button>
       </div>
     </dialog>
   )

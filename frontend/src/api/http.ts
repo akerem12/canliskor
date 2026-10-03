@@ -1,4 +1,4 @@
-import type { Competition, LeagueFixtures, LeagueMatches, MatchDay, MatchDetail, Squad, Standings, TeamProfile, TeamSearchResult } from './types'
+import type { Competition, LeagueFixtures, LeagueMatches, MatchDay, MatchDetail, PlayerProfile, Squad, Standings, TeamProfile, TeamSearchResult } from './types'
 
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url)
@@ -32,3 +32,6 @@ export const getLeagueFixtures = (leagueCode: string) =>
   getJson<LeagueFixtures>(`/api/leagues/${encodeURIComponent(leagueCode)}/fixtures`)
 /** Teams of the followed leagues whose name contains the query (at least two characters). */
 export const searchTeams = (query: string) => getJson<TeamSearchResult[]>(`/api/teams/search?q=${encodeURIComponent(query)}`)
+/** A player: who they are and their season in every competition. The league is the one they were found in. */
+export const getPlayer = (leagueCode: string, playerId: string) =>
+  getJson<PlayerProfile>(`/api/leagues/${encodeURIComponent(leagueCode)}/players/${encodeURIComponent(playerId)}`)

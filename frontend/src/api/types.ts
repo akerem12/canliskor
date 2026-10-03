@@ -27,6 +27,19 @@ export interface Match {
   score: Score | null
   /** The stadium, or null if unknown. */
   venue: string | null
+  /** Null if no odds are posted for the match. */
+  odds: Odds | null
+}
+
+/** Decimal 1X2 odds: what one unit staked pays back, e.g. 1.22 / 6.00 / 10.50. */
+export interface Odds {
+  home: number
+  draw: number
+  away: number
+  /** The team the market favours; null if both are priced the same. */
+  favorite: 'Home' | 'Away' | null
+  /** The bookmaker, e.g. "DraftKings". */
+  provider: string | null
 }
 
 export interface LeagueMatches {
@@ -53,6 +66,16 @@ export interface MatchEvent {
   player: string | null
   /** Assist provider, or the player going off. */
   relatedPlayer: string | null
+  /** Ids for the players' profiles; null if unknown. */
+  playerId: string | null
+  relatedPlayerId: string | null
+}
+
+/** Who set up a goal. */
+export interface MatchAssist {
+  name: string
+  /** Null if the player's profile can't be opened. */
+  playerId: string | null
 }
 
 export type MatchStatType =
@@ -208,6 +231,49 @@ export interface SquadPlayer {
   age: number | null
   /** Country name, e.g. "Türkiye". */
   nationality: string | null
+}
+
+export interface PlayerProfile {
+  id: string
+  name: string
+  jersey: string | null
+  position: PlayerPosition | null
+  /** Country name, e.g. "Germany". */
+  nationality: string | null
+  flagUrl: string | null
+  age: number | null
+  heightCm: number | null
+  /** Portrait; null for most players. */
+  photoUrl: string | null
+  /** The player's club. */
+  team: Team | null
+  /** This season, one entry per competition, the player's main league first. */
+  competitions: PlayerCompetitionStats[]
+  lastUpdatedUtc: string
+}
+
+export interface PlayerCompetitionStats {
+  /** e.g. "2026-27 Turkish Super Lig". */
+  name: string
+  leagueCode: string | null
+  /** The team played for there: the club, or the national team. */
+  teamName: string | null
+  starts: number
+  /** Known for the player's main league only. */
+  substituteAppearances: number | null
+  goals: number
+  assists: number
+  shots: number
+  shotsOnTarget: number
+  yellowCards: number
+  redCards: number
+  foulsCommitted: number
+  foulsSuffered: number
+  offsides: number
+  /** Goalkeepers only, like saves and goalsConceded; null for everyone else. */
+  cleanSheets: number | null
+  saves: number | null
+  goalsConceded: number | null
 }
 
 /** SignalR "MatchUpdated" payload. Both flags false means only the clock moved. */

@@ -12,6 +12,7 @@ const match = (status: MatchStatus, score: [number, number] | null, clock: strin
   awayTeam: { id: 'fb', name: 'Fenerbahce', shortName: 'Fenerbahce', logoUrl: null },
   score: score && { home: score[0], away: score[1] },
   venue: null,
+  odds: null,
 })
 
 const update = (m: Match, changed: 'score' | 'status' | 'clock'): MatchUpdatedMessage =>
