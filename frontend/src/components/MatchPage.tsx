@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useState } from 'react'
 import type { Match, MatchEvent, MatchStat, MatchStatType, Score, Team } from '../api/types'
 import { isInPlay } from '../api/types'
 import { useMatchDetail } from '../live/useMatchDetail'
 import { isGoal, withRunningScore } from '../matchEvents'
 import { formatTime } from '../time'
+import { Lineups } from './Lineups'
 
 interface Props {
   leagueCode: string
@@ -35,46 +36,49 @@ const statLabels: Record<MatchStatType, string> = {
   Saves: 'Saves',
 }
 
-/** Goals, cards and substitutions in order, plus team statistics. A modal dialog: Esc or a click outside closes it. */
-export function MatchDetailDialog({ leagueCode, matchId, leagueName, pushed, onClose }: Props) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const { detail, error } = useMatchDetail(leagueCode, matchId, pushed)
+type Tab = 'lineups' | 'events' | 'stats'
 
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (dialog && !dialog.open) dialog.showModal()
-  }, [])
+const tabLabels: Record<Tab, string> = { lineups: 'Line-ups', events: 'Events', stats: 'Statistics' }
+
+/** One match on a page of its own: the scoreline, then line-ups, events and statistics as tabs. */
+export function MatchPage({ leagueCode, matchId, leagueName, pushed, onClose }: Props) {
+  const { detail, error } = useMatchDetail(leagueCode, matchId, pushed)
+  // Until a tab is picked: line-ups once they are announced, otherwise events.
+  const [pickedTab, setPickedTab] = useState<Tab | null>(null)
+  const tab = pickedTab ?? (detail?.lineups ? 'lineups' : 'events')
 
   // The pushed match has the live clock; the detail's copy may be up to one refresh behind.
   const match = pushed ?? detail?.match
 
   return (
-    <dialog
-      ref={dialogRef}
-      className="detail"
-      aria-label={match ? `${match.homeTeam.name} vs ${match.awayTeam.name}` : 'Match details'}
-      onClose={onClose}
-      // Clicks on the backdrop target the dialog element itself; clicks on the content target its children.
-      onClick={e => e.target === e.currentTarget && dialogRef.current?.close()}
-    >
-      <div className="detail__body">
-        <header className="detail__top">
-          <span className="detail__league">{leagueName ?? leagueCode}</span>
-          <button className="detail__close" onClick={() => dialogRef.current?.close()} aria-label="Close">×</button>
-        </header>
+    <main className="detail" aria-label={match ? `${match.homeTeam.name} vs ${match.awayTeam.name}` : 'Match details'}>
+      <header className="detail__top">
+        <button className="detail__back" onClick={onClose}>← Matches</button>
+        <span className="detail__league">{leagueName ?? leagueCode}</span>
+      </header>
 
-        {match ? <Scoreline match={match} /> : !error && <p className="notice">Loading match…</p>}
-        {error && !detail && <p className="notice notice--error">Can't load match details ({error}).</p>}
+      {match ? <Scoreline match={match} /> : !error && <p className="notice">Loading match…</p>}
+      {error && !detail && <p className="notice notice--error">Can't load match details ({error}).</p>}
 
-        {detail && match && (
-          <>
-            <Events events={detail.events} match={match} />
-            {detail.stats.length > 0 && <Stats stats={detail.stats} />}
-            <p className="detail__updated">updated {formatTime(detail.lastUpdatedUtc)}</p>
-          </>
-        )}
-      </div>
-    </dialog>
+      {detail && match && (
+        <>
+          <nav className="tabs detail__tabs" aria-label="Match sections">
+            {(Object.keys(tabLabels) as Tab[]).map(t => (
+              <button key={t} className={t === tab ? 'tab tab--active' : 'tab'} onClick={() => setPickedTab(t)}>
+                {tabLabels[t]}
+              </button>
+            ))}
+          </nav>
+
+          {tab === 'lineups' && <Lineups lineups={detail.lineups} match={match} />}
+          {tab === 'events' && <Events events={detail.events} match={match} />}
+          {tab === 'stats' && (detail.stats.length > 0
+            ? <Stats stats={detail.stats} />
+            : <p className="detail__empty">Statistics appear once the match has kicked off.</p>)}
+          <p className="detail__updated">updated {formatTime(detail.lastUpdatedUtc)}</p>
+        </>
+      )}
+    </main>
   )
 }
 
@@ -123,7 +127,6 @@ function Events({ events, match }: { events: MatchEvent[]; match: Match }) {
 
   return (
     <section aria-label="Match events">
-      <h3 className="detail__heading">Events</h3>
       <ol className="events">
         {withRunningScore(events).map(({ event, score }, i) => (
           <EventRow key={i} event={event} score={score} />
@@ -191,7 +194,6 @@ function EventText({ event }: { event: MatchEvent }) {
 function Stats({ stats }: { stats: MatchStat[] }) {
   return (
     <section aria-label="Statistics">
-      <h3 className="detail__heading">Statistics</h3>
       <dl className="stats">
         {stats.map(stat => {
           const total = stat.home + stat.away

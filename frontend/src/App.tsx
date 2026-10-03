@@ -4,7 +4,7 @@ import { isInPlay } from './api/types'
 import { ConnectionBadge } from './components/ConnectionBadge'
 import { DateNav, MaxDaysAway } from './components/DateNav'
 import { LeagueSection } from './components/LeagueSection'
-import { MatchDetailDialog } from './components/MatchDetailDialog'
+import { MatchPage } from './components/MatchPage'
 import { useLiveScores } from './live/useLiveScores'
 import { addDays, formatLongDate, istanbulToday } from './time'
 
@@ -43,8 +43,8 @@ function writeOpenMatchToUrl(open: OpenMatch | null) {
   if (open) {
     url.searchParams.set('league', open.leagueCode)
     url.searchParams.set('match', open.matchId)
-    // A history entry of its own, so Back (e.g. on a phone) closes the dialog instead of leaving the page.
-    window.history.pushState({ matchDialog: true }, '', url)
+    // A history entry of its own, so Back returns to the match list instead of leaving the site.
+    window.history.pushState({ matchPage: true }, '', url)
   } else {
     url.searchParams.delete('league')
     url.searchParams.delete('match')
@@ -75,7 +75,7 @@ export default function App() {
   }
   const closeMatch = () => {
     // Opened from the list: go back to the entry we pushed (popstate then clears the state). Opened from a link: no such entry.
-    if ((window.history.state as { matchDialog?: boolean } | null)?.matchDialog) {
+    if ((window.history.state as { matchPage?: boolean } | null)?.matchPage) {
       window.history.back()
     } else {
       setOpenMatch(null)
@@ -108,34 +108,9 @@ export default function App() {
         <ConnectionBadge status={status} />
       </header>
 
-      <DateNav offset={dayOffset} onChange={setDayOffset} />
-
-      {isToday && (
-        <nav className="tabs" aria-label="Filter matches">
-          <button className={filter === 'all' ? 'tab tab--active' : 'tab'} onClick={() => setFilter('all')}>
-            All matches
-          </button>
-          <button className={filter === 'live' ? 'tab tab--active' : 'tab'} onClick={() => setFilter('live')}>
-            Live <span className="tab__count">{liveCount}</span>
-          </button>
-        </nav>
-      )}
-
-      {/* While another day loads, the previous one stays visible but dimmed. */}
-      <main className={loaded ? undefined : 'is-loading'} aria-busy={!loaded}>
-        {error && status === 'offline' && <p className="notice notice--error">Can't reach the server ({error}).</p>}
-        {!loaded && leagues.length === 0 ? (
-          <p className="notice">Loading matches…</p>
-        ) : shown.length === 0 ? (
-          <p className="notice">{loaded ? emptyMessage : 'Loading matches…'}</p>
-        ) : (
-          shown.map(league => <LeagueSection key={league.code} league={league} recentGoals={recentGoals} onOpenMatch={showMatch} />)
-        )}
-      </main>
-
-      {openMatch && (
-        <MatchDetailDialog
-          // A different match starts with a fresh dialog (no flash of the previous one's events).
+      {openMatch ? (
+        <MatchPage
+          // A different match starts fresh (no flash of the previous one's events).
           key={`${openMatch.leagueCode}/${openMatch.matchId}`}
           leagueCode={openMatch.leagueCode}
           matchId={openMatch.matchId}
@@ -143,6 +118,33 @@ export default function App() {
           pushed={openLeague?.matches.find(m => m.id === openMatch.matchId)}
           onClose={closeMatch}
         />
+      ) : (
+        <>
+          <DateNav offset={dayOffset} onChange={setDayOffset} />
+
+          {isToday && (
+            <nav className="tabs" aria-label="Filter matches">
+              <button className={filter === 'all' ? 'tab tab--active' : 'tab'} onClick={() => setFilter('all')}>
+                All matches
+              </button>
+              <button className={filter === 'live' ? 'tab tab--active' : 'tab'} onClick={() => setFilter('live')}>
+                Live <span className="tab__count">{liveCount}</span>
+              </button>
+            </nav>
+          )}
+
+          {/* While another day loads, the previous one stays visible but dimmed. */}
+          <main className={loaded ? undefined : 'is-loading'} aria-busy={!loaded}>
+            {error && status === 'offline' && <p className="notice notice--error">Can't reach the server ({error}).</p>}
+            {!loaded && leagues.length === 0 ? (
+              <p className="notice">Loading matches…</p>
+            ) : shown.length === 0 ? (
+              <p className="notice">{loaded ? emptyMessage : 'Loading matches…'}</p>
+            ) : (
+              shown.map(league => <LeagueSection key={league.code} league={league} recentGoals={recentGoals} onOpenMatch={showMatch} />)
+            )}
+          </main>
+        </>
       )}
 
       <footer className="footer">Times in Istanbul time · Data: ESPN</footer>

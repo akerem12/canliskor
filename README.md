@@ -5,7 +5,7 @@
 A Maçkolik-style web app for following live football scores in real time: Turkish Süper Lig plus major European and South American leagues.
 Portfolio project focused on backend design: background polling, caching, real-time push (SignalR), resilient external API integration and clean architecture.
 
-> Status: **work in progress** (step 10: line-ups and our own player ratings in the API; the match page that shows them is next).
+> Status: **work in progress** (step 11: match page with line-ups on a pitch, substitutes and our own player ratings).
 
 ## Architecture
 
@@ -66,7 +66,8 @@ The frontend keeps the selected day in the URL (`/?date=2026-10-10`), so links c
 
 ### Match details
 
-Clicking a match opens its goals (with assists, penalties and own goals), cards, substitutions and team statistics.
+Clicking a match opens its page: line-ups, events (goals with assists, penalties and own goals, cards,
+substitutions) and team statistics, as tabs.
 They come from ESPN's match summary, loaded on request by `MatchDetailService` and cached in the store. How long
 a cached detail is used depends on the match:
 
@@ -81,9 +82,9 @@ A cached detail is also stale as soon as the poller's scoreboard shows a differe
 the scorer. Detail fetches share the one-at-a-time gate with browsing. Only followed leagues and numeric ids are
 accepted, and ESPN's summary is checked to belong to the requested league (ESPN serves any match under any league's URL).
 
-The dialog reloads its detail when SignalR pushes a score or status change for that match, and every 30 s while the
-match is in play (cards and substitutions aren't pushed). The open match is kept in the URL
-(`/?league=esp.1&match=401882858`); on a phone, Back closes it.
+The match page reloads its detail when SignalR pushes a score or status change for that match, and every 30 s
+while the match is in play (cards and substitutions aren't pushed). The open match is kept in the URL
+(`/?league=esp.1&match=401882858`); Back returns to the match list.
 
 ### Line-ups
 
@@ -93,6 +94,10 @@ starters are ordered from defence to attack, cut into rows of the formation's si
 right. If the formation is missing or doesn't add up to the outfield players, players of the same depth form a row.
 Substitutes are all listed as `SUB`, so one who came on takes the position group of the player they replaced.
 Line-ups are `null` until both are announced, about an hour before kickoff.
+
+The frontend draws both elevens on a vertical pitch, home team at the top, with shirt number, rating, goals, cards
+and the minute a player went off; the substitutes are listed below. If both teams' shirt colours are too alike, the
+away team is drawn in white or black. Clicking a player shows their minutes, rating and statistics.
 
 ### Player ratings
 
