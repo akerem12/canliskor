@@ -245,6 +245,16 @@ export interface SquadPlayer {
   age: number | null
   /** Country name, e.g. "Türkiye". */
   nationality: string | null
+  flagUrl: string | null
+  /** This season in the squad's league; null if the data source has no numbers for the player. */
+  season: SquadPlayerSeason | null
+}
+
+export interface SquadPlayerSeason {
+  /** Matches played in, from the start or as a substitute. */
+  appearances: number
+  goals: number
+  assists: number
 }
 
 export interface PlayerProfile {

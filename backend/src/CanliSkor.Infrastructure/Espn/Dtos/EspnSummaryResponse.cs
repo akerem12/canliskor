@@ -78,10 +78,22 @@ internal sealed record EspnRosterResponse(EspnTeam? Team, IReadOnlyList<EspnRost
 
 /// <param name="Position">Abbreviation is "G", "D", "M" or "F".</param>
 /// <param name="Citizenship">Country name, e.g. "Türkiye".</param>
+/// <param name="Statistics">This season in the roster's league. Missing for players who haven't been in a match squad.</param>
 internal sealed record EspnRosterAthlete(
     string? Id,
     string? DisplayName,
     string? Jersey,
     EspnPosition? Position,
     int? Age,
-    string? Citizenship);
+    string? Citizenship,
+    EspnFlag? Flag = null,
+    EspnRosterStatistics? Statistics = null);
+
+internal sealed record EspnFlag(string? Href);
+
+internal sealed record EspnRosterStatistics(EspnRosterSplits? Splits);
+
+internal sealed record EspnRosterSplits(IReadOnlyList<EspnRosterStatCategory>? Categories);
+
+/// <param name="Stats">Names such as "appearances", "totalGoals", "goalAssists".</param>
+internal sealed record EspnRosterStatCategory(IReadOnlyList<EspnPlayerStat>? Stats);

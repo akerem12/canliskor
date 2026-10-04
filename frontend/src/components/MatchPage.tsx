@@ -10,7 +10,8 @@ import { assistOf, isGoal, withRunningScore } from '../matchEvents'
 import { PlayerName } from '../players/PlayerName'
 import { formatTime } from '../time'
 import type { Route } from '../route'
-import { EmptyState, Skeleton, TeamLogo } from './common'
+import { tabFromUrl, writeTabToUrl } from '../urlTab'
+import { EmptyState, OwnGoalMark, Skeleton, TeamLogo } from './common'
 import { Lineups } from './Lineups'
 import { OddsBoard } from './Odds'
 import { Squads } from './Squads'
@@ -44,23 +45,11 @@ type Tab = typeof tabs[number]
 const tabLabel = (tab: Tab, t: Dictionary) =>
   ({ lineups: t.match.lineups, events: t.match.events, stats: t.match.statistics, squads: t.match.squads })[tab]
 
-/** ?tab=squads → the tab to open, so a link leads to the same view. */
-function tabFromUrl(): Tab | null {
-  const tab = new URLSearchParams(window.location.search).get('tab')
-  return tabs.find(known => known === tab) ?? null
-}
-
-function writeTabToUrl(tab: Tab) {
-  const url = new URL(window.location.href)
-  url.searchParams.set('tab', tab)
-  window.history.replaceState(window.history.state, '', url)
-}
-
 /** One match on a page of its own: the scoreline, then line-ups, events, statistics and squads as tabs. */
 export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch, onNavigate, onClose }: Props) {
   const { t } = useI18n()
   const { detail, error } = useMatchDetail(leagueCode, matchId, pushed, watchMatch)
-  const [pickedTab, setPickedTab] = useState(tabFromUrl)
+  const [pickedTab, setPickedTab] = useState(() => tabFromUrl(tabs))
   const pickTab = (picked: Tab) => {
     setPickedTab(picked)
     writeTabToUrl(picked)
@@ -193,6 +182,8 @@ function EventIcon({ type }: { type: MatchEvent['type'] }) {
       return <span className="card card--red" role="img" aria-label={t.match.redCard} />
     case 'Substitution':
       return <span className="event__icon" role="img" aria-label={t.match.substitution}>⇄</span>
+    case 'OwnGoal':
+      return <OwnGoalMark />
     default:
       return <span className="event__icon" role="img" aria-label={t.match.goal}>⚽</span>
   }
@@ -218,7 +209,7 @@ function EventText({ event, leagueCode }: { event: MatchEvent; leagueCode: strin
     case 'PenaltyGoal':
       return <span className="event__player">{player} <span className="event__note">{t.match.penalty}</span></span>
     case 'OwnGoal':
-      return <span className="event__player">{player} <span className="event__note">{t.match.ownGoal}</span></span>
+      return <span className="event__player">{player} <span className="event__note event__note--own-goal" title={t.lineups.ownGoal}>{t.match.ownGoal}</span></span>
     case 'Goal':
       return (
         <>

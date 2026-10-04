@@ -13,9 +13,24 @@ export function resultFor(match: Match, teamId: string): Result | null {
   return scored > conceded ? 'W' : scored < conceded ? 'L' : 'D'
 }
 
-/** The team's last few results, oldest first, the way a form guide is read. Matches come newest first. */
-export function formGuide(recentMatches: Match[], teamId: string, count = 5): { match: Match; result: Result }[] {
+const friendlyPattern = /friendly|pre-?season|exhibition/i
+
+/** Friendlies, pre-season and exhibition games: played, but not competitive. Told by the competition's code or name. */
+export const isFriendly = (leagueCode: string, competitionName?: string) =>
+  friendlyPattern.test(leagueCode) || (competitionName !== undefined && friendlyPattern.test(competitionName))
+
+/**
+ * The team's last few competitive results, oldest first, the way a form guide is read. Matches come newest first;
+ * friendlies are passed over.
+ */
+export function formGuide(
+  recentMatches: Match[],
+  teamId: string,
+  friendly: (match: Match) => boolean = match => isFriendly(match.leagueCode),
+  count = 5,
+): { match: Match; result: Result }[] {
   return recentMatches
+    .filter(match => !friendly(match))
     .map(match => ({ match, result: resultFor(match, teamId) }))
     .filter((entry): entry is { match: Match; result: Result } => entry.result !== null)
     .slice(0, count)

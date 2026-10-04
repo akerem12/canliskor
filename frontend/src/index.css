@@ -19,6 +19,8 @@
   --live: #ff5d6c;
   --goal: #3d3410;
   --warn: #f59e0b;
+  --own-goal: #f0906c;
+  --own-goal-fill: #c2410c;
   --glass: rgb(10 14 23 / 0.72);
   --glow: rgb(37 99 235 / 0.22);
   --backdrop: rgb(5 8 14 / 0.7);
@@ -56,6 +58,8 @@
   --live: #dc2626;
   --goal: #fff1b8;
   --warn: #b26a00;
+  --own-goal: #b23a0a;
+  --own-goal-fill: #c2410c;
   --glass: rgb(255 255 255 / 0.78);
   --glow: rgb(37 99 235 / 0.12);
   --backdrop: rgb(15 23 42 / 0.45);
@@ -258,6 +262,13 @@ h1, h2 { margin: 0; }
 .card { flex: none; display: inline-block; width: 11px; height: 15px; margin: 0 0.1em; border-radius: 2px; }
 .card--yellow { background: #f5c518; }
 .card--red { background: #d6262f; }
+.own-goal { display: inline-flex; align-items: center; gap: 3px; flex: none; }
+.own-goal__ball { filter: grayscale(1); opacity: 0.55; }
+.own-goal__badge {
+  display: inline-grid; place-items: center; height: 16px; padding: 0 4px; border-radius: 4px;
+  background: var(--own-goal-fill); color: #fff; font-size: 0.62rem; font-weight: 900; line-height: 1; letter-spacing: 0.03em;
+}
+.event__note--own-goal { color: var(--own-goal); font-weight: 700; }
 
 .stats { margin: 0; }
 .stat { margin-bottom: 10px; }
@@ -323,7 +334,7 @@ h1, h2 { margin: 0; }
 .player__off { font-size: 0.65rem; font-weight: 700; color: #ffd9d9; text-shadow: 0 1px 2px rgb(0 0 0 / 0.6); }
 
 .marks { display: inline-flex; align-items: center; gap: 1px; font-size: 0.7rem; white-space: nowrap; }
-.marks__own-goal { filter: hue-rotate(140deg) saturate(4); }
+.marks .own-goal__badge { height: 13px; padding: 0 2px; font-size: 0.55rem; letter-spacing: 0; }
 .marks .card { width: 8px; height: 11px; }
 
 .benches { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -354,7 +365,13 @@ h1, h2 { margin: 0; }
 .squad__players > li:first-child { border-top: none; }
 .squad__number { flex: none; width: 1.8em; text-align: right; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 .squad__name { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
-.squad__nationality { font-size: 0.75rem; color: var(--muted); }
+.squad__nationality { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--muted); }
+.squad__flag { flex: none; width: 14px; height: 14px; object-fit: contain; }
+.squad__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.squad__season { flex: none; display: grid; grid-template-columns: repeat(3, 2.3rem); text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.squad__season--head { margin-bottom: 2px; font-size: 0.7rem; font-weight: 600; color: var(--muted); }
+.squad__season--head abbr { text-decoration: none; cursor: help; }
+.squad__note { margin: 12px 0 0; font-size: 0.7rem; color: var(--muted); text-align: center; }
 .squad__age { flex: none; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Player sheet */
@@ -422,6 +439,30 @@ h1, h2 { margin: 0; }
 .hero__facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; }
 .hero__facts dt { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 .hero__facts dd { margin: 0; font-weight: 600; }
+.hero__form { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 12px; }
+.hero__form-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.hero__form .form { margin: 0; }
+.team__tabs { flex-wrap: wrap; margin: 14px 0 0; }
+.team__filter .chip { padding: 5px 14px; font-size: 0.85rem; }
+.panel__note { margin: 10px 0 0; font-size: 0.75rem; color: var(--muted); }
+
+.next { display: grid; gap: 10px; }
+.next__match {
+  display: grid; gap: 8px; justify-items: center; width: 100%; padding: 10px 8px; font: inherit; color: inherit; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--bg); transition: border-color 0.15s;
+}
+.next__match:hover { border-color: var(--accent); }
+.next__match--static { cursor: default; }
+.next__match--static:hover { border-color: var(--border); }
+.next__meta, .next__venue { font-size: 0.8rem; color: var(--muted); text-align: center; }
+.next__teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; width: 100%; }
+.next__team { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
+.next__teams .fixture__score { font-size: 1.1rem; padding: 4px 12px; }
+
+.friendly-tag {
+  display: inline-block; padding: 0 6px; border: 1px solid var(--border-strong); border-radius: 999px;
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted);
+}
 
 .form { display: flex; gap: 6px; list-style: none; margin: 0 0 10px; padding: 0; }
 .form__chip {
@@ -432,6 +473,8 @@ h1, h2 { margin: 0; }
 .form__chip--W { background: #1e9e4c; }
 .form__chip--D { background: #8a938e; }
 .form__chip--L { background: #d6262f; }
+/* A friendly's result is shown, but faded: it isn't part of the form guide. */
+.form__chip--friendly { opacity: 0.45; }
 
 .fixtures { list-style: none; margin: 0; padding: 0; }
 .fixture {
@@ -454,8 +497,10 @@ h1, h2 { margin: 0; }
   transition: border-color 0.15s, background-color 0.15s;
 }
 .more:hover { border-color: var(--accent); background: var(--accent-soft); }
-.fixture__team { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fixture__team--home { text-align: right; }
+.fixture__team { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fixture__team--home { justify-content: flex-end; }
+.fixture__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fixture__venue { grid-column: 1 / -1; font-size: 0.72rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fixture__team--own { font-weight: 700; }
 .fixture__score {
   min-width: 3.4rem; padding: 2px 8px; border-radius: 6px; text-align: center;
@@ -730,6 +775,9 @@ main.is-loading { opacity: 0.5; transition: opacity 0.15s; }
   .profile__stats { grid-template-columns: repeat(2, 1fr); }
   /* Fingers need more room than a mouse pointer. */
   .squad__player { padding: 9px 0; }
+  .squad__season { grid-template-columns: repeat(3, 1.9rem); }
+  .team__tabs { gap: 6px; }
+  .team__tabs .tab { padding: 6px 10px; }
   /* A narrower minute column and smaller chips leave the names room to stay whole. */
   .event { padding: 9px 0; grid-template-columns: 1fr 2.6rem 1fr; }
   .event__content { gap: 5px; }

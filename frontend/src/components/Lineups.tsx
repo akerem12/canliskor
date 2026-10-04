@@ -7,7 +7,7 @@ import type { Shirt } from '../lineups'
 import { pitchName, pitchRows, shirtColors } from '../lineups'
 import { usePlayerProfile } from '../players/usePlayerProfile'
 import { formatMatchDate, formatTime } from '../time'
-import { Skeleton } from './common'
+import { OwnGoalMark, Skeleton } from './common'
 
 interface Props {
   lineups: MatchLineups | null
@@ -174,7 +174,7 @@ function PlayerMarks({ player, className }: { player: LineupPlayer; className?: 
           A{assists > 1 ? assists : ''}
         </span>
       )}
-      {ownGoals > 0 && <span className="marks__own-goal" role="img" aria-label={t.lineups.ownGoal}>⚽</span>}
+      {ownGoals > 0 && <OwnGoalMark compact count={ownGoals} />}
       {yellowCards > 0 && redCards === 0 && <span className="card card--yellow" role="img" aria-label={t.match.yellowCard} />}
       {redCards > 0 && <span className="card card--red" role="img" aria-label={t.match.redCard} />}
     </span>

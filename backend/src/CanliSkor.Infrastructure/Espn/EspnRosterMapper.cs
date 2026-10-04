@@ -23,7 +23,9 @@ internal static class EspnRosterMapper
                 string.IsNullOrEmpty(a.Jersey) ? null : a.Jersey,
                 MapPosition(a.Position?.Abbreviation),
                 a.Age,
-                string.IsNullOrEmpty(a.Citizenship) ? null : a.Citizenship))
+                string.IsNullOrEmpty(a.Citizenship) ? null : a.Citizenship,
+                string.IsNullOrWhiteSpace(a.Flag?.Href) ? null : a.Flag.Href,
+                MapSeason(a.Statistics)))
             // Unknown positions and players without a number go last.
             .OrderBy(p => p.Position ?? (PlayerPosition)int.MaxValue)
             .ThenBy(p => int.TryParse(p.Jersey, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : int.MaxValue)
@@ -31,6 +33,19 @@ internal static class EspnRosterMapper
             .ToList();
 
         return new Squad(leagueCode, response.Team.Id, response.Team.DisplayName, players);
+    }
+
+    private static SquadPlayerSeason? MapSeason(EspnRosterStatistics? statistics)
+    {
+        var stats = statistics?.Splits?.Categories?.SelectMany(c => c.Stats ?? []).ToList();
+        if (stats is null || stats.Count == 0)
+        {
+            return null;
+        }
+
+        int Stat(string name) => (int)Math.Round(stats.FirstOrDefault(s => s.Name == name)?.Value ?? 0);
+
+        return new SquadPlayerSeason(Stat("appearances"), Stat("totalGoals"), Stat("goalAssists"));
     }
 
     internal static PlayerPosition? MapPosition(string? abbreviation) => abbreviation switch

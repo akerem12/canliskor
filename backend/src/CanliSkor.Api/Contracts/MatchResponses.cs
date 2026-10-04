@@ -120,7 +120,18 @@ public sealed record PlayerStatsResponse(
 /// <param name="LastUpdatedUtc">When the squad was fetched from the data source.</param>
 public sealed record SquadResponse(string TeamId, string TeamName, IReadOnlyList<SquadPlayerResponse> Players, DateTimeOffset LastUpdatedUtc);
 
-public sealed record SquadPlayerResponse(string Id, string Name, string? Jersey, PlayerPosition? Position, int? Age, string? Nationality);
+/// <param name="Season">Appearances, goals and assists this season in the squad's league; null if unknown.</param>
+public sealed record SquadPlayerResponse(
+    string Id,
+    string Name,
+    string? Jersey,
+    PlayerPosition? Position,
+    int? Age,
+    string? Nationality,
+    string? FlagUrl,
+    SquadPlayerSeasonResponse? Season);
+
+public sealed record SquadPlayerSeasonResponse(int Appearances, int Goals, int Assists);
 
 public sealed record LeagueResponse(string Code, string Name);
 
@@ -246,7 +257,9 @@ public static class ContractMappings
     public static SquadResponse ToResponse(this SquadSnapshot snapshot) => new(
         snapshot.Squad.TeamId,
         snapshot.Squad.TeamName,
-        snapshot.Squad.Players.Select(p => new SquadPlayerResponse(p.Id, p.Name, p.Jersey, p.Position, p.Age, p.Nationality)).ToList(),
+        snapshot.Squad.Players.Select(p => new SquadPlayerResponse(
+            p.Id, p.Name, p.Jersey, p.Position, p.Age, p.Nationality, p.FlagUrl,
+            p.Season is null ? null : new SquadPlayerSeasonResponse(p.Season.Appearances, p.Season.Goals, p.Season.Assists))).ToList(),
         snapshot.FetchedAtUtc);
 
     public static StandingsResponse ToResponse(this Timestamped<LeagueStandings> entry) => new(

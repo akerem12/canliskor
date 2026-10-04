@@ -69,6 +69,28 @@ public class EspnRosterMapperTests
     }
 
     [Fact]
+    public void Flag_and_season_numbers_are_read_when_present()
+    {
+        var statistics = new EspnRosterStatistics(new EspnRosterSplits(
+        [
+            new EspnRosterStatCategory([new EspnPlayerStat("appearances", 7), new EspnPlayerStat("ownGoals", 1)]),
+            new EspnRosterStatCategory([new EspnPlayerStat("goalAssists", 2), new EspnPlayerStat("totalGoals", 5)]),
+        ]));
+        var response = new EspnRosterResponse(new EspnTeam("1", "Team", "Team", null),
+        [
+            new EspnRosterAthlete("1", "Scorer", "9", new EspnPosition("F"), 28, "Türkiye", new EspnFlag("https://flags/tur.png"), statistics),
+            new EspnRosterAthlete("2", "Newcomer", "10", new EspnPosition("F"), 19, "Türkiye", new EspnFlag(""), null),
+        ]);
+
+        var squad = EspnRosterMapper.Map(response, "tur.1")!;
+
+        Assert.Equal("https://flags/tur.png", squad.Players[0].FlagUrl);
+        Assert.Equal(new SquadPlayerSeason(7, 5, 2), squad.Players[0].Season);
+        Assert.Null(squad.Players[1].FlagUrl);
+        Assert.Null(squad.Players[1].Season);
+    }
+
+    [Fact]
     public void Response_without_a_team_is_rejected()
     {
         Assert.Null(EspnRosterMapper.Map(new EspnRosterResponse(null, []), "tur.1"));

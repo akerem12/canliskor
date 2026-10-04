@@ -12,6 +12,21 @@ export function TeamLogo({ team, size }: { team: Team; size: number }) {
     : <span className="logo logo--none" style={style} aria-hidden />
 }
 
+/**
+ * An own goal: a greyed ball with an "OG" badge, so it can't be taken for a goal or a red card.
+ * @param compact The badge alone, for the small marks next to a player on the pitch.
+ */
+export function OwnGoalMark({ compact = false, count = 1 }: { compact?: boolean; count?: number }) {
+  const { t } = useI18n()
+
+  return (
+    <span className="own-goal" role="img" aria-label={t.lineups.ownGoal} title={t.lineups.ownGoal}>
+      {!compact && <span className="own-goal__ball">⚽</span>}
+      <span className="own-goal__badge">{t.match.ownGoalShort}{count > 1 ? count : ''}</span>
+    </span>
+  )
+}
+
 /** Grey bars standing in for content that is on its way. */
 export function Skeleton({ rows, height = 18 }: { rows: number; height?: number }) {
   return (

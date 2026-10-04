@@ -147,6 +147,7 @@ export default function App() {
         )}
         {route.view === 'team' && (
           <TeamPage
+            key={`${route.leagueCode}/${route.teamId}`}
             leagueCode={route.leagueCode}
             teamId={route.teamId}
             leagueName={leagueOf(route.leagueCode)?.name}

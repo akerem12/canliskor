@@ -280,6 +280,11 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
         Assert.Equal("Forward", players[1].GetProperty("position").GetString());
         Assert.Equal(33, players[1].GetProperty("age").GetInt32());
         Assert.Equal("Argentina", players[1].GetProperty("nationality").GetString());
+        Assert.Equal("https://flags/arg.png", players[1].GetProperty("flagUrl").GetString());
+        Assert.Equal(7, players[1].GetProperty("season").GetProperty("appearances").GetInt32());
+        Assert.Equal(5, players[1].GetProperty("season").GetProperty("goals").GetInt32());
+        Assert.Equal(2, players[1].GetProperty("season").GetProperty("assists").GetInt32());
+        Assert.Equal(JsonValueKind.Null, players[2].GetProperty("season").ValueKind);
         Assert.Equal(JsonValueKind.Null, players[2].GetProperty("position").ValueKind);
     }
 
@@ -442,7 +447,7 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
         Task.FromResult(leagueCode != "tur.1" || teamId != "432" ? null : new Squad(leagueCode, teamId, "Galatasaray",
         [
             new SquadPlayer("1", "Keeper", "1", PlayerPosition.Goalkeeper, 30, "Türkiye"),
-            new SquadPlayer("9", "Icardi", "9", PlayerPosition.Forward, 33, "Argentina"),
+            new SquadPlayer("9", "Icardi", "9", PlayerPosition.Forward, 33, "Argentina", "https://flags/arg.png", new SquadPlayerSeason(7, 5, 2)),
             new SquadPlayer("50", "Youngster", null, null, null, null),
         ]));
 
