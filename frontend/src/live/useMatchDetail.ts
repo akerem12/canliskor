@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getMatchDetail } from '../api/http'
 import type { Match, MatchDetail } from '../api/types'
+import { localizeNames } from '../i18n/names'
+import { useI18n } from '../i18n/useI18n'
 import type { WatchMatch } from './useLiveScores'
 
 /** The newer of two details of the same match: a REST response and a push can arrive in either order. */
@@ -15,6 +17,7 @@ export function newerDetail(current: MatchDetail | null, incoming: MatchDetail):
  * @param pushed The match as kept current over SignalR, if it is on the day being shown.
  */
 export function useMatchDetail(leagueCode: string, matchId: string, pushed: Match | undefined, watchMatch: WatchMatch) {
+  const { language } = useI18n()
   const [detail, setDetail] = useState<MatchDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,5 +45,7 @@ export function useMatchDetail(leagueCode: string, matchId: string, pushed: Matc
     [leagueCode, matchId, watchMatch],
   )
 
-  return { detail, error }
+  const localized = useMemo(() => localizeNames(detail, language), [detail, language])
+
+  return { detail: localized, error }
 }

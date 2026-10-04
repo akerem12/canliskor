@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { searchTeams } from '../api/http'
 import type { TeamSearchResult } from '../api/types'
 import { FavoriteButton } from '../favorites/FavoriteButton'
+import { localizeNames, searchQueryFor } from '../i18n/names'
 import { useI18n } from '../i18n/useI18n'
 import type { Route } from '../route'
 import { EmptyState, Skeleton, TeamLogo } from './common'
@@ -19,7 +20,7 @@ interface Found {
 
 /** Finds any team of the followed leagues by name; a result opens the team's page. */
 export function TeamSearchBox({ onNavigate }: { onNavigate: (route: Route) => void }) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const [text, setText] = useState('')
   const [found, setFound] = useState<Found | null>(null)
   const query = text.trim()
@@ -29,7 +30,7 @@ export function TeamSearchBox({ onNavigate }: { onNavigate: (route: Route) => vo
     if (!searching) return
     let cancelled = false
     const timer = setTimeout(() => {
-      searchTeams(query).then(
+      searchTeams(searchQueryFor(query, language)).then(
         results => {
           if (!cancelled) setFound({ query, results, error: false })
         },
@@ -42,10 +43,10 @@ export function TeamSearchBox({ onNavigate }: { onNavigate: (route: Route) => vo
       cancelled = true
       clearTimeout(timer)
     }
-  }, [query, searching])
+  }, [query, searching, language])
 
   // Results of an earlier query aren't this query's results.
-  const current = searching && found?.query === query ? found : null
+  const current = localizeNames(searching && found?.query === query ? found : null, language)
 
   return (
     <div className="search">

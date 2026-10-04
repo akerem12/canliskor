@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { localizeNames } from '../i18n/names'
+import { useI18n } from '../i18n/useI18n'
 
 interface FetchState<T> {
   key: string
@@ -8,9 +10,11 @@ interface FetchState<T> {
 
 /**
  * Loads something once per key and tells apart "still loading", "failed" and "here it is".
+ * Team, competition and country names in the result are in the site's language.
  * @param key Identifies what is being loaded; a new key starts a new load and forgets the old result.
  */
 export function useFetch<T>(key: string, load: () => Promise<T>) {
+  const { language } = useI18n()
   const [state, setState] = useState<FetchState<T>>({ key, data: null, error: null })
   const [attempt, setAttempt] = useState(0)
 
@@ -37,8 +41,9 @@ export function useFetch<T>(key: string, load: () => Promise<T>) {
 
   // A result that belongs to a previous key is not this key's result.
   const current = state.key === key ? state : { data: null, error: null }
+  const data = useMemo(() => localizeNames(current.data, language), [current.data, language])
   return {
-    data: current.data,
+    data,
     error: current.error,
     loading: current.data === null && current.error === null,
     retry: () => {

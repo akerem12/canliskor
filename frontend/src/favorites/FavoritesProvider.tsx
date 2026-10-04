@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { localizeNames, sourceLeagueName, sourceTeamName } from '../i18n/names'
+import { useI18n } from '../i18n/useI18n'
 import type { Favorites } from './favorites'
 import { noFavorites, parseFavorites, StorageKey, toggleLeague, toggleTeam } from './favorites'
 import type { FavoritesContextValue } from './useFavorites'
@@ -27,6 +29,7 @@ function writeStored(favorites: Favorites) {
  * a reload. There is no server side to wait for, so a click on a star shows at once everywhere on the page.
  */
 export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const { language } = useI18n()
   const [favorites, setFavorites] = useState(readStored)
 
   // Starred in another tab: this one follows.
@@ -46,11 +49,13 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  // A star may be pressed while the site is in Turkish: the name is kept as the data source spells it, and
+  // shown in whichever language the site is in.
   const value = useMemo<FavoritesContextValue>(() => ({
-    favorites,
-    toggleTeam: team => update(current => toggleTeam(current, team)),
-    toggleLeague: league => update(current => toggleLeague(current, league)),
-  }), [favorites, update])
+    favorites: localizeNames(favorites, language),
+    toggleTeam: team => update(current => toggleTeam(current, { ...team, name: sourceTeamName(team.name) })),
+    toggleLeague: league => update(current => toggleLeague(current, { ...league, name: sourceLeagueName(league.code, league.name) })),
+  }), [favorites, language, update])
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>
 }

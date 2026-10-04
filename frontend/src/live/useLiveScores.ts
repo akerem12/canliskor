@@ -1,8 +1,10 @@
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
 import type { HubConnection } from '@microsoft/signalr'
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { getDay, getLeagues, getLive } from '../api/http'
 import type { Match, MatchDetail, MatchUpdatedMessage } from '../api/types'
+import { localizeNames } from '../i18n/names'
+import { useI18n } from '../i18n/useI18n'
 import { addDays, istanbulToday } from '../time'
 import { goalsIn, initialState, mergeLeagues, scoresReducer } from './matchState'
 
@@ -55,7 +57,10 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
   // Every match seen so far, so a listener can compare an update with what was known before it.
   const knownRef = useRef(new Map<string, Match>())
   const onUpdateRef = useRef(onUpdate)
+  const { language } = useI18n()
+  const languageRef = useRef(language)
   useEffect(() => {
+    languageRef.current = language
     onUpdateRef.current = onUpdate
     for (const match of state.leagues.flatMap(l => l.matches)) {
       knownRef.current.set(match.id, match)
@@ -87,7 +92,8 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
     connection.on('MatchUpdated', (message: MatchUpdatedMessage) => {
       const previous = knownRef.current.get(message.match.id)
       knownRef.current.set(message.match.id, message.match)
-      onUpdateRef.current?.(message, previous)
+      // Alerts name the teams, so they get the update in the site's language.
+      onUpdateRef.current?.(localizeNames(message, languageRef.current), localizeNames(previous, languageRef.current))
 
       dispatch({ type: 'update', message })
       if (message.scoreChanged && goalsIn(message.match) > goalsIn(previous)) {
@@ -231,5 +237,7 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
     }
   }, [])
 
-  return { leagues: state.leagues, loaded: state.loaded, status, date, recentGoals, error, watchMatch }
+  const leagues = useMemo(() => localizeNames(state.leagues, language), [state.leagues, language])
+
+  return { leagues, loaded: state.loaded, status, date, recentGoals, error, watchMatch }
 }
