@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace CanliSkor.Infrastructure.Espn.Dtos;
 
 // Mirrors only the parts of ESPN's match summary JSON (/summary?event={id}) that we use.
@@ -50,6 +52,7 @@ internal sealed record EspnRoster(
 /// <param name="Color">Hex without "#", e.g. "990000".</param>
 internal sealed record EspnUniform(string? Color);
 
+/// <param name="SubbedIn">ESPN sends true/false for most matches and {"didSub": false} for some; both are read.</param>
 /// <param name="SubbedInFor">The player this substitute replaced.</param>
 /// <param name="Plays">The player's cards, goals and substitutions, in match order.</param>
 internal sealed record EspnRosterEntry(
@@ -57,8 +60,8 @@ internal sealed record EspnRosterEntry(
     string? Jersey,
     EspnAthlete? Athlete,
     EspnPosition? Position,
-    bool SubbedIn,
-    bool SubbedOut,
+    [property: JsonConverter(typeof(EspnSubstitutionFlagConverter))] bool SubbedIn,
+    [property: JsonConverter(typeof(EspnSubstitutionFlagConverter))] bool SubbedOut,
     EspnSubstitutionPartner? SubbedInFor,
     IReadOnlyList<EspnPlayerStat>? Stats,
     IReadOnlyList<EspnPlayerPlay>? Plays);
