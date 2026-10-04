@@ -1,4 +1,4 @@
-import type { LeagueMatches, MatchUpdatedMessage } from '../api/types'
+import type { LeagueMatches, Match, MatchUpdatedMessage } from '../api/types'
 
 // Pure state logic for the live scoreboard, kept free of React and SignalR so it can be unit-tested.
 
@@ -35,6 +35,9 @@ export function scoresReducer(state: ScoresState, action: ScoresAction): ScoresS
 }
 
 /** Replaces the match with the same id. Unknown matches are ignored (same rule as the backend's change detector). */
+/** Goals scored so far by both teams; none before kick-off or for a match not seen before. */
+export const goalsIn = (match: Match | undefined) => (match?.score ? match.score.home + match.score.away : 0)
+
 export function applyUpdate(leagues: LeagueMatches[], { match }: MatchUpdatedMessage): LeagueMatches[] {
   return leagues.map(league =>
     league.code !== match.leagueCode || !league.matches.some(m => m.id === match.id)

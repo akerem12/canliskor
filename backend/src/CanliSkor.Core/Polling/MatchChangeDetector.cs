@@ -8,6 +8,8 @@ namespace CanliSkor.Core.Polling;
 /// </summary>
 public static class MatchChangeDetector
 {
+    private static readonly Score NoGoals = new(0, 0);
+
     /// <remarks>
     /// No previous scoreboard (e.g. first poll after startup) means no changes: there is nothing to compare
     /// against, and clients load the full state over REST anyway. Matches that appear for the first time are
@@ -31,7 +33,8 @@ public static class MatchChangeDetector
             }
 
             var kinds = MatchChangeKind.None;
-            if (match.Score != before.Score) kinds |= MatchChangeKind.Score;
+            // Before kick-off there is no score and at kick-off it turns 0-0: nobody scored, so that is no score change.
+            if ((match.Score ?? NoGoals) != (before.Score ?? NoGoals)) kinds |= MatchChangeKind.Score;
             if (match.Status != before.Status) kinds |= MatchChangeKind.Status;
             if (match.Clock != before.Clock) kinds |= MatchChangeKind.Clock;
 

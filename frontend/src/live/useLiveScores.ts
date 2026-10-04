@@ -4,7 +4,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { getDay, getLeagues, getLive } from '../api/http'
 import type { Match, MatchDetail, MatchUpdatedMessage } from '../api/types'
 import { addDays, istanbulToday } from '../time'
-import { initialState, mergeLeagues, scoresReducer } from './matchState'
+import { goalsIn, initialState, mergeLeagues, scoresReducer } from './matchState'
 
 export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting' | 'offline'
 
@@ -90,7 +90,7 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
       onUpdateRef.current?.(message, previous)
 
       dispatch({ type: 'update', message })
-      if (message.scoreChanged) {
+      if (message.scoreChanged && goalsIn(message.match) > goalsIn(previous)) {
         highlightGoal(message.match.id)
       }
     })

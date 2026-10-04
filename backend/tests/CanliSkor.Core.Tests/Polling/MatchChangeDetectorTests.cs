@@ -41,13 +41,24 @@ public class MatchChangeDetectorTests
     }
 
     [Fact]
-    public void Kickoff_reports_status_score_and_clock_together()
+    public void Kickoff_reports_status_and_clock_but_no_score_change()
     {
         var scheduled = LiveMatch with { Status = MatchStatus.Scheduled, Clock = null, Score = null };
 
         var change = Assert.Single(Detect(scheduled, LiveMatch));
 
-        Assert.Equal(MatchChangeKind.Status | MatchChangeKind.Score | MatchChangeKind.Clock, change.Kinds);
+        // The score appearing as 0-0 is not a goal.
+        Assert.Equal(MatchChangeKind.Status | MatchChangeKind.Clock, change.Kinds);
+    }
+
+    [Fact]
+    public void Goal_in_the_same_poll_as_kickoff_is_a_score_change()
+    {
+        var scheduled = LiveMatch with { Status = MatchStatus.Scheduled, Clock = null, Score = null };
+
+        var change = Assert.Single(Detect(scheduled, LiveMatch with { Score = new Score(0, 1) }));
+
+        Assert.True(change.Kinds.HasFlag(MatchChangeKind.Score));
     }
 
     [Fact]

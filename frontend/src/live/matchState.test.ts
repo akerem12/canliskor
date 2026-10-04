@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LeagueMatches, Match, MatchUpdatedMessage } from '../api/types'
-import { applyUpdate, initialState, mergeLeagues, scoresReducer } from './matchState'
+import { applyUpdate, goalsIn, initialState, mergeLeagues, scoresReducer } from './matchState'
 
 const match = (id: string, overrides: Partial<Match> = {}): Match => ({
   id,
@@ -92,5 +92,17 @@ describe('mergeLeagues', () => {
     const result = mergeLeagues([league('eng.1'), league('tur.1')], [], ['tur.1', 'eng.1'])
 
     expect(result.map(l => l.code)).toEqual(['tur.1', 'eng.1'])
+  })
+})
+
+describe('goalsIn', () => {
+  it('counts the goals of both teams', () => {
+    expect(goalsIn(match('1', { score: { home: 2, away: 1 } }))).toBe(3)
+  })
+
+  it('is the same before kick-off and at 0-0, so kick-off is no goal', () => {
+    expect(goalsIn(match('1', { status: 'Scheduled', score: null }))).toBe(0)
+    expect(goalsIn(match('1'))).toBe(0)
+    expect(goalsIn(undefined)).toBe(0)
   })
 })
