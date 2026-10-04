@@ -154,9 +154,13 @@ h1, h2 { margin: 0; }
 .league__matches { list-style: none; margin: 0; padding: 0; }
 
 .match {
+  /* The time and status rail on the left, and an empty rail just as wide on the right. */
+  --rail: 3.2rem 3.4rem;
+  --score: 4.8rem;
   position: relative;
   display: grid;
-  grid-template-columns: 3.2rem 3.4rem 1fr auto 1fr;
+  /* Mirrored around a fixed score box, so the score sits on the row's centre line whatever the names' lengths. */
+  grid-template-columns: var(--rail) minmax(0, 1fr) var(--score) minmax(0, 1fr) var(--rail);
   align-items: center; gap: 8px;
   width: 100%; padding: 10px 14px;
   /* A button: reset the browser's look so the row looks like before. */
@@ -171,15 +175,15 @@ h1, h2 { margin: 0; }
 .match__minute { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 700; color: var(--muted); }
 .match--live .match__minute { color: var(--live); }
 .match__score {
-  min-width: 3.6rem; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums;
-  padding: 2px 8px; border-radius: 6px; background: var(--bg);
+  text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
+  padding: 2px 4px; border-radius: 6px; background: var(--bg);
 }
 .match--live .match__score { color: var(--live); }
 
 .team { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .team--home { justify-content: flex-end; text-align: right; }
 .team--home .team__logo { order: 2; }
-.team__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .team__name--short { display: none; }
 .team__logo { flex: none; width: 20px; height: 20px; object-fit: contain; }
 
@@ -201,7 +205,7 @@ h1, h2 { margin: 0; }
 
 @media (max-width: 520px) {
   /* One status column: kickoff time before the match, minute/FT once it has started. */
-  .match { grid-template-columns: 2.8rem 1fr auto 1fr; padding: 10px; }
+  .match { --rail: 2.8rem; --score: 3.8rem; gap: 6px; padding: 10px; }
   .match--started .match__time, .match:not(.match--started) .match__minute { display: none; }
   .team__logo { display: none; }
   /* Phones: "Man United" instead of "Manchester U…" (the full name stays in the tooltip). */
@@ -571,7 +575,7 @@ h1, h2 { margin: 0; }
 .feed__card--live { border-color: var(--live); }
 .feed__meta { display: flex; justify-content: space-between; gap: 8px; font-size: 0.78rem; color: var(--muted); }
 .feed__league { font-weight: 700; color: var(--accent); }
-.feed__teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin: 8px 0; }
+.feed__teams { display: grid; grid-template-columns: minmax(0, 1fr) 4.8rem minmax(0, 1fr); align-items: center; gap: 10px; margin: 8px 0; }
 .feed__team {
   display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px; font: inherit; font-weight: 600;
   color: inherit; border: none; border-radius: 8px; background: none; text-align: left;
@@ -581,7 +585,7 @@ button.feed__team:hover { color: var(--accent); background: var(--surface); }
 .feed__team--home { flex-direction: row-reverse; text-align: right; }
 .feed__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .feed__time {
-  display: flex; flex-direction: column; align-items: center; min-width: 3.6rem; padding: 3px 9px; border-radius: 7px;
+  display: flex; flex-direction: column; align-items: center; padding: 3px 4px; border-radius: 7px; white-space: nowrap;
   font-weight: 800; font-variant-numeric: tabular-nums; background: var(--surface);
 }
 .feed__live { font-size: 0.7rem; color: var(--live); }
