@@ -15,14 +15,13 @@ export function TeamLogo({ team, size }: { team: Team; size: number }) {
     )
 }
 
-/** The site's mark: a scoreboard of two blocks around a colon. The blocks take the text colour of the theme. */
+/** The site's mark: a goal frame with a ball in the net. Frame and net take their colours from the theme. */
 export function LogoMark() {
   return (
     <svg className="logo-mark" viewBox="0 0 120 120" aria-hidden>
-      <rect x="14" y="30" width="32" height="60" rx="8" fill="currentColor" />
-      <circle cx="60" cy="48" r="6" fill="#2BB673" />
-      <circle cx="60" cy="72" r="6" fill="#2BB673" />
-      <rect x="74" y="30" width="32" height="60" rx="8" fill="currentColor" />
+      <path className="logo-mark__net" d="M40 30 V92 M60 30 V92 M80 30 V92 M18 52 H102 M18 72 H102" strokeWidth="2" />
+      <path d="M18 94 V28 H102 V94" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="66" cy="76" r="13" fill="#2BB673" />
     </svg>
   )
 }

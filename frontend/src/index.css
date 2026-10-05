@@ -28,6 +28,7 @@
   --own-goal-fill: #c2410c;
   --h2h-home: #34d399;
   --logo-ink: #faf9f5;
+  --logo-net: #3a443e;
   --glass: rgb(10 14 23 / 0.72);
   --glow: rgb(37 99 235 / 0.22);
   --backdrop: rgb(5 8 14 / 0.7);
@@ -72,6 +73,7 @@
   --own-goal-fill: #c2410c;
   --h2h-home: #0f8a5f;
   --logo-ink: #0e1411;
+  --logo-net: #d6d4cc;
   --glass: rgb(255 255 255 / 0.78);
   --glow: rgb(37 99 235 / 0.12);
   --backdrop: rgb(15 23 42 / 0.45);
@@ -114,8 +116,9 @@ h1, h2 { margin: 0; }
 .topbar__name {
   color: transparent; background: linear-gradient(90deg, var(--title-from), var(--title-to)); -webkit-background-clip: text; background-clip: text;
 }
-/* Light blocks in the dark theme, dark ink in the light one. */
+/* A light frame in the dark theme, dark ink in the light one; the net a quiet grey in both. */
 .logo-mark { flex: none; width: 30px; height: 30px; color: var(--logo-ink); }
+.logo-mark__net { stroke: var(--logo-net); }
 .topbar__date { color: var(--muted); font-size: 0.9rem; }
 .topbar__side { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .tools { display: flex; gap: 6px; }
