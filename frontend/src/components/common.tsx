@@ -2,14 +2,17 @@ import { useState } from 'react'
 import type { Team } from '../api/types'
 import { useI18n } from '../i18n/useI18n'
 
-/** A team's crest. A missing or broken image leaves an empty slot of the same size, so rows stay aligned. */
+/** A team's crest. A missing or broken image gives a plain grey shield of the same size, so rows stay aligned. */
 export function TeamLogo({ team, size }: { team: Team; size: number }) {
   const [broken, setBroken] = useState(false)
-  const style = { width: size, height: size }
 
   return team.logoUrl && !broken
-    ? <img className="logo" src={team.logoUrl} alt="" style={style} loading="lazy" onError={() => setBroken(true)} />
-    : <span className="logo logo--none" style={style} aria-hidden />
+    ? <img className="logo" src={team.logoUrl} alt="" width={size} height={size} loading="lazy" onError={() => setBroken(true)} />
+    : (
+      <svg className="logo logo--none" width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+        <path d="M12 2.5 4.5 5v6.2c0 4.6 3 8.4 7.5 10.3 4.5-1.9 7.5-5.7 7.5-10.3V5z" />
+      </svg>
+    )
 }
 
 /**

@@ -3,6 +3,7 @@ import { isInPlay } from '../api/types'
 import type { Dictionary } from '../i18n/en'
 import { useI18n } from '../i18n/useI18n'
 import { formatTime } from '../time'
+import { TeamLogo } from './common'
 import { OddsStrip } from './Odds'
 
 /** "HT", "FT" and the like; nothing before kickoff, and a live match shows its minute instead. */
@@ -19,10 +20,7 @@ function statusLabel(status: Match['status'], t: Dictionary): string {
 function TeamName({ team, align }: { team: Team; align: 'home' | 'away' }) {
   return (
     <span className={`team team--${align}`} title={team.name}>
-      {/* Same space with or without a logo, so team names line up. */}
-      {team.logoUrl
-        ? <img className="team__logo" src={team.logoUrl} alt="" width={20} height={20} loading="lazy" />
-        : <span className="team__logo" aria-hidden />}
+      <TeamLogo team={team} size={20} />
       <span className="team__name team__name--full">{team.name}</span>
       <span className="team__name team__name--short">{team.shortName}</span>
     </span>

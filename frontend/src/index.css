@@ -138,8 +138,9 @@ h1, h2 { margin: 0; }
 
 .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
 /* The match list's filters on the left, its odds switch on the right. */
-.listbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.listbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 14px; }
 .listbar .tabs { margin-bottom: 0; }
+.listbar .tab { white-space: nowrap; }
 .odds-toggle {
   display: inline-flex; align-items: center; gap: 8px; margin-left: auto; padding: 4px 0;
   font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--subtle);
@@ -219,10 +220,9 @@ h1, h2 { margin: 0; }
 
 .team { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .team--home { justify-content: flex-end; text-align: right; }
-.team--home .team__logo { order: 2; }
+.team--home .logo { order: 2; }
 .team__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .team__name--short { display: none; }
-.team__logo { flex: none; width: 20px; height: 20px; object-fit: contain; }
 
 .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--live); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.25; } }
@@ -242,9 +242,12 @@ h1, h2 { margin: 0; }
 
 @media (max-width: 520px) {
   /* One status column: kickoff time before the match, minute/FT once it has started. */
-  .match { --rail: 2.8rem; --score: 3.8rem; gap: 6px; padding: 10px 12px; }
+  /* Narrow rails, a compact score box and smaller names leave room for the crests down to 320px. */
+  .match { --rail: 2.6rem; --score: 3.4rem; gap: 5px; padding: 10px; }
   .match--started .match__time, .match:not(.match--started) .match__minute { display: none; }
-  .team__logo { display: none; }
+  .match__time { font-size: 0.8rem; }
+  .match__minute { font-size: 0.75rem; }
+  .match .team { gap: 5px; font-size: 0.8125rem; }
   /* Phones: "Man United" instead of "Manchester U…" (the full name stays in the tooltip). */
   .team__name--full { display: none; }
   .team__name--short { display: inline; }
@@ -462,7 +465,7 @@ h1, h2 { margin: 0; }
 .panel__title { margin: 0 0 10px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 
 .logo { flex: none; object-fit: contain; }
-.logo--none { display: inline-block; }
+.logo--none { fill: var(--chip); stroke: var(--subtle); stroke-width: 1.5; stroke-linejoin: round; }
 
 .league-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .league-list__item {
@@ -859,6 +862,12 @@ main.is-loading { opacity: 0.5; transition: opacity 0.15s; }
   .match__odds .odd { flex: none; gap: 4px; }
   .match__odds .odd__label { display: inline; }
   .listbar { margin-bottom: 12px; }
+}
+
+@media (max-width: 360px) {
+  /* The narrowest phones: the empty right-hand rail goes to the names, and the odds line follows the score. */
+  .match { grid-template-columns: var(--rail) minmax(0, 1fr) var(--score) minmax(0, 1fr); }
+  .match__odds { padding-left: calc(var(--rail) + 5px); }
   /* The header stays one row: the connection shows as its dot alone. */
   .connection__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .topbar { flex-wrap: nowrap; }
