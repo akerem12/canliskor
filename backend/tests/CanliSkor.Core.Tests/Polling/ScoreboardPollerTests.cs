@@ -21,6 +21,7 @@ public class ScoreboardPollerTests
     private readonly FakeTimeProvider _time = new(Now);
 
     private readonly MatchViewerRegistry _viewers = new();
+    private readonly PollSchedule _schedule = new();
 
     private ScoreboardPoller CreatePoller(params string[] leagues) => new(
         _provider,
@@ -39,6 +40,7 @@ public class ScoreboardPollerTests
             _store,
             _publisher,
             NullLogger<LiveDetailRefresher>.Instance),
+        _schedule,
         TestOptions.Leagues(leagues),
         new StaticOptionsMonitor<PollingOptions>(TestOptions.Polling()),
         _time,
@@ -70,6 +72,65 @@ public class ScoreboardPollerTests
         var delay = await CreatePoller("tur.1").PollAsync(CancellationToken.None);
 
         Assert.Equal(TimeSpan.FromSeconds(30), delay);
+    }
+
+    [Fact]
+    public async Task Only_leagues_with_a_match_in_play_are_polled_at_the_live_interval()
+    {
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("tur.1", Yesterday), Now.AddHours(-1)));
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("eng.1", Yesterday), Now.AddHours(-1)));
+        _provider.Returns(Scoreboard("tur.1", Today, Match(MatchStatus.Live, Now.AddMinutes(-20))));
+        _provider.Returns(Scoreboard("eng.1", Today, Match(MatchStatus.Finished, Now.AddHours(-3))));
+        var poller = CreatePoller("tur.1", "eng.1");
+
+        var delay = await poller.PollAsync(CancellationToken.None);
+        _time.Advance(delay);
+        await poller.PollAsync(CancellationToken.None);
+
+        Assert.Equal([("tur.1", Today), ("eng.1", Today), ("tur.1", Today)], _provider.Requests);
+    }
+
+    [Fact]
+    public async Task A_quiet_league_is_polled_again_after_the_idle_interval()
+    {
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("eng.1", Yesterday), Now.AddHours(-1)));
+        _provider.Returns(Scoreboard("eng.1", Today, Match(MatchStatus.Finished, Now.AddHours(-3))));
+        var poller = CreatePoller("eng.1");
+
+        Assert.Equal(TimeSpan.FromMinutes(15), await poller.PollAsync(CancellationToken.None));
+        _time.Advance(TimeSpan.FromMinutes(14));
+        await poller.PollAsync(CancellationToken.None);
+        Assert.Single(_provider.Requests);
+
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await poller.PollAsync(CancellationToken.None);
+        Assert.Equal(2, _provider.Requests.Count);
+    }
+
+    [Fact]
+    public async Task A_league_about_to_kick_off_is_polled_at_the_live_interval()
+    {
+        // Lead time in the tests: 2 minutes.
+        _provider.Returns(Scoreboard("tur.1", Today, Match(MatchStatus.Scheduled, Now.AddSeconds(90))));
+
+        Assert.Equal(TimeSpan.FromSeconds(30), await CreatePoller("tur.1").PollAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task A_failing_league_is_not_asked_again_before_the_retry_interval()
+    {
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("tur.1", Yesterday), Now.AddHours(-1)));
+        // _provider has no data configured, so every fetch fails.
+        var poller = CreatePoller("tur.1");
+
+        await poller.PollAsync(CancellationToken.None);
+        _time.Advance(TimeSpan.FromSeconds(30));
+        await poller.PollAsync(CancellationToken.None);
+        Assert.Single(_provider.Requests);
+
+        _time.Advance(TimeSpan.FromSeconds(30));
+        await poller.PollAsync(CancellationToken.None);
+        Assert.Equal(2, _provider.Requests.Count);
     }
 
     [Fact]

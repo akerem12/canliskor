@@ -40,12 +40,12 @@ external API.
 After each fetch the new scoreboard is compared with the cached one; only matches whose score, status or clock
 changed are pushed, and only to clients subscribed to that league.
 
-**Smart polling.** After each round the worker computes the next delay:
+**Smart polling.** Each league has its own rhythm; a round only fetches the leagues that are due:
 
-| Situation | Next poll |
+| Situation in the league | Its next poll |
 |---|---|
-| A match is live / at half time (or past kickoff but not yet flagged live) | `LiveInterval` (30 s) |
-| Next kickoff is soon | just before kickoff (`KickoffLeadTime`) |
+| A match is live / at half time (or past kickoff but not yet flagged live) | `LiveInterval` (10 s, as long as ESPN caches its own answers) |
+| Next kickoff is soon | 5 minutes before kickoff (`KickoffLeadTime`), then at `LiveInterval` |
 | Nothing happening | `IdleInterval` (15 min) |
 | A fetch failed | at most `ErrorRetryInterval` (1 min); last good data keeps being served |
 
@@ -73,7 +73,7 @@ a cached detail is used depends on the match:
 
 | Match | Refetched after |
 |---|---|
-| Live (or past kickoff) | `LiveInterval` (30 s): any number of viewers cost one ESPN call per interval |
+| Live (or past kickoff) | `LiveInterval` (10 s): any number of viewers cost one ESPN call per interval |
 | Scheduled | 30 minutes |
 | Finished, postponed, cancelled | 6 hours (only late corrections can change) |
 

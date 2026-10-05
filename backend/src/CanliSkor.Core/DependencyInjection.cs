@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<ExpectedLineupService>();
         services.AddSingleton<OnDemandFetchGate>();
         services.AddSingleton<MatchViewerRegistry>();
+        services.AddSingleton<PollSchedule>();
         services.AddScoped<LiveDetailRefresher>();
 
         return services;

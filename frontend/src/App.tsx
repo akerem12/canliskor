@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { isInPlay } from './api/types'
 import { Skeleton, EmptyState } from './components/common'
+import { LogoMark } from './components/common'
 import { ConnectionBadge } from './components/ConnectionBadge'
 import { DateNav, MaxDaysAway } from './components/DateNav'
 import { HeaderTools } from './components/HeaderTools'
@@ -101,7 +102,10 @@ export default function App() {
       <header className="topbar">
         <div className="topbar__title">
           <h1>
-            <button className="topbar__home" onClick={() => navigate({ view: 'matches' })}>CanlıSkor</button>
+            <button className="topbar__home" onClick={() => navigate({ view: 'matches' })}>
+              <LogoMark />
+              <span className="topbar__name">CanlıSkor</span>
+            </button>
           </h1>
           <span className="topbar__date">{formatLongDate(date, t)}</span>
         </div>

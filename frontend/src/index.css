@@ -27,6 +27,7 @@
   --own-goal: #f0906c;
   --own-goal-fill: #c2410c;
   --h2h-home: #34d399;
+  --logo-ink: #faf9f5;
   --glass: rgb(10 14 23 / 0.72);
   --glow: rgb(37 99 235 / 0.22);
   --backdrop: rgb(5 8 14 / 0.7);
@@ -70,6 +71,7 @@
   --own-goal: #b23a0a;
   --own-goal-fill: #c2410c;
   --h2h-home: #0f8a5f;
+  --logo-ink: #0e1411;
   --glass: rgb(255 255 255 / 0.78);
   --glow: rgb(37 99 235 / 0.12);
   --backdrop: rgb(15 23 42 / 0.45);
@@ -106,9 +108,14 @@ h1, h2 { margin: 0; }
 }
 .topbar h1 { font-size: 1.6rem; letter-spacing: -0.02em; }
 .topbar__home {
-  font: inherit; letter-spacing: inherit; cursor: pointer; padding: 0; border: none;
+  display: flex; align-items: center; gap: 6px;
+  font: inherit; letter-spacing: inherit; cursor: pointer; padding: 0; border: none; background: none;
+}
+.topbar__name {
   color: transparent; background: linear-gradient(90deg, var(--title-from), var(--title-to)); -webkit-background-clip: text; background-clip: text;
 }
+/* Light blocks in the dark theme, dark ink in the light one. */
+.logo-mark { flex: none; width: 30px; height: 30px; color: var(--logo-ink); }
 .topbar__date { color: var(--muted); font-size: 0.9rem; }
 .topbar__side { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 .tools { display: flex; gap: 6px; }
@@ -862,12 +869,6 @@ main.is-loading { opacity: 0.5; transition: opacity 0.15s; }
   .match__odds .odd { flex: none; gap: 4px; }
   .match__odds .odd__label { display: inline; }
   .listbar { margin-bottom: 12px; }
-}
-
-@media (max-width: 360px) {
-  /* The narrowest phones: the empty right-hand rail goes to the names, and the odds line follows the score. */
-  .match { grid-template-columns: var(--rail) minmax(0, 1fr) var(--score) minmax(0, 1fr); }
-  .match__odds { padding-left: calc(var(--rail) + 5px); }
   /* The header stays one row: the connection shows as its dot alone. */
   .connection__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .topbar { flex-wrap: nowrap; }
@@ -884,6 +885,11 @@ main.is-loading { opacity: 0.5; transition: opacity 0.15s; }
   .event__content { gap: 5px; }
   .event__player, .event__in { font-size: 0.9rem; }
   .event__score { margin: 0; padding: 1px 4px; font-size: 0.72rem; }
+}
+@media (max-width: 360px) {
+  /* The narrowest phones: the empty right-hand rail goes to the names, and the odds line follows the score. */
+  .match { grid-template-columns: var(--rail) minmax(0, 1fr) var(--score) minmax(0, 1fr); }
+  .match__odds { padding-left: calc(var(--rail) + 5px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

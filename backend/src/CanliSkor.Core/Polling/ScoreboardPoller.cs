@@ -8,8 +8,9 @@ using Microsoft.Extensions.Options;
 namespace CanliSkor.Core.Polling;
 
 /// <summary>
-/// One polling round: fetch every followed league, update the store, push what changed, refresh the details of
-/// watched live matches, and decide when to poll next.
+/// One polling round: fetch every followed league that is due, update the store, push what changed, refresh the
+/// details of watched live matches, and decide when to poll next. A league is due every few seconds while it has
+/// a match in play or about to kick off, and rarely otherwise, so quiet leagues cost next to nothing.
 /// Kept separate from the hosted service so it can be unit-tested without timers or a host.
 /// </summary>
 public sealed partial class ScoreboardPoller(
@@ -17,41 +18,74 @@ public sealed partial class ScoreboardPoller(
     IMatchStore store,
     IMatchUpdatePublisher publisher,
     LiveDetailRefresher detailRefresher,
+    PollSchedule schedule,
     IOptionsMonitor<FootballOptions> footballOptions,
     IOptionsMonitor<PollingOptions> pollingOptions,
     TimeProvider timeProvider,
     ILogger<ScoreboardPoller> logger)
 {
+    /// <summary>However late a round ends, the next one waits at least this long.</summary>
+    public static readonly TimeSpan MinDelay = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// A league due this soon is polled in the current round already, so leagues that are live at the same
+    /// time are fetched together instead of each waking the poller for itself.
+    /// </summary>
+    public static readonly TimeSpan DueSlack = TimeSpan.FromSeconds(2);
+
     /// <returns>How long to wait before the next round.</returns>
     public async Task<TimeSpan> PollAsync(CancellationToken cancellationToken)
     {
         var options = pollingOptions.CurrentValue;
         var today = IstanbulTime.Today(timeProvider);
         var knownMatches = new List<Match>();
-        var anyFailed = false;
+        DateTimeOffset? nextDue = null;
+
+        schedule.ForgetBefore(today.AddDays(-1));
 
         // Sequential on purpose: a handful of requests per round, and it is gentler on an unofficial API.
         foreach (var leagueCode in footballOptions.CurrentValue.Leagues)
         {
             foreach (var date in await GetDatesToPollAsync(leagueCode, today, cancellationToken))
             {
-                try
+                var now = timeProvider.GetUtcNow();
+                if (!schedule.IsDue(leagueCode, date, now + DueSlack))
                 {
-                    var scoreboard = await provider.GetScoreboardAsync(leagueCode, date, cancellationToken);
-                    var previous = await store.GetAsync(leagueCode, date, cancellationToken);
-                    await store.SetAsync(new ScoreboardSnapshot(scoreboard, timeProvider.GetUtcNow()), cancellationToken);
-                    knownMatches.AddRange(scoreboard.Matches);
-
-                    // Store first, then push: a client that reacts by calling the REST API sees the new state.
-                    await PublishChangesAsync(MatchChangeDetector.Detect(previous?.Scoreboard, scoreboard), cancellationToken);
+                    // Nothing in play here: the last snapshot is good until the league's own next poll.
+                    var current = await store.GetAsync(leagueCode, date, cancellationToken);
+                    knownMatches.AddRange(current?.Scoreboard.Matches ?? []);
                 }
-                catch (FootballDataProviderException ex)
+                else
                 {
-                    // Keep serving the last good snapshot; still use it to plan the next poll.
-                    anyFailed = true;
-                    LogFetchFailed(ex, leagueCode, date);
-                    var cached = await store.GetAsync(leagueCode, date, cancellationToken);
-                    knownMatches.AddRange(cached?.Scoreboard.Matches ?? []);
+                    try
+                    {
+                        var scoreboard = await provider.GetScoreboardAsync(leagueCode, date, cancellationToken);
+                        var previous = await store.GetAsync(leagueCode, date, cancellationToken);
+                        now = timeProvider.GetUtcNow();
+                        await store.SetAsync(new ScoreboardSnapshot(scoreboard, now), cancellationToken);
+                        knownMatches.AddRange(scoreboard.Matches);
+                        schedule.Set(leagueCode, date, now + PollingIntervalCalculator.Calculate(scoreboard.Matches, now, options));
+
+                        // Store first, then push: a client that reacts by calling the REST API sees the new state.
+                        await PublishChangesAsync(MatchChangeDetector.Detect(previous?.Scoreboard, scoreboard), cancellationToken);
+                    }
+                    catch (FootballDataProviderException ex)
+                    {
+                        // Keep serving the last good snapshot; still use it to plan the next poll, which comes sooner.
+                        LogFetchFailed(ex, leagueCode, date);
+                        var cached = await store.GetAsync(leagueCode, date, cancellationToken);
+                        knownMatches.AddRange(cached?.Scoreboard.Matches ?? []);
+
+                        now = timeProvider.GetUtcNow();
+                        var retry = PollingIntervalCalculator.Calculate(cached?.Scoreboard.Matches ?? [], now, options);
+                        schedule.Set(leagueCode, date, now + (retry > options.ErrorRetryInterval ? options.ErrorRetryInterval : retry));
+                    }
+                }
+
+                var dueAt = schedule.DueAt(leagueCode, date);
+                if (dueAt is not null && (nextDue is null || dueAt < nextDue))
+                {
+                    nextDue = dueAt;
                 }
             }
         }
@@ -59,11 +93,9 @@ public sealed partial class ScoreboardPoller(
         // After the scoreboards, so the details pushed to open match pages are never behind the scores.
         await detailRefresher.RefreshAsync(knownMatches, cancellationToken);
 
-        var delay = PollingIntervalCalculator.Calculate(knownMatches, timeProvider.GetUtcNow(), options);
-        if (anyFailed && delay > options.ErrorRetryInterval)
-        {
-            delay = options.ErrorRetryInterval;
-        }
+        // Counted from when each league was fetched, so a slow round doesn't stretch the rhythm of the live ones.
+        var delay = (nextDue ?? timeProvider.GetUtcNow() + options.IdleInterval) - timeProvider.GetUtcNow();
+        delay = delay < MinDelay ? MinDelay : delay > options.IdleInterval ? options.IdleInterval : delay;
 
         LogPollCompleted(knownMatches.Count, knownMatches.Count(m => m.Status.IsInPlay()), delay);
         return delay;

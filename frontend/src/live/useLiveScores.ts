@@ -14,6 +14,8 @@ const HubUrl = '/hubs/live-scores'
 const RestartDelayMs = 5_000
 const GoalHighlightMs = 10_000
 const DayCheckIntervalMs = 60_000
+/** While the live connection is down, the scores are fetched this often instead. */
+const FallbackPollMs = 15_000
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
@@ -127,14 +129,15 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
       }
     }
 
-    async function load() {
+    /** @param quiet A refresh behind the scenes: what is on screen stays as it is until the new data is in. */
+    async function load(quiet = false) {
       // Clicking through days quickly: only the latest request may update the screen.
       const seq = ++loadSeq
       const today = istanbulToday()
       const offset = dayOffsetRef.current
       const day = addDays(today, offset)
       setDate(day)
-      dispatch({ type: 'loading' })
+      if (!quiet) dispatch({ type: 'loading' })
 
       // Today also includes yesterday's games still running past midnight.
       const result = offset === 0
@@ -143,7 +146,7 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
 
       if (disposed || seq !== loadSeq) return
       // The day was changed while connecting (no reload was triggered then): load the one now selected.
-      if (offset !== dayOffsetRef.current) return load()
+      if (offset !== dayOffsetRef.current) return load(quiet)
       loadedToday = today
       dispatch({ type: 'loaded', leagues: result })
       setError(null)
@@ -194,6 +197,17 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
       }
     }, DayCheckIntervalMs)
 
+    // No push without a connection: until it is back, ask for the scores every few seconds instead.
+    const fallbackTimer = setInterval(async () => {
+      if (disposed || connection.state === HubConnectionState.Connected) return
+      try {
+        if (leagues.length === 0) leagues = await getLeagues()
+        await load(true)
+      } catch {
+        // The server can't be reached at all; the next round tries again.
+      }
+    }, FallbackPollMs)
+
     // Deferred: React StrictMode (dev) mounts, unmounts and remounts at once. Starting synchronously would open
     // a connection only to stop it mid-negotiation, which SignalR reports as an error in the console.
     restartTimer = setTimeout(start, 0)
@@ -204,6 +218,7 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
       connectionRef.current = null
       clearTimeout(restartTimer)
       clearInterval(dayTimer)
+      clearInterval(fallbackTimer)
       goalTimers.forEach(clearTimeout)
       void connection.stop()
     }

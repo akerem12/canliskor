@@ -15,6 +15,18 @@ export function TeamLogo({ team, size }: { team: Team; size: number }) {
     )
 }
 
+/** The site's mark: a scoreboard of two blocks around a colon. The blocks take the text colour of the theme. */
+export function LogoMark() {
+  return (
+    <svg className="logo-mark" viewBox="0 0 120 120" aria-hidden>
+      <rect x="14" y="30" width="32" height="60" rx="8" fill="currentColor" />
+      <circle cx="60" cy="48" r="6" fill="#2BB673" />
+      <circle cx="60" cy="72" r="6" fill="#2BB673" />
+      <rect x="74" y="30" width="32" height="60" rx="8" fill="currentColor" />
+    </svg>
+  )
+}
+
 /**
  * An own goal: a greyed ball with an "OG" badge, so it can't be taken for a goal or a red card.
  * @param compact The badge alone, for the small marks next to a player on the pitch.
