@@ -15,7 +15,7 @@ internal sealed record EspnScheduleCompetition(EspnStatus? Status, EspnVenue? Ve
 
 internal sealed record EspnVenue(string? FullName, EspnVenueAddress? Address);
 
-internal sealed record EspnVenueAddress(string? City);
+internal sealed record EspnVenueAddress(string? City, string? Country = null);
 
 /// <param name="Score">An object here, unlike the scoreboard's plain string. Missing before kickoff.</param>
 internal sealed record EspnScheduleCompetitor(string? HomeAway, EspnTeam? Team, EspnScheduleScore? Score);

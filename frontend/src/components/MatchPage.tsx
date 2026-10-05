@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { Match, MatchEvent, MatchStat, Score, Team } from '../api/types'
 import { isInPlay } from '../api/types'
 import { MatchAlertButton } from '../alerts/AlertControls'
+import { getStandings } from '../api/http'
+import { useFetch } from '../api/useFetch'
 import type { Dictionary } from '../i18n/en'
 import { useI18n } from '../i18n/useI18n'
 import type { WatchMatch } from '../live/useLiveScores'
@@ -13,8 +15,9 @@ import type { Route } from '../route'
 import { tabFromUrl, writeTabToUrl } from '../urlTab'
 import { EmptyState, OwnGoalMark, Skeleton, TeamLogo } from './common'
 import { Lineups } from './Lineups'
-import { OddsBoard } from './Odds'
+import { MatchOverview } from './MatchOverview'
 import { Squads } from './Squads'
+import { StandingsTable } from './StandingsTable'
 
 interface Props {
   leagueCode: string
@@ -39,13 +42,19 @@ function statusText(status: Match['status'], t: Dictionary): string {
   }
 }
 
-const tabs = ['lineups', 'events', 'stats', 'squads'] as const
+const tabs = ['details', 'lineups', 'stats', 'events', 'standings', 'squads'] as const
 type Tab = typeof tabs[number]
 
-const tabLabel = (tab: Tab, t: Dictionary) =>
-  ({ lineups: t.match.lineups, events: t.match.events, stats: t.match.statistics, squads: t.match.squads })[tab]
+const tabLabel = (tab: Tab, t: Dictionary) => ({
+  details: t.match.overview,
+  lineups: t.match.lineups,
+  stats: t.match.statistics,
+  events: t.match.events,
+  standings: t.match.standings,
+  squads: t.match.squads,
+})[tab]
 
-/** One match on a page of its own: the scoreline, then line-ups, events, statistics and squads as tabs. */
+/** One match on a page of its own: the scoreline, then its details, line-ups, statistics, events, table and squads as tabs. */
 export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch, onNavigate, onClose }: Props) {
   const { t } = useI18n()
   const { detail, error } = useMatchDetail(leagueCode, matchId, pushed, watchMatch)
@@ -58,8 +67,7 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
   // The pushed match has the live clock; the detail's copy may be up to one refresh behind.
   const match = pushed ?? detail?.match
 
-  // Until a tab is picked: line-ups once they are announced, or the possible ones before kick-off; otherwise events.
-  const tab = pickedTab ?? (detail?.lineups || match?.status === 'Scheduled' ? 'lineups' : 'events')
+  const tab = pickedTab ?? 'details'
 
   return (
     <main className="detail" aria-label={match ? t.match.versus(match.homeTeam.name, match.awayTeam.name) : t.match.details}>
@@ -74,7 +82,6 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
       {match
         ? <Scoreline match={match} onOpenTeam={teamId => onNavigate({ view: 'team', leagueCode, teamId })} />
         : !error && <Skeleton rows={4} height={22} />}
-      {match?.odds && <OddsBoard odds={match.odds} match={match} />}
       {match && !detail && !error && <Skeleton rows={6} />}
       {error && !detail && <EmptyState icon="⚠️" title={t.match.cantLoad} hint={t.match.cantLoadHint} />}
 
@@ -88,16 +95,34 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
             ))}
           </nav>
 
+          {tab === 'details' && <MatchOverview detail={detail} match={match} />}
           {tab === 'lineups' && <Lineups lineups={detail.lineups} match={match} />}
           {tab === 'events' && <Events events={detail.events} match={match} />}
           {tab === 'stats' && (detail.stats.length > 0
             ? <Stats stats={detail.stats} />
             : <p className="detail__empty">{t.match.statsLater}</p>)}
+          {tab === 'standings' && <MatchStandings match={match} onNavigate={onNavigate} />}
           {tab === 'squads' && <Squads match={match} />}
-          {tab !== 'squads' && <p className="detail__updated">{t.common.updated(formatTime(detail.lastUpdatedUtc))}</p>}
+          {tab !== 'squads' && tab !== 'standings' && <p className="detail__updated">{t.common.updated(formatTime(detail.lastUpdatedUtc))}</p>}
         </>
       )}
     </main>
+  )
+}
+
+/** The competition's table, the two teams' rows marked; in a group stage, only their groups. */
+function MatchStandings({ match, onNavigate }: { match: Match; onNavigate: (route: Route) => void }) {
+  const { t } = useI18n()
+  const standings = useFetch(`standings/${match.leagueCode}`, () => getStandings(match.leagueCode))
+
+  return (
+    <section aria-label={t.match.standings}>
+      {standings.loading && <Skeleton rows={12} />}
+      {standings.error && <EmptyState icon="📊" title={t.leagues.tableUnavailable} hint={t.leagues.sourceBusy} onRetry={standings.retry} />}
+      {standings.data && (standings.data.groups.length === 0
+        ? <EmptyState icon="📊" title={t.leagues.noTable} hint={t.leagues.noTableHintTeam} />
+        : <StandingsTable standings={standings.data} teamIds={[match.homeTeam.id, match.awayTeam.id]} onNavigate={onNavigate} />)}
+    </section>
   )
 }
 

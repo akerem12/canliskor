@@ -7,7 +7,7 @@ const timeFormat = new Intl.DateTimeFormat('en-GB', { timeZone: TimeZone, hour: 
 const dateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TimeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
 
 /** Formatters are costly to build, so each locale's pair is built once. */
-const formats = new Map<string, { long: Intl.DateTimeFormat; short: Intl.DateTimeFormat }>()
+const formats = new Map<string, Record<'long' | 'short' | 'date' | 'weekdayDate', Intl.DateTimeFormat>>()
 
 function formatsFor(locale: string) {
   let entry = formats.get(locale)
@@ -15,6 +15,8 @@ function formatsFor(locale: string) {
     entry = {
       long: new Intl.DateTimeFormat(locale, { timeZone: TimeZone, weekday: 'long', day: 'numeric', month: 'long' }),
       short: new Intl.DateTimeFormat(locale, { timeZone: TimeZone, weekday: 'short', day: 'numeric', month: 'short' }),
+      date: new Intl.DateTimeFormat(locale, { timeZone: TimeZone, day: 'numeric', month: 'short', year: 'numeric' }),
+      weekdayDate: new Intl.DateTimeFormat(locale, { timeZone: TimeZone, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
     }
     formats.set(locale, entry)
   }
@@ -46,3 +48,9 @@ export function formatDayLabel(yyyyMmDd: string, offset: number, t: Dictionary):
 
 /** "Sat 10 Oct" in Istanbul, for a match's kickoff. */
 export const formatMatchDate = (iso: string, t: Dictionary) => formatsFor(t.locale).short.format(new Date(iso))
+
+/** "31 Jan 2026" in Istanbul: a date that may be years back. */
+export const formatDate = (iso: string, t: Dictionary) => formatsFor(t.locale).date.format(new Date(iso))
+
+/** "Saturday 10 October 2026" in Istanbul. */
+export const formatDateWithWeekday = (iso: string, t: Dictionary) => formatsFor(t.locale).weekdayDate.format(new Date(iso))

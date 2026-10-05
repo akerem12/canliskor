@@ -8,13 +8,16 @@ interface Props {
   standings: Standings
   /** Highlights this team's row; with several groups, only the group it is in is shown. */
   teamId?: string
+  /** The same for several teams at once: the two sides of a match. */
+  teamIds?: readonly string[]
   onNavigate: (route: Route) => void
 }
 
 /** A league table (or one per group). Rows lead to the team's page; coloured edges mark what a position means. */
-export function StandingsTable({ standings, teamId, onNavigate }: Props) {
-  const ownGroup = teamId ? standings.groups.find(g => g.rows.some(r => r.team.id === teamId)) : undefined
-  const groups = ownGroup ? [ownGroup] : standings.groups
+export function StandingsTable({ standings, teamId, teamIds, onNavigate }: Props) {
+  const highlighted = teamIds ?? (teamId ? [teamId] : [])
+  const ownGroups = standings.groups.filter(g => g.rows.some(r => highlighted.includes(r.team.id)))
+  const groups = ownGroups.length > 0 ? ownGroups : standings.groups
   // A plain league's single group is named after the season, which the page already says.
   const showNames = standings.groups.length > 1
 
@@ -26,7 +29,7 @@ export function StandingsTable({ standings, teamId, onNavigate }: Props) {
           group={group}
           title={showNames ? group.name : undefined}
           leagueCode={standings.leagueCode}
-          teamId={teamId}
+          teamIds={highlighted}
           onNavigate={onNavigate}
         />
       ))}
@@ -35,11 +38,11 @@ export function StandingsTable({ standings, teamId, onNavigate }: Props) {
   )
 }
 
-function GroupTable({ group, title, leagueCode, teamId, onNavigate }: {
+function GroupTable({ group, title, leagueCode, teamIds, onNavigate }: {
   group: StandingsGroup
   title: string | undefined
   leagueCode: string
-  teamId: string | undefined
+  teamIds: readonly string[]
   onNavigate: (route: Route) => void
 }) {
   const { t } = useI18n()
@@ -64,7 +67,7 @@ function GroupTable({ group, title, leagueCode, teamId, onNavigate }: {
         </thead>
         <tbody>
           {group.rows.map(row => (
-            <tr key={row.team.id} className={row.team.id === teamId ? 'table__row table__row--own' : 'table__row'}>
+            <tr key={row.team.id} className={teamIds.includes(row.team.id) ? 'table__row table__row--own' : 'table__row'}>
               <td className="table__rank" style={row.noteColor ? { boxShadow: `inset 3px 0 0 ${row.noteColor}` } : undefined} title={row.note ?? undefined}>
                 {row.rank}
               </td>

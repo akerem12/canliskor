@@ -95,7 +95,31 @@ export interface MatchDetail {
   stats: MatchStat[]
   /** Null until both line-ups are announced. */
   lineups: MatchLineups | null
+  /** Stadium, referee and crowd; null if none of it is known. */
+  info: MatchInfo | null
+  /** The two teams' latest finished matches against each other (five at most), newest first. */
+  previousMeetings: PreviousMeeting[]
   lastUpdatedUtc: string
+}
+
+/** Each part is null when unknown. */
+export interface MatchInfo {
+  venue: string | null
+  city: string | null
+  country: string | null
+  referee: string | null
+  attendance: number | null
+}
+
+export interface PreviousMeeting {
+  id: string
+  /** Istanbul time with offset. */
+  kickoff: string
+  /** e.g. "2025-26 English Premier League"; null if unknown. */
+  competition: string | null
+  homeTeam: Team
+  awayTeam: Team
+  score: Score
 }
 
 export interface MatchLineups {

@@ -15,6 +15,7 @@ import { pinFavorites } from './favorites/pinned'
 import { useFavorites } from './favorites/useFavorites'
 import { useI18n } from './i18n/useI18n'
 import { useLiveScores } from './live/useLiveScores'
+import { useShowOdds } from './oddsPreference'
 import type { Route } from './route'
 import { routeFromSearch, routeToSearch, sameRoute } from './route'
 import { addDays, formatLongDate, istanbulToday } from './time'
@@ -211,6 +212,7 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
   const liveCount = liveLeagues.reduce((n, l) => n + l.matches.length, 0)
   // Favourite teams' matches on top, favourite leagues first.
   const { favorites } = useFavorites()
+  const { showOdds, toggle: toggleOdds } = useShowOdds()
   const pinned = pinFavorites(effectiveFilter === 'live' ? liveLeagues : leagues, favorites)
   const shown = pinned.leagues
 
@@ -222,16 +224,22 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
     <>
       <DateNav offset={dayOffset} onChange={onDayChange} />
 
-      {isToday && (
-        <nav className="tabs" aria-label={t.matchList.filter}>
-          <button className={filter === 'all' ? 'tab tab--active' : 'tab'} onClick={() => onFilterChange('all')}>
-            {t.matchList.all}
-          </button>
-          <button className={filter === 'live' ? 'tab tab--active' : 'tab'} onClick={() => onFilterChange('live')}>
-            {t.matchList.live} <span className="tab__count">{liveCount}</span>
-          </button>
-        </nav>
-      )}
+      <div className="listbar">
+        {isToday && (
+          <nav className="tabs" aria-label={t.matchList.filter}>
+            <button className={filter === 'all' ? 'tab tab--active' : 'tab'} onClick={() => onFilterChange('all')}>
+              {t.matchList.all}
+            </button>
+            <button className={filter === 'live' ? 'tab tab--active' : 'tab'} onClick={() => onFilterChange('live')}>
+              {t.matchList.live} <span className="tab__count">{liveCount}</span>
+            </button>
+          </nav>
+        )}
+        <button className="odds-toggle" role="switch" aria-checked={showOdds} title={t.odds.toggleTitle} onClick={toggleOdds}>
+          {t.odds.toggle}
+          <span className="odds-toggle__track" aria-hidden><span className="odds-toggle__knob" /></span>
+        </button>
+      </div>
 
       {/* While another day loads, the previous one stays visible but dimmed. */}
       <main className={loaded ? undefined : 'is-loading'} aria-busy={!loaded}>
@@ -259,6 +267,7 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
                       key={match.id}
                       match={match}
                       justScored={recentGoals.has(match.id)}
+                      showOdds={showOdds}
                       onOpen={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}
                     />
                   ))}
@@ -266,7 +275,7 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
               </section>
             )}
             {shown.map(league => (
-              <LeagueSection key={league.code} league={league} recentGoals={recentGoals} onNavigate={onNavigate} />
+              <LeagueSection key={league.code} league={league} recentGoals={recentGoals} showOdds={showOdds} onNavigate={onNavigate} />
             ))}
           </>
         )}

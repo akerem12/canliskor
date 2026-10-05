@@ -86,6 +86,18 @@ describe('localizeNames', () => {
     expect(localizeNames(stats, 'tr')).toMatchObject({ name: '2026-27 Süper Lig', teamName: 'Fenerbahçe' })
   })
 
+  it("translates a match's stadium country and its earlier meetings", () => {
+    const detail = {
+      info: { venue: 'Stade de France', city: 'Saint-Denis', country: 'France' },
+      previousMeetings: [{ id: '7', competition: '2024-25 UEFA Nations League', homeTeam: match.homeTeam, awayTeam: match.awayTeam }],
+    }
+    const localized = localizeNames(detail, 'tr')
+
+    expect(localized.info).toEqual({ venue: 'Stade de France', city: 'Saint-Denis', country: 'Fransa' })
+    expect(localized.previousMeetings[0].competition).toBe('2024-25 UEFA Uluslar Ligi')
+    expect(localized.previousMeetings[0].homeTeam.name).toBe('Portekiz')
+  })
+
   it('passes null and undefined through', () => {
     expect(localizeNames(null, 'tr')).toBeNull()
     expect(localizeNames(undefined, 'tr')).toBeUndefined()

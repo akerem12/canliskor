@@ -5,11 +5,29 @@ namespace CanliSkor.Core.Domain;
 /// </summary>
 /// <param name="Stats">Empty before kickoff.</param>
 /// <param name="Lineups">Null until the line-ups are announced (about an hour before kickoff).</param>
+/// <param name="Info">Where the match is played and who referees it. Null if the provider says nothing at all.</param>
+/// <param name="PreviousMeetings">Earlier matches between the two teams, newest first. Null means none are known.</param>
 public sealed record MatchDetail(
     Match Match,
     IReadOnlyList<MatchEvent> Events,
     IReadOnlyList<MatchStat> Stats,
-    MatchLineups? Lineups = null);
+    MatchLineups? Lineups = null,
+    MatchInfo? Info = null,
+    IReadOnlyList<PreviousMeeting>? PreviousMeetings = null);
+
+/// <summary>What surrounds a match. Every part is null when the provider doesn't say.</summary>
+/// <param name="Attendance">The official crowd; null until it is reported.</param>
+public sealed record MatchInfo(string? Venue, string? City, string? Country, string? Referee, int? Attendance);
+
+/// <summary>A finished earlier match between the same two teams, in any competition.</summary>
+/// <param name="Competition">As the provider names it, e.g. "2025-26 English Premier League". Null if unknown.</param>
+public sealed record PreviousMeeting(
+    string Id,
+    DateTimeOffset KickoffUtc,
+    string? Competition,
+    Team HomeTeam,
+    Team AwayTeam,
+    Score Score);
 
 /// <param name="Clock">Match minute as displayed, e.g. "57'" or "45'+2'".</param>
 /// <param name="Side">The team the event counts for. An own goal counts for the team that benefits from it.</param>

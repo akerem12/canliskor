@@ -5,8 +5,15 @@
   --surface-alt: #1a2540;
   --text: #f8fafc;
   --muted: #94a3b8;
+  /* Quieter still: kick-off times and the like. */
+  --subtle: #64748b;
   --border: #24334d;
   --border-strong: #33476b;
+  /* Barely-there lines and fills: row dividers, row hover, odds. */
+  --hairline: rgb(255 255 255 / 0.05);
+  --hover: rgb(255 255 255 / 0.03);
+  --chip: rgb(255 255 255 / 0.04);
+  --chip-border: rgb(255 255 255 / 0.08);
   /* Blue for text and outlines; the darker fill carries white text. */
   --accent: #6aa6ff;
   --accent-fill: #2563eb;
@@ -14,13 +21,12 @@
   --cyan: #22d3ee;
   --on-cyan: #04222a;
   --gold: #fbbf24;
-  --on-gold: #1a1300;
-  --gold-soft: rgb(251 191 36 / 0.12);
   --live: #ff5d6c;
   --goal: #3d3410;
   --warn: #f59e0b;
   --own-goal: #f0906c;
   --own-goal-fill: #c2410c;
+  --h2h-home: #34d399;
   --glass: rgb(10 14 23 / 0.72);
   --glow: rgb(37 99 235 / 0.22);
   --backdrop: rgb(5 8 14 / 0.7);
@@ -45,21 +51,25 @@
   --surface-alt: #eaf0f7;
   --text: #0f172a;
   --muted: #55657c;
+  --subtle: #64748b;
   --border: #d5deea;
   --border-strong: #a9b9cf;
+  --hairline: rgb(15 23 42 / 0.07);
+  --hover: rgb(15 23 42 / 0.03);
+  --chip: rgb(15 23 42 / 0.03);
+  --chip-border: rgb(15 23 42 / 0.1);
   --accent: #1d4ed8;
   --accent-fill: #2563eb;
   --accent-soft: #e2ebff;
   --cyan: #0e7490;
   --on-cyan: #ffffff;
   --gold: #b45309;
-  --on-gold: #ffffff;
-  --gold-soft: rgb(245 158 11 / 0.16);
   --live: #dc2626;
   --goal: #fff1b8;
   --warn: #b26a00;
   --own-goal: #b23a0a;
   --own-goal-fill: #c2410c;
+  --h2h-home: #0f8a5f;
   --glass: rgb(255 255 255 / 0.78);
   --glow: rgb(37 99 235 / 0.12);
   --backdrop: rgb(15 23 42 / 0.45);
@@ -127,6 +137,26 @@ h1, h2 { margin: 0; }
 .mainnav__item--active { color: var(--accent); border-bottom-color: var(--accent); }
 
 .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+/* The match list's filters on the left, its odds switch on the right. */
+.listbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.listbar .tabs { margin-bottom: 0; }
+.odds-toggle {
+  display: inline-flex; align-items: center; gap: 8px; margin-left: auto; padding: 4px 0;
+  font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--subtle);
+  border: none; background: none; transition: color 0.15s;
+}
+.odds-toggle:hover, .odds-toggle[aria-checked='true'] { color: var(--muted); }
+.odds-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.odds-toggle__track {
+  position: relative; width: 26px; height: 14px; border-radius: 999px;
+  border: 1px solid var(--chip-border); background: var(--chip); transition: background-color 0.15s, border-color 0.15s;
+}
+.odds-toggle__knob {
+  position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--subtle);
+  transition: transform 0.15s, background-color 0.15s;
+}
+.odds-toggle[aria-checked='true'] .odds-toggle__track { border-color: var(--border-strong); }
+.odds-toggle[aria-checked='true'] .odds-toggle__knob { transform: translateX(12px); background: var(--text); }
 .tab {
   font: inherit; font-weight: 600; cursor: pointer;
   padding: 6px 14px; border-radius: 999px;
@@ -140,38 +170,43 @@ h1, h2 { margin: 0; }
   border-radius: 999px; background: var(--live); color: #fff; font-size: 0.75rem; text-align: center;
 }
 
-.league { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
-.league:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
+.league { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+/* A faint tint sets the header apart from the rows under it. */
 .league__header {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
-  padding: 10px 14px; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 16px; background: var(--chip); border-bottom: 1px solid var(--hairline);
 }
-.league__header h2 { font-size: 0.95rem; }
-.league__name { font: inherit; font-weight: inherit; color: inherit; cursor: pointer; padding: 0; border: none; background: none; }
+.league__header h2 { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 0.85rem; font-weight: 600; }
+.league__icon { flex: none; width: 16px; height: 16px; object-fit: contain; font-size: 0.8rem; line-height: 16px; text-align: center; }
+.league__name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: inherit; font-weight: inherit; color: inherit; cursor: pointer; padding: 0; border: none; background: none;
+}
 .league__name:hover { color: var(--accent); }
 .league--skeleton { padding: 14px; }
-.league__updated { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.league__updated { font-size: 0.7rem; color: var(--subtle); white-space: nowrap; }
 .league__matches { list-style: none; margin: 0; padding: 0; }
 
 .match {
   /* The time and status rail on the left, and an empty rail just as wide on the right. */
-  --rail: 3.2rem 3.4rem;
+  --rail: 3.2rem 3.8rem;
   --score: 4.8rem;
   position: relative;
   display: grid;
   /* Mirrored around a fixed score box, so the score sits on the row's centre line whatever the names' lengths. */
   grid-template-columns: var(--rail) minmax(0, 1fr) var(--score) minmax(0, 1fr) var(--rail);
   align-items: center; gap: 8px;
-  width: 100%; padding: 10px 14px;
+  /* Every row as tall as the next, with or without odds. */
+  width: 100%; min-height: 46px; padding: 10px 16px;
   /* A button: reset the browser's look so the row looks like before. */
   font: inherit; color: inherit; text-align: left; cursor: pointer;
-  background: none; border: none; border-top: 1px solid var(--border);
+  background: none; border: none; border-top: 1px solid var(--hairline);
   transition: background-color 0.15s;
 }
 .league__matches > li:first-child .match { border-top: none; }
-.match:hover { background: var(--surface-alt); }
+.match:hover { background: var(--hover); }
 .match:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.match__time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.match__time { font-size: 0.87rem; color: var(--subtle); font-variant-numeric: tabular-nums; }
 .match__minute { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 700; color: var(--muted); }
 .match--live .match__minute { color: var(--live); }
 .match__score {
@@ -179,6 +214,8 @@ h1, h2 { margin: 0; }
   padding: 2px 4px; border-radius: 6px; background: var(--bg);
 }
 .match--live .match__score { color: var(--live); }
+/* Nothing to box in before kick-off. */
+.match:not(.match--started) .match__score { background: none; color: var(--subtle); }
 
 .team { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .team--home { justify-content: flex-end; text-align: right; }
@@ -205,7 +242,7 @@ h1, h2 { margin: 0; }
 
 @media (max-width: 520px) {
   /* One status column: kickoff time before the match, minute/FT once it has started. */
-  .match { --rail: 2.8rem; --score: 3.8rem; gap: 6px; padding: 10px; }
+  .match { --rail: 2.8rem; --score: 3.8rem; gap: 6px; padding: 10px 12px; }
   .match--started .match__time, .match:not(.match--started) .match__minute { display: none; }
   .team__logo { display: none; }
   /* Phones: "Man United" instead of "Manchester U…" (the full name stays in the tooltip). */
@@ -627,7 +664,7 @@ button.feed__team:hover { color: var(--accent); background: var(--surface); }
 .bell:hover { border-color: var(--accent); }
 .bell--on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .bell:disabled { opacity: 0.5; cursor: not-allowed; }
-.league--pinned { border-color: var(--gold); }
+.league--pinned { border-color: var(--border-strong); }
 
 /* Team search */
 .search { margin: 8px 0 12px; }
@@ -697,18 +734,23 @@ button.feed__team:hover { color: var(--accent); background: var(--surface); }
 
 main.is-loading { opacity: 0.5; transition: opacity 0.15s; }
 
-/* Odds */
+/* Odds: grey on grey, the favourite's price a shade brighter. */
 .odds-strip { display: flex; justify-content: center; gap: 6px; }
-.match__odds { grid-column: 1 / -1; margin-top: 2px; }
 .feed__odds { margin: 0 0 8px; }
 .odd {
   display: inline-flex; align-items: baseline; gap: 6px; min-width: 4.1rem; justify-content: space-between;
-  padding: 2px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg);
-  font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  padding: 2px 8px; border: 1px solid var(--chip-border); border-radius: 6px; background: var(--chip);
+  font-size: 0.78rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums;
 }
-.odd__label { font-weight: 600; color: var(--muted); }
-.odd--favorite { border-color: var(--gold); background: var(--gold-soft); color: var(--gold); }
-.odd--favorite .odd__label { color: var(--gold); }
+.odd__label { font-weight: 500; color: var(--subtle); }
+.odd--favorite { font-weight: 700; color: var(--text); }
+/* In a match row: one small pill in the right-hand rail, home / draw / away in the order of the row. */
+.match__odds {
+  grid-column: 6 / -1; justify-self: end; gap: 7px; padding: 2px 7px; white-space: nowrap;
+  border: 1px solid var(--chip-border); border-radius: 6px; background: var(--chip);
+}
+.match__odds .odd { min-width: 0; padding: 0; border: none; background: none; font-size: 0.7rem; }
+.match__odds .odd__label { display: none; }
 
 .odds-board { margin-top: 14px; padding: 10px 12px 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
 .odds-board__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 0.75rem; color: var(--muted); }
@@ -724,13 +766,55 @@ main.is-loading { opacity: 0.5; transition: opacity 0.15s; }
 .odds-cell__key { flex: none; font-weight: 800; color: var(--text); }
 .odds-cell__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .odds-cell__price { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
-.odds-cell--favorite, .odds-cell--favorite:hover { border-color: var(--gold); background: var(--gold-soft); }
-.odds-cell--favorite .odds-cell__price { color: var(--gold); }
+.odds-cell__price { color: var(--muted); }
+.odds-cell--favorite { border-color: var(--border-strong); }
+.odds-cell--favorite .odds-cell__price { color: var(--text); }
 .odds-cell__badge {
-  padding: 1px 8px; border-radius: 999px; background: var(--gold); color: var(--on-gold);
-  font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 1px 8px; border: 1px solid var(--chip-border); border-radius: 999px; background: var(--chip); color: var(--muted);
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
 }
 .odds-board__note { margin: 8px 0 0; text-align: center; font-size: 0.7rem; color: var(--muted); }
+
+/* Match details: odds, earlier meetings and match info as cards under one another */
+.overview { display: grid; gap: 12px; }
+.overview .odds-board { margin-top: 0; }
+.overview__card { min-width: 0; padding: 10px 12px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.overview__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; font-size: 0.75rem; color: var(--muted); }
+.overview__head h3 { margin: 0; font-size: inherit; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.h2h__tally { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 12px; margin: 0 0 6px; }
+.h2h__count { min-width: 0; }
+.h2h__count dd { margin: 0; font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.h2h__count dt { font-size: 0.75rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h2h__count--draws { text-align: center; }
+.h2h__count--away { text-align: right; }
+.h2h__bar { display: flex; gap: 3px; height: 6px; }
+.h2h__segment { flex: 0 0 0; min-width: 6px; border-radius: 3px; }
+.h2h__segment--home { background: var(--h2h-home); }
+.h2h__segment--draws { background: var(--subtle); }
+.h2h__segment--away { background: var(--accent-fill); }
+.h2h__count--home dd { color: var(--h2h-home); }
+.h2h__count--away dd { color: var(--accent); }
+
+.h2h__list { list-style: none; margin: 12px 0 0; padding: 0; }
+.h2h__row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 3.6rem minmax(0, 1fr); align-items: center; gap: 4px 8px;
+  padding: 8px 0; border-top: 1px solid var(--hairline);
+}
+.h2h__when { grid-column: 1 / -1; text-align: center; font-size: 0.72rem; color: var(--subtle); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h2h__team { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--muted); }
+.h2h__team--home { flex-direction: row-reverse; text-align: right; }
+.h2h__team--winner { color: var(--text); font-weight: 700; }
+.h2h__score { padding: 2px 4px; border-radius: 6px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; background: var(--surface); }
+
+.info { margin: 0; }
+.info__row { display: grid; grid-template-columns: 1.6rem 6.5rem minmax(0, 1fr); align-items: baseline; gap: 8px; padding: 8px 0; border-top: 1px solid var(--hairline); }
+.info__row:first-child { border-top: none; padding-top: 0; }
+.info__row:last-child { padding-bottom: 0; }
+.info__icon { text-align: center; }
+.info__row dt { font-size: 0.8rem; color: var(--muted); }
+.info__row dd { margin: 0; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.info__note { display: block; font-size: 0.75rem; font-weight: 400; color: var(--subtle); }
 
 /* Players: names that open a profile, the assist badge, the profile dialog */
 .player-link {
@@ -770,12 +854,16 @@ main.is-loading { opacity: 0.5; transition: opacity 0.15s; }
 
 @media (max-width: 520px) {
   .odd { min-width: 0; flex: 1; }
+  /* No rail wide enough on a phone: the prices become one quiet line of text under the teams. */
+  .match__odds { grid-column: 1 / -1; justify-self: center; gap: 14px; margin-top: -4px; padding: 0; border: none; background: none; }
+  .match__odds .odd { flex: none; gap: 4px; }
+  .match__odds .odd__label { display: inline; }
+  .listbar { margin-bottom: 12px; }
   /* The header stays one row: the connection shows as its dot alone. */
   .connection__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .topbar { flex-wrap: nowrap; }
   /* "Back to today" gets a row of its own, so the three days keep their full labels. */
   .date-nav__today { flex: 1 0 100%; }
-  .match__odds { justify-content: stretch; }
   .profile__stats { grid-template-columns: repeat(2, 1fr); }
   /* Fingers need more room than a mouse pointer. */
   .squad__player { padding: 9px 0; }

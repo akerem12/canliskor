@@ -256,6 +256,9 @@ function localizeFields(source: Json, result: Json) {
   if (isText(source.leagueCode) && isText(source.leagueName)) result.leagueName = leagueNameTr(source.leagueCode, source.leagueName)
   if (isText(source.teamName)) result.teamName = teamNameTr(source.teamName)
   if (isText(source.nationality)) result.nationality = countryNameTr(source.nationality)
+  if (isText(source.country)) result.country = countryNameTr(source.country)
+  // An earlier meeting's competition, named with its season.
+  if (isText(source.competition)) result.competition = seasonLeagueNameTr(null, source.competition)
   if (isText(source.standingSummary)) result.standingSummary = standingSummaryTr(source.standingSummary)
   if ('rank' in source && isText(source.note)) result.note = tablePhraseTr(source.note)
 }

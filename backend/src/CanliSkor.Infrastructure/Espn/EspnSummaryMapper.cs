@@ -52,8 +52,54 @@ internal static class EspnSummaryMapper
             .OfType<MatchEvent>()
             .ToList();
 
-        return new MatchDetail(match, events, MapStats(response.Boxscore), EspnLineupMapper.Map(response.Rosters));
+        return new MatchDetail(
+            match,
+            events,
+            MapStats(response.Boxscore),
+            EspnLineupMapper.Map(response.Rosters),
+            MapInfo(response.GameInfo),
+            MapPreviousMeetings(response.Seasonseries, match));
     }
+
+    private static MatchInfo? MapInfo(EspnGameInfo? gameInfo)
+    {
+        var officials = gameInfo?.Officials ?? [];
+        // The referee is marked as such; a lone unmarked official is taken to be the referee too.
+        var referee = officials.FirstOrDefault(o => string.Equals(o.Position?.Name, "Referee", StringComparison.OrdinalIgnoreCase))
+            ?? (officials.Count == 1 && officials[0].Position?.Name is null ? officials[0] : null);
+
+        var info = new MatchInfo(
+            Venue: Text(gameInfo?.Venue?.FullName),
+            City: Text(gameInfo?.Venue?.Address?.City),
+            Country: Text(gameInfo?.Venue?.Address?.Country),
+            Referee: Text(referee?.DisplayName),
+            // ESPN sends 0 where it has no figure.
+            Attendance: gameInfo?.Attendance > 0 ? gameInfo.Attendance : null);
+
+        return info == new MatchInfo(null, null, null, null, null) ? null : info;
+    }
+
+    private static List<PreviousMeeting> MapPreviousMeetings(IReadOnlyList<EspnSeries>? series, Match match)
+    {
+        var events = series?.FirstOrDefault(s => s.Type == "head-to-head")?.Events ?? [];
+
+        return events
+            // Only what has been played, and never the match itself.
+            .Where(e => e.StatusType?.Completed == true && e.Id != match.Id)
+            .Select(e => (Event: e, Played: EspnScoreboardMapper.MapEvent(
+                new EspnEvent(e.Id, e.Date, new EspnStatus(null, new EspnStatusType(null, "post")), [new EspnCompetition(e.Competitors)]),
+                match.LeagueCode)))
+            .Where(x => x.Played?.Score is not null)
+            .Select(x => new PreviousMeeting(
+                x.Played!.Id, x.Played.KickoffUtc, Text(x.Event.CompetitionName), AsToday(x.Played.HomeTeam), AsToday(x.Played.AwayTeam), x.Played.Score!))
+            .OrderByDescending(m => m.KickoffUtc)
+            .ToList();
+
+        // The series names its teams more sparsely (no short name); today's match has the same two in full.
+        Team AsToday(Team team) => team.Id == match.HomeTeam.Id ? match.HomeTeam : team.Id == match.AwayTeam.Id ? match.AwayTeam : team;
+    }
+
+    private static string? Text(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static MatchEvent? MapEvent(EspnKeyEvent e, Match match)
     {

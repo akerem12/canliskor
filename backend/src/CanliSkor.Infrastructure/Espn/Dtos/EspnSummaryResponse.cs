@@ -10,7 +10,31 @@ internal sealed record EspnSummaryResponse(
     EspnBoxscore? Boxscore,
     IReadOnlyList<EspnKeyEvent>? KeyEvents,
     IReadOnlyList<EspnRoster>? Rosters = null,
-    IReadOnlyList<EspnOdds?>? Pickcenter = null);
+    IReadOnlyList<EspnOdds?>? Pickcenter = null,
+    EspnGameInfo? GameInfo = null,
+    IReadOnlyList<EspnSeries>? Seasonseries = null);
+
+/// <param name="Attendance">0 until the crowd is reported, which for most leagues is never.</param>
+/// <param name="Officials">The referee, where ESPN knows one (few leagues).</param>
+internal sealed record EspnGameInfo(EspnVenue? Venue, int? Attendance, IReadOnlyList<EspnOfficial>? Officials);
+
+internal sealed record EspnOfficial(string? DisplayName, EspnOfficialPosition? Position);
+
+/// <param name="Name">"Referee" for the one in the middle.</param>
+internal sealed record EspnOfficialPosition(string? Name);
+
+/// <param name="Type">"head-to-head": the two teams' latest meetings (five at most), newest first.</param>
+internal sealed record EspnSeries(string? Type, IReadOnlyList<EspnSeriesEvent>? Events);
+
+/// <param name="CompetitionName">With the season, e.g. "2025-26 English Premier League".</param>
+internal sealed record EspnSeriesEvent(
+    string? Id,
+    string? Date,
+    EspnSeriesStatus? StatusType,
+    IReadOnlyList<EspnCompetitor>? Competitors,
+    string? CompetitionName);
+
+internal sealed record EspnSeriesStatus(bool Completed);
 
 internal sealed record EspnSummaryHeader(string? Id, EspnLeague? League, IReadOnlyList<EspnSummaryCompetition>? Competitions);
 

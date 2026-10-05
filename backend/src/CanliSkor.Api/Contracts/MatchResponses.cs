@@ -41,13 +41,30 @@ public sealed record ScoreResponse(int Home, int Away);
 
 /// <param name="Stats">Empty before kickoff.</param>
 /// <param name="Lineups">Null until both line-ups are announced.</param>
+/// <param name="Info">Stadium, referee and crowd; null if none of it is known.</param>
+/// <param name="PreviousMeetings">The two teams' latest finished matches against each other (five at most), newest first.</param>
 /// <param name="LastUpdatedUtc">When the detail was fetched from the data source.</param>
 public sealed record MatchDetailResponse(
     MatchResponse Match,
     IReadOnlyList<MatchEventResponse> Events,
     IReadOnlyList<MatchStatResponse> Stats,
     MatchLineupsResponse? Lineups,
+    MatchInfoResponse? Info,
+    IReadOnlyList<PreviousMeetingResponse> PreviousMeetings,
     DateTimeOffset LastUpdatedUtc);
+
+/// <summary>Each part is null when unknown.</summary>
+public sealed record MatchInfoResponse(string? Venue, string? City, string? Country, string? Referee, int? Attendance);
+
+/// <param name="Kickoff">In Istanbul time, like every kickoff.</param>
+/// <param name="Competition">E.g. "2025-26 English Premier League"; null if unknown.</param>
+public sealed record PreviousMeetingResponse(
+    string Id,
+    DateTimeOffset Kickoff,
+    string? Competition,
+    TeamResponse HomeTeam,
+    TeamResponse AwayTeam,
+    ScoreResponse Score);
 
 /// <param name="Side">"Home" or "Away": the team the event counts for (an own goal counts for the team that benefits).</param>
 /// <param name="Player">Scorer, booked player, or the player coming on.</param>
@@ -248,6 +265,10 @@ public static class ContractMappings
         snapshot.Detail.Events.Select(e => new MatchEventResponse(e.Type, e.Clock, e.Side, e.Player, e.RelatedPlayer, e.PlayerId, e.RelatedPlayerId)).ToList(),
         snapshot.Detail.Stats.Select(s => new MatchStatResponse(s.Type, s.Home, s.Away)).ToList(),
         snapshot.Detail.Lineups is { } lineups ? new MatchLineupsResponse(ToResponse(lineups.Home), ToResponse(lineups.Away)) : null,
+        snapshot.Detail.Info is { } info ? new MatchInfoResponse(info.Venue, info.City, info.Country, info.Referee, info.Attendance) : null,
+        (snapshot.Detail.PreviousMeetings ?? []).Select(m => new PreviousMeetingResponse(
+            m.Id, IstanbulTime.ToIstanbul(m.KickoffUtc), m.Competition, ToResponse(m.HomeTeam), ToResponse(m.AwayTeam),
+            new ScoreResponse(m.Score.Home, m.Score.Away))).ToList(),
         snapshot.FetchedAtUtc);
 
     public static ExpectedLineupsResponse ToResponse(this ExpectedLineups expected) => new(

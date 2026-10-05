@@ -125,6 +125,24 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Get_match_detail_returns_match_info_and_previous_meetings()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/matches/77");
+
+        var info = json.RootElement.GetProperty("info");
+        Assert.Equal("RAMS Park", info.GetProperty("venue").GetString());
+        Assert.Equal("Istanbul", info.GetProperty("city").GetString());
+        Assert.Equal("Halil Umut Meler", info.GetProperty("referee").GetString());
+        Assert.Equal(JsonValueKind.Null, info.GetProperty("attendance").ValueKind);
+
+        var meeting = Assert.Single(json.RootElement.GetProperty("previousMeetings").EnumerateArray());
+        Assert.Equal("2026-02-22T20:00:00+03:00", meeting.GetProperty("kickoff").GetString());
+        Assert.Equal("2025-26 Turkish Super Lig", meeting.GetProperty("competition").GetString());
+        Assert.Equal("Fenerbahce", meeting.GetProperty("homeTeam").GetProperty("name").GetString());
+        Assert.Equal(3, meeting.GetProperty("score").GetProperty("away").GetInt32());
+    }
+
+    [Fact]
     public async Task Get_match_detail_returns_lineups()
     {
         using var json = await GetJson("/api/leagues/tur.1/matches/77");
@@ -392,7 +410,11 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
                 new Score(1, 0)),
             [new MatchEvent(MatchEventType.PenaltyGoal, "12'", TeamSide.Home, "Icardi", null, PlayerId: "9")],
             [new MatchStat(MatchStatType.Possession, 61.5, 38.5)],
-            new MatchLineups(Lineup("Icardi", "#fdb912"), Lineup("Dzeko", null))));
+            new MatchLineups(Lineup("Icardi", "#fdb912"), Lineup("Dzeko", null)),
+            new MatchInfo("RAMS Park", "Istanbul", null, "Halil Umut Meler", null),
+            [new PreviousMeeting(
+                "55", new DateTimeOffset(2026, 2, 22, 17, 0, 0, TimeSpan.Zero), "2025-26 Turkish Super Lig",
+                new Team("436", "Fenerbahce", "Fenerbahce", null), new Team("432", "Galatasaray", "Galatasaray", null), new Score(0, 3))]));
 
     private static TeamLineup Lineup(string striker, string? shirtColor) => new("4-4-2", shirtColor,
         [[Player("1", "Keeper", PlayerPosition.Goalkeeper, goals: 0)], [Player("9", striker, PlayerPosition.Forward, goals: 1)]],

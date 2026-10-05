@@ -32,10 +32,11 @@ function TeamName({ team, align }: { team: Team; align: 'home' | 'away' }) {
 interface Props {
   match: Match
   justScored: boolean
+  showOdds: boolean
   onOpen: () => void
 }
 
-export function MatchRow({ match, justScored, onOpen }: Props) {
+export function MatchRow({ match, justScored, showOdds, onOpen }: Props) {
   const { t } = useI18n()
   const live = isInPlay(match.status)
   const minute = match.status === 'Live' ? (match.clock ?? t.status.liveShort) : statusLabel(match.status, t)
@@ -57,7 +58,7 @@ export function MatchRow({ match, justScored, onOpen }: Props) {
         </span>
         <TeamName team={match.awayTeam} align="away" />
         {/* Prices are for what is still to come: once the match has kicked off they are history. */}
-        {match.status === 'Scheduled' && match.odds && <OddsStrip odds={match.odds} className="match__odds" />}
+        {showOdds && match.status === 'Scheduled' && match.odds && <OddsStrip odds={match.odds} className="match__odds" />}
         {justScored && <span className="match__goal-badge">{t.matchList.goal}</span>}
       </button>
     </li>
