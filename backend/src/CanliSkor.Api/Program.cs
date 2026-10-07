@@ -14,6 +14,7 @@ builder.Services
     .AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHostedService<ScoreboardPollingWorker>();
+builder.Services.AddKeepAlive(builder.Configuration);
 
 // Enums as strings ("Live", not 1): readable, and reordering the enum can't break clients.
 // Same setting for REST and SignalR, so both deliver identical match JSON.

@@ -289,8 +289,12 @@ Settings can be overridden with environment variables, e.g. `Polling__LiveInterv
 
 `render.yaml` describes one free web service built from the Dockerfile. In Render: sign in with GitHub, then
 **New > Blueprint**, pick this repository and **Apply**. Every push to `main` redeploys. A free service is stopped
-after about 15 minutes without visitors and needs up to a minute to start again on the next visit; while stopped it
-doesn't poll, so the first page after a wake-up fills in as the first poll completes.
+after about 15 minutes without visitors and needs up to a minute to start again on the next visit. To prevent that,
+the app requests its own public address (`/health`) every 5 minutes while it runs on Render (`KeepAliveWorker`), so
+it stays up around the clock. That uses about 744 of the 750 free hours Render gives a workspace per month, which
+leaves no room for a second free service: before adding one, set the environment variable `KeepAlive__Enabled=false`
+on this service in Render (or set `KeepAlive:Enabled` to `false` in `appsettings.json`). The service then sleeps
+again when idle; while stopped it doesn't poll, so the first page after a wake-up fills in as the first poll completes.
 
 Without Docker: `npm run build` in `frontend/`, copy `frontend/dist/*` into `backend/src/CanliSkor.Api/wwwroot/`,
 then `dotnet publish backend/src/CanliSkor.Api -c Release`. Start from an empty `dist`/`wwwroot`, because stale
