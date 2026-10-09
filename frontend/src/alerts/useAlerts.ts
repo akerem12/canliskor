@@ -1,8 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { Match, MatchUpdatedMessage } from '../api/types'
 import type { Dictionary } from '../i18n/en'
 import type { AlertSettings } from './alerts'
-import { AlertsStorageKey, describeUpdate, isMatchWatched, noAlerts, parseAlertSettings, toggleMatch, wantsAlert } from './alerts'
+import { AlertsStorageKey, describeUpdate, isMatchWatched, noAlerts, parseAlertSettings, pushWishes, toggleMatch, wantsAlert } from './alerts'
+import { pushSupported, syncPush } from './push'
 
 /** "unsupported": this browser has no notifications at all. Otherwise the browser's own permission state. */
 export type AlertPermission = 'unsupported' | NotificationPermission
@@ -16,7 +17,18 @@ export interface AlertsContextValue {
   isWatched: (matchId: string) => boolean
   /** Starts or stops alerts for one match; starting asks for permission first if needed. */
   toggleMatch: (match: Match) => Promise<void>
+  /** False if this browser can't be notified while the site is closed; the two options below then do nothing. */
+  pushSupported: boolean
+  /** The reminder half an hour before kick-off is wanted. */
+  kickoffReminder: boolean
+  setKickoffReminder: (on: boolean) => void
+  /** The notification for announced line-ups is wanted. */
+  lineupAlerts: boolean
+  setLineupAlerts: (on: boolean) => void
 }
+
+/** How often an open page repeats what it wants to the server, which forgets it when it restarts. */
+const PushResyncMs = 10 * 60 * 1000
 
 export const AlertsContext = createContext<AlertsContextValue | null>(null)
 
@@ -49,15 +61,18 @@ function writeStored(settings: AlertSettings) {
  * Match alerts as browser notifications: goals, kick-off, half time and full time, for every match of a favourite
  * team (if switched on) and for single matches the visitor picked. Settings live in localStorage.
  *
- * Alerts come from the live updates this page already receives, so they work while the site is open in a tab,
- * also in the background, but not once the tab or the browser is closed.
+ * Those alerts come from the live updates this page already receives, so they work while the site is open in a
+ * tab, also in the background, but not once the tab or the browser is closed. Two more are sent by the server as
+ * push notifications and arrive either way: a reminder half an hour before kick-off, and the line-ups being
+ * announced. For those the server is told what this browser follows (see push.ts).
  *
  * @param favoriteTeamIds Ids of the favourite teams. Favourite leagues don't alert.
  * @param onOpenMatch Called when a notification is clicked.
  * @param dictionary The words of the current language, for the notifications' text.
+ * @param language The current language's code; the server writes the push notifications in it.
  * @returns The context value for the pages, and `handleUpdate` to feed every live update into.
  */
-export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpenMatch: (match: Match) => void, dictionary: Dictionary) {
+export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpenMatch: (match: Match) => void, dictionary: Dictionary, language: string) {
   const [settings, setSettings] = useState(readStored)
   const [permission, setPermission] = useState<AlertPermission>(() => (supported() ? Notification.permission : 'unsupported'))
 
@@ -100,6 +115,26 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
     update(current => toggleMatch(current, match))
   }, [ensurePermission, update])
 
+  // What the server should push, as text: the effect below only runs when the wishes themselves change.
+  const wishes = useMemo(
+    () => JSON.stringify(permission === 'granted' ? pushWishes(settings, favoriteTeamIds, language) : null),
+    [permission, settings, favoriteTeamIds, language],
+  )
+  useEffect(() => {
+    const sync = () => void syncPush(JSON.parse(wishes))
+    const whenShown = () => {
+      if (document.visibilityState === 'visible') sync()
+    }
+
+    sync()
+    const timer = window.setInterval(sync, PushResyncMs)
+    document.addEventListener('visibilitychange', whenShown)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', whenShown)
+    }
+  }, [wishes])
+
   const handleUpdate = useCallback((message: MatchUpdatedMessage, previous: Match | undefined) => {
     if (!supported() || Notification.permission !== 'granted') return
     if (!wantsAlert(message.match, settingsRef.current, favoritesRef.current)) return
@@ -121,6 +156,11 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
     setTeamAlerts,
     isWatched: matchId => permission === 'granted' && isMatchWatched(settings, matchId),
     toggleMatch: toggle,
+    pushSupported: pushSupported(),
+    kickoffReminder: settings.kickoffReminder,
+    setKickoffReminder: on => update(current => ({ ...current, kickoffReminder: on })),
+    lineupAlerts: settings.lineupAlerts,
+    setLineupAlerts: on => update(current => ({ ...current, lineupAlerts: on })),
   }
 
   return { value, handleUpdate }

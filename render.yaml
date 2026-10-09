@@ -12,3 +12,7 @@ services:
       # The port the container listens on (the ASP.NET base image's default); Render routes traffic to it.
       - key: PORT
         value: "8080"
+      # The secret the notification keys are derived from. Render makes it up once and keeps it, so browsers that
+      # subscribed to notifications stay subscribed across deploys.
+      - key: Push__Secret
+        generateValue: true

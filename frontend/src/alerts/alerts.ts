@@ -25,9 +25,13 @@ export interface AlertSettings {
   /** Alerts for every match of a favourite team. Favourite leagues never alert: that would be every goal of a league. */
   teamAlerts: boolean
   matches: WatchedMatch[]
+  /** A reminder half an hour before kick-off, for the same matches. Sent by the server, so it arrives with the site closed. */
+  kickoffReminder: boolean
+  /** A notification when the starting elevens are announced. Sent by the server too. */
+  lineupAlerts: boolean
 }
 
-export const noAlerts: AlertSettings = { teamAlerts: false, matches: [] }
+export const noAlerts: AlertSettings = { teamAlerts: false, matches: [], kickoffReminder: true, lineupAlerts: true }
 
 export const AlertsStorageKey = 'canliskor.alerts.v1'
 
@@ -48,9 +52,12 @@ export function parseAlertSettings(stored: string | null, now: number): AlertSet
   }
   if (typeof raw !== 'object' || raw === null) return noAlerts
 
-  const { teamAlerts, matches } = raw as { teamAlerts?: unknown; matches?: unknown }
+  const { teamAlerts, matches, kickoffReminder, lineupAlerts } = raw as Record<string, unknown>
   return {
     teamAlerts: teamAlerts === true,
+    // On unless switched off: settings stored before these two existed have neither.
+    kickoffReminder: kickoffReminder !== false,
+    lineupAlerts: lineupAlerts !== false,
     matches: (Array.isArray(matches) ? matches : [])
       .filter((m): m is WatchedMatch => isString(m?.id) && isString(m?.leagueCode) && isString(m?.kickoff))
       .map(m => ({ id: m.id, leagueCode: m.leagueCode, kickoff: m.kickoff }))
@@ -74,6 +81,27 @@ export function toggleMatch(settings: AlertSettings, match: Match): AlertSetting
 export function wantsAlert(match: Match, settings: AlertSettings, favoriteTeamIds: ReadonlySet<string>): boolean {
   return isMatchWatched(settings, match.id)
     || (settings.teamAlerts && (favoriteTeamIds.has(match.homeTeam.id) || favoriteTeamIds.has(match.awayTeam.id)))
+}
+
+/** What the server is asked to send this browser; see push.ts. */
+export interface PushWishes {
+  language: string
+  teamIds: string[]
+  matchIds: string[]
+  kickoffReminder: boolean
+  lineupAlerts: boolean
+}
+
+/**
+ * What to ask the server for: the reminder and the line-ups alert, for the favourite teams (if team alerts are on)
+ * and the watched matches. Null if that comes to nothing, so the browser needn't be subscribed at all.
+ */
+export function pushWishes(settings: AlertSettings, favoriteTeamIds: ReadonlySet<string>, language: string): PushWishes | null {
+  const teamIds = settings.teamAlerts ? [...favoriteTeamIds].sort() : []
+  const matchIds = settings.matches.map(m => m.id)
+  if (teamIds.length + matchIds.length === 0 || !(settings.kickoffReminder || settings.lineupAlerts)) return null
+
+  return { language, teamIds, matchIds, kickoffReminder: settings.kickoffReminder, lineupAlerts: settings.lineupAlerts }
 }
 
 const minuteOf = (clock: string | null) => {

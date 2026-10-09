@@ -1,3 +1,4 @@
+using CanliSkor.Core.Notifications;
 using CanliSkor.Core.Options;
 using CanliSkor.Core.Polling;
 using CanliSkor.Core.Services;
@@ -37,6 +38,9 @@ public static class DependencyInjection
         services.AddSingleton<MatchViewerRegistry>();
         services.AddSingleton<PollSchedule>();
         services.AddScoped<LiveDetailRefresher>();
+        services.AddSingleton<PushSubscriberRegistry>();
+        services.AddSingleton<NotificationLog>();
+        services.AddScoped<MatchNotifier>();
 
         return services;
     }

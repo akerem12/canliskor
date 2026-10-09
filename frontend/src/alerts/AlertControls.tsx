@@ -14,25 +14,41 @@ function blockedReason(permission: AlertPermission, t: Dictionary): string | nul
 /** The switch for alerts on every match of a favourite team. Shown on the Favourites page. */
 export function TeamAlertsSwitch({ teamCount }: { teamCount: number }) {
   const { t } = useI18n()
-  const { permission, teamAlerts, setTeamAlerts } = useAlerts()
+  const { permission, teamAlerts, setTeamAlerts, pushSupported, kickoffReminder, setKickoffReminder, lineupAlerts, setLineupAlerts } = useAlerts()
   const blocked = blockedReason(permission, t)
 
   return (
     <div className="alerts">
-      <div className="alerts__text">
-        <strong>{t.alerts.heading}</strong>
-        <span>{blocked ?? (teamCount === 0 ? t.alerts.starFirst : t.alerts.description)}</span>
+      <div className="alerts__row">
+        <div className="alerts__text">
+          <strong>{t.alerts.heading}</strong>
+          <span>{blocked ?? (teamCount === 0 ? t.alerts.starFirst : t.alerts.description)}</span>
+        </div>
+        <button
+          className={teamAlerts ? 'switch switch--on' : 'switch'}
+          role="switch"
+          aria-checked={teamAlerts}
+          aria-label={t.alerts.switchLabel}
+          disabled={blocked !== null}
+          onClick={() => void setTeamAlerts(!teamAlerts)}
+        >
+          <span className="switch__knob" />
+        </button>
       </div>
-      <button
-        className={teamAlerts ? 'switch switch--on' : 'switch'}
-        role="switch"
-        aria-checked={teamAlerts}
-        aria-label={t.alerts.switchLabel}
-        disabled={blocked !== null}
-        onClick={() => void setTeamAlerts(!teamAlerts)}
-      >
-        <span className="switch__knob" />
-      </button>
+      {/* The two the server sends. They also cover matches picked with the bell, so they show whatever the switch says. */}
+      {blocked === null && pushSupported && (
+        <fieldset className="alerts__options">
+          <legend>{t.alerts.pushLegend}</legend>
+          <label>
+            <input type="checkbox" checked={kickoffReminder} onChange={event => setKickoffReminder(event.target.checked)} />
+            {t.alerts.kickoffReminder}
+          </label>
+          <label>
+            <input type="checkbox" checked={lineupAlerts} onChange={event => setLineupAlerts(event.target.checked)} />
+            {t.alerts.lineupAlerts}
+          </label>
+        </fieldset>
+      )}
     </div>
   )
 }

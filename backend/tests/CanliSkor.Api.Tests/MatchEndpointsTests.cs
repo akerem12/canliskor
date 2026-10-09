@@ -389,6 +389,8 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
                 // No background polling (and no calls to ESPN) during tests.
                 var worker = services.Single(d => d.ImplementationType == typeof(ScoreboardPollingWorker));
                 services.Remove(worker);
+                // And no notifications sent to anyone.
+                services.Remove(services.Single(d => d.ImplementationType == typeof(MatchNotificationWorker)));
                 services.AddSingleton<TimeProvider>(new FakeTimeProvider(Now));
                 // Browsing other days may call the provider: never let tests reach ESPN.
                 services.AddScoped<IFootballDataProvider, StubFootballDataProvider>();

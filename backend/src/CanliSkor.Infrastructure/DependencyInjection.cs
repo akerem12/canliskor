@@ -1,6 +1,8 @@
 using CanliSkor.Core.Abstractions;
 using CanliSkor.Infrastructure.Caching;
 using CanliSkor.Infrastructure.Espn;
+using CanliSkor.Infrastructure.Push;
+using Lib.Net.Http.WebPush.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -22,6 +24,20 @@ public static class DependencyInjection
             })
             // Retry with exponential backoff + jitter, per-attempt and total timeouts, circuit breaker.
             .AddStandardResilienceHandler();
+
+        services.AddOptions<PushOptions>()
+            .Bind(configuration.GetSection(PushOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Singletons: the keys must stay the same for as long as the process lives.
+        services.AddSingleton(sp => VapidKeys.FromSecret(sp.GetRequiredService<IOptions<PushOptions>>().Value.Secret));
+        services.AddSingleton(sp =>
+        {
+            var keys = sp.GetRequiredService<VapidKeys>();
+            return new VapidAuthentication(keys.PublicKey, keys.PrivateKey) { Subject = sp.GetRequiredService<IOptions<PushOptions>>().Value.Subject };
+        });
+        services.AddHttpClient<IPushSender, WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
 
         services.AddMemoryCache();
         services.AddSingleton<IMatchStore, InMemoryMatchStore>();

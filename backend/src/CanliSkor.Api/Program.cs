@@ -14,6 +14,7 @@ builder.Services
     .AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHostedService<ScoreboardPollingWorker>();
+builder.Services.AddHostedService<MatchNotificationWorker>();
 builder.Services.AddKeepAlive(builder.Configuration);
 
 // Enums as strings ("Live", not 1): readable, and reordering the enum can't break clients.
@@ -31,6 +32,7 @@ app.UseStaticFrontend();
 app.MapHealthChecks("/health");
 app.MapLeagueEndpoints();
 app.MapMatchEndpoints();
+app.MapPushEndpoints();
 app.MapHub<LiveScoresHub>(LiveScoresHub.Path);
 
 app.Run();

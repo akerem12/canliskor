@@ -83,14 +83,14 @@ export default function App() {
   }
   const [filter, setFilter] = useState<Filter>('all')
   const { route, navigate, back } = useRoute()
-  const { t } = useI18n()
+  const { t, language } = useI18n()
 
   const { favorites } = useFavorites()
   const favoriteCount = favorites.teams.length + favorites.leagues.length
   const favoriteTeamIds = useMemo(() => new Set(favorites.teams.map(t => t.teamId)), [favorites.teams])
 
   // Alerts listen to every live update; a click on one opens the match.
-  const alerts = useAlertsController(favoriteTeamIds, match => navigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id }), t)
+  const alerts = useAlertsController(favoriteTeamIds, match => navigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id }), t, language)
   const { leagues, loaded, status, date, recentGoals, error, watchMatch } = useLiveScores(dayOffset, alerts.handleUpdate)
 
   const leagueOf = (code: string) => leagues.find(l => l.code === code)
