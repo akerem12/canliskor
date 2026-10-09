@@ -1,7 +1,8 @@
+import { apiUrl } from './base'
 import type { Competition, ExpectedLineups, LeagueFixtures, LeagueMatches, MatchDay, MatchDetail, PlayerProfile, Squad, Standings, TeamProfile, TeamSearchResult } from './types'
 
 async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url)
+  const response = await fetch(apiUrl(url))
   if (!response.ok) {
     throw new Error(`GET ${url} failed with ${response.status}`)
   }

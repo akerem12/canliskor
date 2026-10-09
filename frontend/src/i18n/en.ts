@@ -58,6 +58,8 @@ export const en = {
     all: 'All matches',
     live: 'Live',
     cantReach: (error: string) => `Can't reach the server (${error}).`,
+    waking: 'Waking the server up… This can take up to a minute.',
+    noAnswer: "The server didn't answer.",
     noneLive: 'No matches in play right now.',
     noneToday: 'No matches today.',
     noneThatDay: 'No matches on this day.',

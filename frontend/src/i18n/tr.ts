@@ -57,6 +57,8 @@ export const tr: Dictionary = {
     all: 'Tüm maçlar',
     live: 'Canlı',
     cantReach: error => `Sunucuya ulaşılamıyor (${error}).`,
+    waking: 'Sunucu uyanıyor… Bu bir dakika kadar sürebilir.',
+    noAnswer: 'Sunucu yanıt vermedi.',
     noneLive: 'Şu anda oynanan maç yok.',
     noneToday: 'Bugün maç yok.',
     noneThatDay: 'Bu gün maç yok.',

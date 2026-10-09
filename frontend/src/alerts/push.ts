@@ -1,6 +1,7 @@
 // Push notifications: the ones the server sends, which arrive while the site is closed (the kick-off reminder and
 // "line-ups are out"). This file keeps the server in step with what the visitor wants; public/sw.js shows them.
 
+import { apiUrl } from '../api/base'
 import type { PushWishes } from './alerts'
 
 export const pushSupported = () =>
@@ -25,7 +26,7 @@ async function sync(wishes: PushWishes | null) {
     const registration = await navigator.serviceWorker.getRegistration()
     const subscription = await registration?.pushManager.getSubscription()
     if (subscription) {
-      await fetch(`/api/push/subscription?endpoint=${encodeURIComponent(subscription.endpoint)}`, { method: 'DELETE' })
+      await fetch(apiUrl(`/api/push/subscription?endpoint=${encodeURIComponent(subscription.endpoint)}`), { method: 'DELETE' })
     }
     return
   }
@@ -33,7 +34,7 @@ async function sync(wishes: PushWishes | null) {
   const registration = await navigator.serviceWorker.register('/sw.js')
   await navigator.serviceWorker.ready
 
-  const keyResponse = await fetch('/api/push/key')
+  const keyResponse = await fetch(apiUrl('/api/push/key'))
   if (!keyResponse.ok) throw new Error(`GET /api/push/key failed with ${keyResponse.status}`)
   const { publicKey } = (await keyResponse.json()) as { publicKey: string }
 
@@ -46,7 +47,7 @@ async function sync(wishes: PushWishes | null) {
   }
   subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromBase64Url(publicKey) })
 
-  const response = await fetch('/api/push/subscription', {
+  const response = await fetch(apiUrl('/api/push/subscription'), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...subscription.toJSON(), ...wishes }),

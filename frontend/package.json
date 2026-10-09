@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "build:android": "npm run build && cap sync android",
+    "build:android": "tsc -b && vite build --mode android && cap sync android",
     "open:android": "cap open android"
   },
   "dependencies": {

@@ -246,6 +246,7 @@ h1, h2 { margin: 0; }
 
 .notice { padding: 24px; text-align: center; color: var(--muted); background: var(--surface); border-radius: 10px; }
 .notice--error { color: var(--live); padding: 12px; margin-bottom: 14px; }
+.notice--waking { padding: 12px; margin-bottom: 14px; }
 
 .footer { margin-top: 24px; text-align: center; font-size: 0.75rem; color: var(--muted); }
 .footer__note { display: block; max-width: 34rem; margin: 4px auto 0; opacity: 0.8; }

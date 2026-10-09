@@ -24,10 +24,12 @@ builder.Services.AddSignalR()
     .AddJsonProtocol(o => o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSingleton<IMatchUpdatePublisher, SignalRMatchUpdatePublisher>();
 builder.Services.AddHealthChecks();
+builder.Services.AddMobileAppCors();
 
 var app = builder.Build();
 
 app.UseStaticFrontend();
+app.UseCors();
 
 app.MapHealthChecks("/health");
 app.MapLeagueEndpoints();

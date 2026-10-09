@@ -19,6 +19,7 @@ import { useLiveScores } from './live/useLiveScores'
 import { useShowOdds } from './oddsPreference'
 import type { Route } from './route'
 import { routeFromSearch, routeToSearch, sameRoute } from './route'
+import { useSlowStart } from './live/slowStart'
 import { addDays, formatLongDate, istanbulToday } from './time'
 
 type Filter = 'all' | 'live'
@@ -91,7 +92,7 @@ export default function App() {
 
   // Alerts listen to every live update; a click on one opens the match.
   const alerts = useAlertsController(favoriteTeamIds, match => navigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id }), t, language)
-  const { leagues, loaded, status, date, recentGoals, error, watchMatch } = useLiveScores(dayOffset, alerts.handleUpdate)
+  const { leagues, loaded, status, date, recentGoals, error, watchMatch, retry } = useLiveScores(dayOffset, alerts.handleUpdate)
 
   const leagueOf = (code: string) => leagues.find(l => l.code === code)
 
@@ -175,6 +176,7 @@ export default function App() {
             loaded={loaded}
             offline={status === 'offline'}
             error={error}
+            onRetry={retry}
             recentGoals={recentGoals}
             onNavigate={navigate}
           />
@@ -199,13 +201,16 @@ interface MatchListProps {
   loaded: boolean
   offline: boolean
   error: string | null
+  onRetry: () => void
   recentGoals: ReadonlySet<string>
   onNavigate: (route: Route) => void
 }
 
 /** The matches of one day, grouped by league. Leagues without a match that day aren't listed here. */
-function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, loaded, offline, error, recentGoals, onNavigate }: MatchListProps) {
+function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, loaded, offline, error, onRetry, recentGoals, onNavigate }: MatchListProps) {
   const { t } = useI18n()
+  // Nothing to show yet and it is taking long: most likely the server is waking up.
+  const { slowStart, restart: waitAgain } = useSlowStart(!loaded && leagues.length === 0)
   // The Live tab only means something today; other days always show everything.
   const isToday = dayOffset === 0
   const effectiveFilter: Filter = isToday ? filter : 'all'
@@ -247,7 +252,14 @@ function MatchList({ dayOffset, onDayChange, filter, onFilterChange, leagues, lo
 
       {/* While another day loads, the previous one stays visible but dimmed. */}
       <main className={loaded ? undefined : 'is-loading'} aria-busy={!loaded}>
-        {error && offline && <p className="notice notice--error">{t.matchList.cantReach(error)}</p>}
+        {slowStart === 'waking' && <p className="notice notice--waking" role="status">{t.matchList.waking}</p>}
+        {slowStart === 'timedOut' && (
+          <p className="notice notice--error">
+            {t.matchList.noAnswer}{' '}
+            <button className="notice__retry" onClick={() => { waitAgain(); onRetry() }}>{t.common.tryAgain}</button>
+          </p>
+        )}
+        {slowStart === 'no' && error && offline && <p className="notice notice--error">{t.matchList.cantReach(error)}</p>}
         {!loaded && leagues.length === 0 ? (
           <MatchListSkeleton />
         ) : shown.length === 0 ? (

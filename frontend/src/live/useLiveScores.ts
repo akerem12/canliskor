@@ -1,16 +1,18 @@
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
 import type { HubConnection } from '@microsoft/signalr'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { apiUrl } from '../api/base'
 import { getDay, getLeagues, getLive } from '../api/http'
 import type { Match, MatchDetail, MatchUpdatedMessage } from '../api/types'
 import { localizeNames } from '../i18n/names'
 import { useI18n } from '../i18n/useI18n'
+import { onAppActiveChange } from '../native/app'
 import { addDays, istanbulToday } from '../time'
 import { goalsIn, initialState, mergeLeagues, scoresReducer } from './matchState'
 
 export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting' | 'offline'
 
-const HubUrl = '/hubs/live-scores'
+const HubUrl = apiUrl('/hubs/live-scores')
 const RestartDelayMs = 5_000
 const GoalHighlightMs = 10_000
 const DayCheckIntervalMs = 60_000
@@ -53,6 +55,7 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
   // The connection lives for the whole page, so its callbacks read the current day through refs.
   const dayOffsetRef = useRef(dayOffset)
   const loadRef = useRef<(() => Promise<void>) | null>(null)
+  const retryRef = useRef<(() => void) | null>(null)
   const connectionRef = useRef<HubConnection | null>(null)
   const watchedRef = useRef<WatchedMatch | null>(null)
 
@@ -71,6 +74,11 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
 
   useEffect(() => {
     let disposed = false
+    // The Android app in the background: no connection and no requests until it is opened again.
+    let paused = false
+    let stopping: Promise<void> = Promise.resolve()
+    // Counts attempts to connect, so one that was abandoned (pause, retry) can tell and leaves things alone.
+    let attempt = 0
     let restartTimer: ReturnType<typeof setTimeout> | undefined
     let leagues: string[] = []
     let loadedToday: string | undefined
@@ -155,14 +163,17 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
     loadRef.current = load
 
     async function start() {
+      const mine = ++attempt
       setStatus('connecting')
       try {
+        // A stop still under way (pause, retry) must finish first, or start() is refused.
+        await stopping
         await connection.start()
         await subscribe()
         await load()
-        if (!disposed) setStatus('live')
+        if (!disposed && mine === attempt) setStatus('live')
       } catch (e) {
-        if (disposed) return
+        if (disposed || paused || mine !== attempt) return
         // withAutomaticReconnect only covers drops after a successful start; retry the first start ourselves.
         setStatus('offline')
         setError(errorMessage(e))
@@ -184,8 +195,8 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
       }
     })
     connection.onclose(() => {
-      // Automatic reconnect gave up: start over.
-      if (disposed) return
+      // Automatic reconnect gave up: start over. Stopped on purpose (pause, retry): whoever stopped it restarts it.
+      if (disposed || paused || restarting) return
       setStatus('offline')
       restartTimer = setTimeout(start, RestartDelayMs)
     })
@@ -199,7 +210,7 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
 
     // No push without a connection: until it is back, ask for the scores every few seconds instead.
     const fallbackTimer = setInterval(async () => {
-      if (disposed || connection.state === HubConnectionState.Connected) return
+      if (disposed || paused || connection.state === HubConnectionState.Connected) return
       try {
         if (leagues.length === 0) leagues = await getLeagues()
         await load(true)
@@ -208,6 +219,31 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
       }
     }, FallbackPollMs)
 
+    /** Drops whatever the connection is doing and connects anew, now. */
+    let restarting = false
+    function restart() {
+      clearTimeout(restartTimer)
+      attempt++
+      restarting = true
+      stopping = connection.stop().finally(() => {
+        restarting = false
+      })
+      restartTimer = setTimeout(start, 0)
+    }
+    retryRef.current = restart
+
+    const stopListening = onAppActiveChange(active => {
+      if (disposed || active !== paused) return
+      paused = !active
+      if (active) {
+        restart()
+      } else {
+        clearTimeout(restartTimer)
+        attempt++
+        stopping = connection.stop()
+      }
+    })
+
     // Deferred: React StrictMode (dev) mounts, unmounts and remounts at once. Starting synchronously would open
     // a connection only to stop it mid-negotiation, which SignalR reports as an error in the console.
     restartTimer = setTimeout(start, 0)
@@ -215,6 +251,8 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
     return () => {
       disposed = true
       loadRef.current = null
+      retryRef.current = null
+      stopListening()
       connectionRef.current = null
       clearTimeout(restartTimer)
       clearInterval(dayTimer)
@@ -252,7 +290,10 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
     }
   }, [])
 
+  /** Stops waiting for the current attempt to connect and tries again at once. */
+  const retry = useCallback(() => retryRef.current?.(), [])
+
   const leagues = useMemo(() => localizeNames(state.leagues, language), [state.leagues, language])
 
-  return { leagues, loaded: state.loaded, status, date, recentGoals, error, watchMatch }
+  return { leagues, loaded: state.loaded, status, date, recentGoals, error, watchMatch, retry }
 }
