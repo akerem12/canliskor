@@ -61,6 +61,33 @@ public class PushEndpointsTests(MatchEndpointsTests.Factory factory) : IClassFix
     }
 
     [Fact]
+    public async Task The_android_app_registers_with_its_firebase_token_instead_of_a_subscription()
+    {
+        const string token = "dYv3example-token_0123456789:APA91bExampleExampleExample";
+
+        var response = await _client.PutAsJsonAsync("/api/push/subscription",
+            new { token, language = "tr", teamIds = new[] { "432" }, matchIds = Array.Empty<string>(), kickoffReminder = true, lineupAlerts = true });
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var subscriber = Assert.Single(_registry.All(), s => s.Endpoint == token);
+        Assert.Equal(PushChannel.Fcm, subscriber.Channel);
+        Assert.Equal(["432"], subscriber.TeamIds);
+
+        await _client.DeleteAsync($"/api/push/subscription?endpoint={Uri.EscapeDataString(token)}");
+        Assert.DoesNotContain(_registry.All(), s => s.Endpoint == token);
+    }
+
+    [Theory]
+    [InlineData("short")]
+    [InlineData("https://example.org/a-url-is-not-a-token-however-long-it-is")]
+    public async Task A_token_that_is_no_firebase_token_is_refused(string token)
+    {
+        var response = await _client.PutAsJsonAsync("/api/push/subscription", new { token, kickoffReminder = true });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task A_subscription_without_keys_is_refused()
     {
         var response = await _client.PutAsJsonAsync("/api/push/subscription", new { endpoint = Endpoint, kickoffReminder = true });

@@ -39,7 +39,15 @@ public static class DependencyInjection
             var keys = sp.GetRequiredService<VapidKeys>();
             return new VapidAuthentication(keys.PublicKey, keys.PrivateKey) { Subject = sp.GetRequiredService<IOptions<PushOptions>>().Value.Subject };
         });
-        services.AddHttpClient<IPushSender, WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
+        services.AddHttpClient<WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
+
+        // The Android app is reached through Firebase. The access token is kept between sends, hence the singleton.
+        services.AddOptions<FirebaseOptions>().Bind(configuration.GetSection(FirebaseOptions.SectionName));
+        services.AddHttpClient(FirebaseAccessTokens.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(15));
+        services.AddSingleton<FirebaseAccessTokens>();
+        services.AddHttpClient<FcmPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
+
+        services.AddTransient<IPushSender, ChannelPushSender>();
 
         // With a database the subscribers outlive a restart; without one everything else works the same.
         var databaseUrl = configuration[DatabaseUrl.SettingName];

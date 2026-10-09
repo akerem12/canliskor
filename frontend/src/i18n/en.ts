@@ -325,6 +325,12 @@ export const en = {
     starFirst: 'Star a team first: alerts are sent for favourite teams, not for whole leagues.',
     description: 'Goals, kick-off, half time and full time of your favourite teams, while this site is open in a tab.',
     pushLegend: 'Also when the site is closed, for your teams and the matches you put a bell on:',
+    // The same three for the Android app.
+    deniedApp: "Notifications are switched off for this app. Allow them in the phone's settings (Apps, this app, Notifications) to use alerts.",
+    descriptionApp: 'Goals, kick-off, half time and full time of your favourite teams, while the app is open.',
+    pushLegendApp: 'Also when the app is closed, for your teams and the matches you put a bell on:',
+    // The name of the app's notifications in the phone's settings.
+    channelName: 'Match alerts',
     kickoffReminder: 'Notify 30 minutes before kick-off',
     lineupAlerts: 'Notify when line-ups are announced',
     switchLabel: 'Match alerts for favourite teams',

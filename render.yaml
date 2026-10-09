@@ -20,3 +20,7 @@ services:
       # A secret: its value is typed into Render's dashboard and never written here.
       - key: DATABASE_URL
         sync: false
+      # The Firebase service-account key (the whole JSON file's text) the server sends the Android app's
+      # notifications with. A secret, typed into the dashboard like the one above.
+      - key: Firebase__ServiceAccount
+        sync: false

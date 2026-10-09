@@ -22,9 +22,13 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
             match_ids        text[] not null,
             kickoff_reminder boolean not null,
             lineup_alerts    boolean not null,
-            updated_at       timestamptz not null default now()
+            updated_at       timestamptz not null default now(),
+            channel          text not null default 'Web'
         )
         """;
+
+    // For a table made before the Android app existed.
+    private const string AddChannel = "alter table push_subscribers add column if not exists channel text not null default 'Web'";
 
     private readonly SemaphoreSlim _tableLock = new(1, 1);
     private bool _tableExists;
@@ -35,12 +39,18 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
         {
             await EnsureTableAsync(cancellationToken);
             await using var command = dataSource.CreateCommand(
-                "select endpoint, p256dh, auth, language, team_ids, match_ids, kickoff_reminder, lineup_alerts from push_subscribers");
+                "select endpoint, p256dh, auth, language, team_ids, match_ids, kickoff_reminder, lineup_alerts, channel from push_subscribers");
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
             var subscribers = new List<PushSubscriber>();
             while (await reader.ReadAsync(cancellationToken))
             {
+                // A channel this version doesn't know was written by a newer one: not ours to send to.
+                if (!Enum.TryParse<PushChannel>(reader.GetString(8), out var channel))
+                {
+                    continue;
+                }
+
                 subscribers.Add(new PushSubscriber(
                     reader.GetString(0),
                     reader.GetString(1),
@@ -49,7 +59,8 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
                     new HashSet<string>(reader.GetFieldValue<string[]>(4)),
                     new HashSet<string>(reader.GetFieldValue<string[]>(5)),
                     reader.GetBoolean(6),
-                    reader.GetBoolean(7)));
+                    reader.GetBoolean(7),
+                    channel));
             }
 
             return subscribers;
@@ -67,13 +78,13 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
         {
             await EnsureTableAsync(cancellationToken);
             await using var command = dataSource.CreateCommand("""
-                insert into push_subscribers (endpoint, p256dh, auth, language, team_ids, match_ids, kickoff_reminder, lineup_alerts)
-                values ($1, $2, $3, $4, $5, $6, $7, $8)
+                insert into push_subscribers (endpoint, p256dh, auth, language, team_ids, match_ids, kickoff_reminder, lineup_alerts, channel)
+                values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 on conflict (endpoint) do update set
                     p256dh = excluded.p256dh, auth = excluded.auth, language = excluded.language,
                     team_ids = excluded.team_ids, match_ids = excluded.match_ids,
                     kickoff_reminder = excluded.kickoff_reminder, lineup_alerts = excluded.lineup_alerts,
-                    updated_at = now()
+                    channel = excluded.channel, updated_at = now()
                 """);
             command.Parameters.Add(new() { Value = subscriber.Endpoint });
             command.Parameters.Add(new() { Value = subscriber.P256dh });
@@ -83,6 +94,7 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
             command.Parameters.Add(new() { Value = subscriber.MatchIds.ToArray() });
             command.Parameters.Add(new() { Value = subscriber.KickoffReminder });
             command.Parameters.Add(new() { Value = subscriber.LineupAlerts });
+            command.Parameters.Add(new() { Value = subscriber.Channel.ToString() });
             await command.ExecuteNonQueryAsync(cancellationToken);
             return true;
         }
@@ -122,8 +134,12 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
         {
             if (!_tableExists)
             {
-                await using var command = dataSource.CreateCommand(CreateTable);
-                await command.ExecuteNonQueryAsync(cancellationToken);
+                foreach (var statement in new[] { CreateTable, AddChannel })
+                {
+                    await using var command = dataSource.CreateCommand(statement);
+                    await command.ExecuteNonQueryAsync(cancellationToken);
+                }
+
                 _tableExists = true;
             }
         }

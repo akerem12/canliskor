@@ -3,6 +3,9 @@ import type { Match, MatchUpdatedMessage } from '../api/types'
 import type { Dictionary } from '../i18n/en'
 import type { AlertSettings } from './alerts'
 import { AlertsStorageKey, describeUpdate, isMatchWatched, noAlerts, parseAlertSettings, pushWishes, toggleMatch, wantsAlert } from './alerts'
+import { isNativeApp, onAppActiveChange } from '../native/app'
+import { nativePermission, requestNativePermission, showNative, startNativeNotifications } from '../native/notifications'
+import { routeToSearch } from '../route'
 import { pushSupported, syncPush } from './push'
 
 /** "unsupported": this browser has no notifications at all. Otherwise the browser's own permission state. */
@@ -39,7 +42,11 @@ export function useAlerts(): AlertsContextValue {
   return value
 }
 
-const supported = () => typeof window !== 'undefined' && 'Notification' in window
+/** Notifications exist here: always in the Android app, in a browser if it has the Notification API. */
+const supported = () => isNativeApp || (typeof window !== 'undefined' && 'Notification' in window)
+
+/** What the browser says right now. In the app the answer has to be asked for, so it starts as "not asked yet". */
+const knownPermission = (): AlertPermission => (isNativeApp ? 'default' : supported() ? Notification.permission : 'unsupported')
 
 function readStored(): AlertSettings {
   try {
@@ -66,6 +73,9 @@ function writeStored(settings: AlertSettings) {
  * push notifications and arrive either way: a reminder half an hour before kick-off, and the line-ups being
  * announced. For those the server is told what this browser follows (see push.ts).
  *
+ * The Android app does the same through the phone's own notifications (native/notifications.ts). Its live
+ * connection rests while the app is in the background, so there the first kind only arrives while the app is open.
+ *
  * @param favoriteTeamIds Ids of the favourite teams. Favourite leagues don't alert.
  * @param onOpenMatch Called when a notification is clicked.
  * @param dictionary The words of the current language, for the notifications' text.
@@ -74,19 +84,34 @@ function writeStored(settings: AlertSettings) {
  */
 export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpenMatch: (match: Match) => void, dictionary: Dictionary, language: string) {
   const [settings, setSettings] = useState(readStored)
-  const [permission, setPermission] = useState<AlertPermission>(() => (supported() ? Notification.permission : 'unsupported'))
+  const [permission, setPermission] = useState<AlertPermission>(knownPermission)
 
   // handleUpdate is called from the long-lived connection, so it reads the current values through refs.
   const settingsRef = useRef(settings)
   const favoritesRef = useRef(favoriteTeamIds)
   const openRef = useRef(onOpenMatch)
   const dictionaryRef = useRef(dictionary)
+  const permissionRef = useRef(permission)
   useEffect(() => {
+    permissionRef.current = permission
     settingsRef.current = settings
     favoritesRef.current = favoriteTeamIds
     openRef.current = onOpenMatch
     dictionaryRef.current = dictionary
   })
+
+  // The app: listen for taps on notifications from the start, and ask Android what is allowed, again whenever
+  // the app comes back to the front (the answer may have been changed in the phone's settings meanwhile).
+  const channelName = dictionary.alerts.channelName
+  useEffect(() => {
+    if (!isNativeApp) return
+    startNativeNotifications(channelName)
+    const ask = () => void nativePermission().then(setPermission, () => {})
+    ask()
+    return onAppActiveChange(active => {
+      if (active) ask()
+    })
+  }, [channelName])
 
   const update = useCallback((change: (current: AlertSettings) => AlertSettings) => {
     setSettings(current => {
@@ -99,7 +124,13 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
   /** True if notifications may be shown, asking the visitor if they haven't decided yet. */
   const ensurePermission = useCallback(async () => {
     if (!supported()) return false
-    const result = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission
+    let result: NotificationPermission
+    if (isNativeApp) {
+      const current = await nativePermission()
+      result = current === 'default' ? await requestNativePermission() : current
+    } else {
+      result = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission
+    }
     setPermission(result)
     return result === 'granted'
   }, [])
@@ -136,11 +167,17 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
   }, [wishes])
 
   const handleUpdate = useCallback((message: MatchUpdatedMessage, previous: Match | undefined) => {
-    if (!supported() || Notification.permission !== 'granted') return
+    if (permissionRef.current !== 'granted') return
     if (!wantsAlert(message.match, settingsRef.current, favoritesRef.current)) return
 
     const alert = describeUpdate(previous, message, dictionaryRef.current)
     if (!alert) return
+
+    if (isNativeApp) {
+      const { leagueCode, id } = message.match
+      showNative({ ...alert, url: `/${routeToSearch({ view: 'match', leagueCode, matchId: id }, '')}` })
+      return
+    }
 
     const notification = new Notification(alert.title, { body: alert.body, tag: alert.tag, icon: '/favicon.svg' })
     notification.onclick = () => {

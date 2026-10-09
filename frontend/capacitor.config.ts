@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
-// The Android app is this web app in a native shell (see ANDROID.md).
+// The Android app is this web app in a native shell.
 //
 // RENAMING: the name and the id below are placeholders, and this file is where they are decided.
 //  - appName: the name under the icon. After changing it, also change `app_name` and `title_activity_main` in

@@ -1,13 +1,14 @@
 import type { Match } from '../api/types'
 import type { Dictionary } from '../i18n/en'
 import { useI18n } from '../i18n/useI18n'
+import { isNativeApp } from '../native/app'
 import type { AlertPermission } from './useAlerts'
 import { useAlerts } from './useAlerts'
 
 /** Why alerts can't be switched on, in words; null if they can. */
 function blockedReason(permission: AlertPermission, t: Dictionary): string | null {
   if (permission === 'unsupported') return t.alerts.unsupported
-  if (permission === 'denied') return t.alerts.denied
+  if (permission === 'denied') return isNativeApp ? t.alerts.deniedApp : t.alerts.denied
   return null
 }
 
@@ -22,7 +23,7 @@ export function TeamAlertsSwitch({ teamCount }: { teamCount: number }) {
       <div className="alerts__row">
         <div className="alerts__text">
           <strong>{t.alerts.heading}</strong>
-          <span>{blocked ?? (teamCount === 0 ? t.alerts.starFirst : t.alerts.description)}</span>
+          <span>{blocked ?? (teamCount === 0 ? t.alerts.starFirst : isNativeApp ? t.alerts.descriptionApp : t.alerts.description)}</span>
         </div>
         <button
           className={teamAlerts ? 'switch switch--on' : 'switch'}
@@ -38,7 +39,7 @@ export function TeamAlertsSwitch({ teamCount }: { teamCount: number }) {
       {/* The two the server sends. They also cover matches picked with the bell, so they show whatever the switch says. */}
       {blocked === null && pushSupported && (
         <fieldset className="alerts__options">
-          <legend>{t.alerts.pushLegend}</legend>
+          <legend>{isNativeApp ? t.alerts.pushLegendApp : t.alerts.pushLegend}</legend>
           <label>
             <input type="checkbox" checked={kickoffReminder} onChange={event => setKickoffReminder(event.target.checked)} />
             {t.alerts.kickoffReminder}

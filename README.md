@@ -206,6 +206,29 @@ Limits to know about:
   it once more; on the device it replaces the first one (same tag) instead of adding a second.
 - iPhone and iPad only allow notifications for a site added to the Home Screen and opened from there.
 
+#### Notifications in the Android app
+
+The Android app (the site in a Capacitor shell, `frontend/android`) has neither the browser's Notification API
+nor a service worker, so the same notifications take another road there:
+
+- **From the server:** the reminder and the line-ups go through Firebase Cloud Messaging. The app asks Android
+  for permission, gets a registration token from Firebase and sends it with `PUT /api/push/subscription`
+  (`token` in place of the browser's subscription); the server stores it like any subscriber, marked as channel
+  `Fcm`. `ChannelPushSender` then sends each notification the way its subscriber is reached: `WebPushSender` for
+  browsers, `FcmPushSender` for the app. Android shows the notification by itself while the app is closed.
+- **From the open app:** goals, kick-off, half time and full time are shown with the phone's own notifications
+  (`frontend/src/native/notifications.ts`). The app's live connection rests in the background, so these only
+  arrive while the app is open.
+- **A tap** opens the match (the line-ups tab for the line-ups notification), also when it has to start the app.
+
+Two files tie the app to the Firebase project, and neither is in the repository:
+
+- `frontend/android/app/google-services.json` (Firebase console: Project settings, Your apps): the app's side.
+  Without it the app builds but can't register for notifications.
+- The project's service-account key (Project settings, Service accounts, Generate new private key): the
+  server's side, as the setting `Firebase:ServiceAccount` holding the whole file's text (`Firebase__ServiceAccount`
+  on Render). Without it the server sends nothing to the app; browsers are not affected.
+
 ### Match odds
 
 Matches that haven't kicked off show the bookmaker's 1X2 prices (home win, draw, away win) as decimal odds on the

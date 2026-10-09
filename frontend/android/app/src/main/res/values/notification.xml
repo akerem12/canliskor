@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The colour Android tints the notification icon and the app's name with. -->
+    <color name="notification">#2BB673</color>
+</resources>
