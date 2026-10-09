@@ -8,3 +8,4 @@
 **/*.user
 .git/
 backend/tests/
+frontend/android/
