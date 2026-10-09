@@ -1,5 +1,6 @@
 using CanliSkor.Core.Abstractions;
 using CanliSkor.Core.Domain;
+using CanliSkor.Core.Notifications;
 using CanliSkor.Core.Options;
 using Microsoft.Extensions.Options;
 
@@ -25,6 +26,37 @@ internal static class TestData
 
     public static LeagueScoreboard Scoreboard(string leagueCode, DateOnly date, params Match[] matches) =>
         new(new League(leagueCode, leagueCode.ToUpperInvariant()), date, matches);
+}
+
+/// <summary>Subscribers "in the database": a dictionary, which can be told to fail like a database that is down.</summary>
+internal sealed class FakePushSubscriberStore : IPushSubscriberStore
+{
+    public Dictionary<string, PushSubscriber> Stored { get; } = [];
+
+    public int Saves { get; private set; }
+
+    public bool Down { get; set; }
+
+    public Task<IReadOnlyList<PushSubscriber>?> LoadAllAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<PushSubscriber>?>(Down ? null : [.. Stored.Values]);
+
+    public Task<bool> SaveAsync(PushSubscriber subscriber, CancellationToken cancellationToken = default)
+    {
+        if (Down)
+        {
+            return Task.FromResult(false);
+        }
+
+        Saves++;
+        Stored[subscriber.Endpoint] = subscriber;
+        return Task.FromResult(true);
+    }
+
+    public Task RemoveAsync(string endpoint, CancellationToken cancellationToken = default)
+    {
+        Stored.Remove(endpoint);
+        return Task.CompletedTask;
+    }
 }
 
 internal sealed class FakeMatchStore : IMatchStore

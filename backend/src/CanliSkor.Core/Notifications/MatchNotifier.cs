@@ -137,7 +137,7 @@ public sealed partial class MatchNotifier(
             var outcome = await sender.SendAsync(subscriber, write(subscriber), cancellationToken);
             if (outcome == PushOutcome.Gone)
             {
-                subscribers.Remove(subscriber.Endpoint);
+                await subscribers.RemoveAsync(subscriber.Endpoint, cancellationToken);
             }
 
             // A failed one stays open and is tried again on the next round.

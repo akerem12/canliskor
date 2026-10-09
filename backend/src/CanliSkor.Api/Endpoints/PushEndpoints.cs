@@ -26,7 +26,7 @@ public sealed record PushKeyResponse(string PublicKey);
 
 public static class PushEndpoints
 {
-    /// <summary>More favourites than anyone has; keeps one request from filling the memory.</summary>
+    /// <summary>More favourites than anyone has; keeps one request from filling the memory and the database.</summary>
     private const int MaxIds = 200;
 
     private const int MaxTextLength = 1000;
@@ -38,8 +38,8 @@ public static class PushEndpoints
         // The key a browser needs to subscribe. It changes if the server's key does, and the browser then subscribes anew.
         group.MapGet("/key", (IPushSender sender) => new PushKeyResponse(sender.PublicKey));
 
-        group.MapPut("/subscription", Results<NoContent, ValidationProblem, StatusCodeHttpResult> (
-            PushRegistrationRequest request, PushSubscriberRegistry registry) =>
+        group.MapPut("/subscription", async Task<Results<NoContent, ValidationProblem, StatusCodeHttpResult>> (
+            PushRegistrationRequest request, PushSubscriberRegistry registry, CancellationToken cancellationToken) =>
         {
             if (!PushSubscriber.IsPushServiceEndpoint(request.Endpoint) || request.Endpoint!.Length > MaxTextLength)
             {
@@ -68,13 +68,15 @@ public static class PushEndpoints
                 request.KickoffReminder,
                 request.LineupAlerts);
 
-            return registry.Register(subscriber) ? TypedResults.NoContent() : TypedResults.StatusCode(StatusCodes.Status503ServiceUnavailable);
+            return await registry.RegisterAsync(subscriber, cancellationToken)
+                ? TypedResults.NoContent()
+                : TypedResults.StatusCode(StatusCodes.Status503ServiceUnavailable);
         });
 
         // The endpoint is the secret that identifies the browser, so knowing it is enough to remove it.
-        group.MapDelete("/subscription", (string endpoint, PushSubscriberRegistry registry) =>
+        group.MapDelete("/subscription", async (string endpoint, PushSubscriberRegistry registry, CancellationToken cancellationToken) =>
         {
-            registry.Remove(endpoint);
+            await registry.RemoveAsync(endpoint, cancellationToken);
             return TypedResults.NoContent();
         });
 

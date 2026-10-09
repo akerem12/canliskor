@@ -14,6 +14,7 @@ builder.Services
     .AddInfrastructure(builder.Configuration);
 
 builder.Services.AddHostedService<ScoreboardPollingWorker>();
+builder.Services.AddHostedService<PushSubscriberLoadWorker>();
 builder.Services.AddHostedService<MatchNotificationWorker>();
 builder.Services.AddKeepAlive(builder.Configuration);
 

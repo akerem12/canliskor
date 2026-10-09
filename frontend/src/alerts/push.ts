@@ -59,8 +59,8 @@ let queue: Promise<void> = Promise.resolve()
 
 /**
  * Tells the server what this browser wants to be notified about, subscribing it first if needed; null means
- * nothing. The server keeps this in memory only, so the call is repeated on every visit. Calls run one after
- * another, and a failed one (offline, server restarting) is simply made up for by the next.
+ * nothing. The call is repeated on every visit, which also makes up for anything the server lost. Calls run one
+ * after another, and a failed one (offline, server restarting) is simply made up for by the next.
  */
 export function syncPush(wishes: PushWishes | null): Promise<void> {
   queue = queue.then(() => sync(wishes)).catch(() => {})

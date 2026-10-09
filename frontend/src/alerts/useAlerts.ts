@@ -27,7 +27,7 @@ export interface AlertsContextValue {
   setLineupAlerts: (on: boolean) => void
 }
 
-/** How often an open page repeats what it wants to the server, which forgets it when it restarts. */
+/** How often an open page repeats what it wants to the server, in case the server lost it. */
 const PushResyncMs = 10 * 60 * 1000
 
 export const AlertsContext = createContext<AlertsContextValue | null>(null)

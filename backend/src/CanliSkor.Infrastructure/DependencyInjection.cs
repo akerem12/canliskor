@@ -2,10 +2,12 @@ using CanliSkor.Core.Abstractions;
 using CanliSkor.Infrastructure.Caching;
 using CanliSkor.Infrastructure.Espn;
 using CanliSkor.Infrastructure.Push;
+using CanliSkor.Infrastructure.Storage;
 using Lib.Net.Http.WebPush.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace CanliSkor.Infrastructure;
 
@@ -38,6 +40,18 @@ public static class DependencyInjection
             return new VapidAuthentication(keys.PublicKey, keys.PrivateKey) { Subject = sp.GetRequiredService<IOptions<PushOptions>>().Value.Subject };
         });
         services.AddHttpClient<IPushSender, WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
+
+        // With a database the subscribers outlive a restart; without one everything else works the same.
+        var databaseUrl = configuration[DatabaseUrl.SettingName];
+        if (string.IsNullOrWhiteSpace(databaseUrl))
+        {
+            services.AddSingleton<IPushSubscriberStore, NoPushSubscriberStore>();
+        }
+        else
+        {
+            services.AddSingleton(NpgsqlDataSource.Create(DatabaseUrl.ToConnectionString(databaseUrl)));
+            services.AddSingleton<IPushSubscriberStore, PostgresPushSubscriberStore>();
+        }
 
         services.AddMemoryCache();
         services.AddSingleton<IMatchStore, InMemoryMatchStore>();

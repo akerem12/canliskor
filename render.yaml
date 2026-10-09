@@ -16,3 +16,7 @@ services:
       # subscribed to notifications stay subscribed across deploys.
       - key: Push__Secret
         generateValue: true
+      # The Postgres database that keeps the notification subscribers (postgresql://user:password@host/database).
+      # A secret: its value is typed into Render's dashboard and never written here.
+      - key: DATABASE_URL
+        sync: false

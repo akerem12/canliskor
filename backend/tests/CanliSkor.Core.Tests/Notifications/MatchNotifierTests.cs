@@ -18,7 +18,7 @@ public class MatchNotifierTests
     private readonly FakeMatchStore _store = new();
     private readonly FakeFootballDataProvider _provider = new();
     private readonly FakePushSender _sender = new();
-    private readonly PushSubscriberRegistry _subscribers = new();
+    private readonly PushSubscriberRegistry _subscribers = new(new FakePushSubscriberStore());
     private readonly MatchNotifier _notifier;
 
     public MatchNotifierTests()
@@ -213,8 +213,9 @@ public class MatchNotifierTests
         string endpoint = "https://fcm.googleapis.com/fcm/send/abc",
         bool kickoffReminder = true,
         bool lineupAlerts = true) =>
-        _subscribers.Register(new PushSubscriber(endpoint, "p256dh", "auth", language,
-            new HashSet<string>(teamIds ?? []), new HashSet<string>(matchIds ?? []), kickoffReminder, lineupAlerts));
+        // The fake store answers at once, so there is nothing to wait for.
+        _subscribers.RegisterAsync(new PushSubscriber(endpoint, "p256dh", "auth", language,
+            new HashSet<string>(teamIds ?? []), new HashSet<string>(matchIds ?? []), kickoffReminder, lineupAlerts)).GetAwaiter().GetResult();
 
     private static MatchDetail Detail(Match match, bool withLineups)
     {
