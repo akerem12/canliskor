@@ -59,6 +59,9 @@ export function showNative(notification: NativeNotification) {
       body: notification.body,
       channelId: ChannelId,
       smallIcon: SmallIcon,
+      // Shown at once, so no alarm is involved. Left at its default (exact), the plugin sends the user to
+      // Android's "Alarms & reminders" settings screen first.
+      isExactNotification: false,
       extra: { url: notification.url },
     }],
   })
