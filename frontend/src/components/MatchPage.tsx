@@ -8,7 +8,8 @@ import type { Dictionary } from '../i18n/en'
 import { useI18n } from '../i18n/useI18n'
 import type { WatchMatch } from '../live/useLiveScores'
 import { useMatchDetail } from '../live/useMatchDetail'
-import { assistOf, isGoal, withRunningScore } from '../matchEvents'
+import type { Scorer } from '../matchEvents'
+import { assistOf, isGoal, scorersBySide, shortPlayerName, withRunningScore } from '../matchEvents'
 import { PlayerName } from '../players/PlayerName'
 import { formatTime } from '../time'
 import type { Route } from '../route'
@@ -82,6 +83,7 @@ export function MatchPage({ leagueCode, matchId, leagueName, pushed, watchMatch,
       {match
         ? <Scoreline match={match} onOpenTeam={teamId => onNavigate({ view: 'team', leagueCode, teamId })} />
         : !error && <Skeleton rows={4} height={22} />}
+      {detail && match && <Scorers events={detail.events} leagueCode={match.leagueCode} />}
       {match && !detail && !error && <Skeleton rows={6} />}
       {error && !detail && <EmptyState icon="⚠️" title={t.match.cantLoad} hint={t.match.cantLoadHint} />}
 
@@ -145,6 +147,48 @@ function Scoreline({ match, onOpenTeam }: { match: Match; onOpenTeam: (teamId: s
       </div>
       <TeamBadge team={match.awayTeam} onOpen={onOpenTeam} />
     </div>
+  )
+}
+
+/** Who scored and when, under each team's crest, so nobody has to open Events for it. Nothing at all without goals. */
+function Scorers({ events, leagueCode }: { events: MatchEvent[]; leagueCode: string }) {
+  const { t } = useI18n()
+  const { home, away } = scorersBySide(events)
+  if (home.length === 0 && away.length === 0) return null
+
+  return (
+    <section className="scorers" aria-label={t.match.scorers}>
+      <ul className="scorers__side scorers__side--home">
+        {home.map(scorer => <ScorerLine key={scorer.playerId ?? scorer.name} scorer={scorer} leagueCode={leagueCode} />)}
+      </ul>
+      <span className="scorers__ball" aria-hidden>⚽</span>
+      <ul className="scorers__side scorers__side--away">
+        {away.map(scorer => <ScorerLine key={scorer.playerId ?? scorer.name} scorer={scorer} leagueCode={leagueCode} />)}
+      </ul>
+    </section>
+  )
+}
+
+function ScorerLine({ scorer, leagueCode }: { scorer: Scorer; leagueCode: string }) {
+  const { t } = useI18n()
+  const name = scorer.name ?? t.match.unknownPlayer
+
+  return (
+    <li className="scorers__line">
+      <span className="scorers__name">
+        <PlayerName leagueCode={leagueCode} playerId={scorer.playerId} name={name} label={shortPlayerName(name)} />
+      </span>
+      <span className="scorers__minutes">
+        {scorer.goals.map((goal, i) => (
+          <span key={i} className="scorers__goal">
+            {goal.clock}
+            {goal.type === 'PenaltyGoal' && <span title={t.match.penaltyTitle}> {t.match.penaltyShort}</span>}
+            {goal.type === 'OwnGoal' && <span className="scorers__own-goal" title={t.lineups.ownGoal}> {t.match.ownGoal}</span>}
+            {i < scorer.goals.length - 1 && ', '}
+          </span>
+        ))}
+      </span>
+    </li>
   )
 }
 

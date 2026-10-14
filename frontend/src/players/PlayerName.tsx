@@ -4,11 +4,12 @@ import { usePlayerProfile } from './usePlayerProfile'
 /**
  * A player's name that opens their profile. Without an id there is no profile to open, so it is plain text.
  * A span rather than a button: a button is one unbreakable box, and names have to wrap like text in narrow columns.
+ * `label` shows a shortened name (e.g. "O. Watkins") while the profile and tooltip keep the full one.
  */
-export function PlayerName({ leagueCode, playerId, name }: { leagueCode: string; playerId: string | null; name: string }) {
+export function PlayerName({ leagueCode, playerId, name, label = name }: { leagueCode: string; playerId: string | null; name: string; label?: string }) {
   const openPlayer = usePlayerProfile()
   const { t } = useI18n()
-  if (!playerId) return <>{name}</>
+  if (!playerId) return label === name ? <>{name}</> : <span title={name}>{label}</span>
 
   const open = () => openPlayer({ leagueCode, playerId, name })
   return (
@@ -25,7 +26,7 @@ export function PlayerName({ leagueCode, playerId, name }: { leagueCode: string;
         }
       }}
     >
-      {name}
+      {label}
     </span>
   )
 }
