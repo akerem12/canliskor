@@ -336,8 +336,6 @@ export const tr: Dictionary = {
     switchLabel: 'Favori takımlar için maç uyarıları',
     stop: 'Bu maçın uyarılarını kapat',
     start: 'Bu maçın hatırlatmasını, kadrolarını, gollerini ve sonucunu bildirim olarak al',
-    on: '🔔 Uyarılar açık',
-    off: '🔕 Bana haber ver',
     goalRuledOut: 'Gol iptal edildi',
     goalFor: team => `⚽ ${team} gol attı!`,
     goal: '⚽ Gol!',

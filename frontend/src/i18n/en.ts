@@ -339,8 +339,6 @@ export const en = {
     switchLabel: 'Match alerts for favourite teams',
     stop: 'Stop alerts for this match',
     start: 'Get a reminder, the line-ups, goals and full time of this match as notifications',
-    on: '🔔 Alerts on',
-    off: '🔕 Notify me',
     // The notifications themselves.
     goalRuledOut: 'Goal ruled out',
     goalFor: (team: string) => `⚽ Goal for ${team}!`,

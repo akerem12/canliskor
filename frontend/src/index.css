@@ -694,12 +694,13 @@ button.feed__team:hover { color: var(--accent); background: var(--surface); }
 .switch--on .switch__knob { transform: translateX(20px); }
 .detail__actions { display: flex; align-items: center; gap: 8px; }
 .bell {
-  font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 999px;
-  border: 1px solid var(--border); background: none; color: var(--text); transition: border-color 0.15s, background-color 0.15s;
+  display: inline-flex; align-items: center; justify-content: center; padding: 6px; border: none; border-radius: 999px;
+  background: none; color: var(--muted); cursor: pointer; transition: color 0.15s, transform 0.15s;
 }
-.bell:hover { border-color: var(--accent); }
-.bell--on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.bell:disabled { opacity: 0.5; cursor: not-allowed; }
+.bell:hover { color: var(--text); transform: scale(1.1); }
+.bell--on, .bell--on:hover { color: var(--accent); }
+.bell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.bell:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .league--pinned { border-color: var(--border-strong); }
 
 /* Team search */

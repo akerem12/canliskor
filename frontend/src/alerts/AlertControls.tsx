@@ -54,7 +54,8 @@ export function TeamAlertsSwitch({ teamCount }: { teamCount: number }) {
   )
 }
 
-/** A bell that switches alerts on for one match only. Shown on the match's page until it is over. */
+/** A bell that switches alerts on for one match only: filled while they are on, an outline while off. Shown on the
+ * match's page until it is over; what it does is in its tooltip and label. */
 export function MatchAlertButton({ match }: { match: Match }) {
   const { t } = useI18n()
   const { permission, isWatched, toggleMatch } = useAlerts()
@@ -62,16 +63,26 @@ export function MatchAlertButton({ match }: { match: Match }) {
 
   const blocked = blockedReason(permission, t)
   const watched = isWatched(match.id)
+  const label = blocked ?? (watched ? t.alerts.stop : t.alerts.start)
 
   return (
     <button
       className={watched ? 'bell bell--on' : 'bell'}
       aria-pressed={watched}
+      aria-label={label}
       disabled={blocked !== null}
-      title={blocked ?? (watched ? t.alerts.stop : t.alerts.start)}
+      title={label}
       onClick={() => void toggleMatch(match)}
     >
-      {watched ? t.alerts.on : t.alerts.off}
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
+        <path
+          d="M12 3a6 6 0 0 0-6 6v3.6L4.3 15.4A1 1 0 0 0 5.2 17h13.6a1 1 0 0 0 .9-1.6L18 12.6V9a6 6 0 0 0-6-6Zm-2.2 16a2.3 2.3 0 0 0 4.4 0Z"
+          fill={watched ? 'currentColor' : 'none'}
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+      </svg>
     </button>
   )
 }
