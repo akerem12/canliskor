@@ -60,6 +60,12 @@ public enum MatchEventType
 
     /// <summary>A penalty that didn't go in: saved, wide, or off the woodwork. <see cref="MatchEvent.Side"/> is the team that took it.</summary>
     PenaltyMissed,
+
+    /// <summary>
+    /// A penalty given (also by VAR). <see cref="MatchEvent.Side"/> is the team that gets it, the related player
+    /// the one who gave it away. For notifications; the match page leaves it out of the timeline.
+    /// </summary>
+    PenaltyAwarded,
 }
 
 public enum TeamSide

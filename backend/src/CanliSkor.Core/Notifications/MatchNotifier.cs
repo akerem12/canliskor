@@ -12,7 +12,7 @@ namespace CanliSkor.Core.Notifications;
 /// One round of match notifications. For every match about to kick off that a subscriber follows: the reminder
 /// half an hour before kickoff, and "line-ups are out" as soon as the provider has both starting elevens. For
 /// every followed match in play: the kickoff, then each goal, missed penalty and red card as it appears in the
-/// match's events, half time and full time. Works from the scoreboards the poller keeps in the store, so a kickoff that was moved moves its
+/// match's events, a penalty given, a goal taken back (VAR), half time and full time. Works from the scoreboards the poller keeps in the store, so a kickoff that was moved moves its
 /// reminder, and a match postponed or cancelled gets none. Kept separate from the hosted service so it can be
 /// unit-tested.
 /// </summary>
@@ -155,7 +155,13 @@ public sealed partial class MatchNotifier(
 
                 await SendAsync($"event:{match.Id}:{key}", followers,
                     s => MatchNotificationText.Event(match, matchEvent, score, key, s.Language)!, now, cancellationToken);
+                if (IsGoal(matchEvent.Type))
+                {
+                    live.AnnouncedGoals[key] = matchEvent;
+                }
             }
+
+            await NotifyDisallowedGoalsAsync(match, detail, live, followers, now, cancellationToken);
         }
 
         // After the goals, so the final score comes last.
@@ -178,8 +184,41 @@ public sealed partial class MatchNotifier(
         }
     }
 
-    private static bool IsNotified(MatchEventType type) => type is MatchEventType.Goal or MatchEventType.PenaltyGoal
-        or MatchEventType.OwnGoal or MatchEventType.PenaltyMissed or MatchEventType.RedCard;
+    /// <summary>
+    /// An announced goal that is gone from the events was taken back. Only believed when the events add up to the
+    /// score they came with, so a detail that is briefly incomplete or behind doesn't take goals away.
+    /// </summary>
+    private async Task NotifyDisallowedGoalsAsync(
+        Match match, MatchDetail detail, LiveMatchLog live, List<PushSubscriber> followers, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var score = detail.Match.Score ?? NoGoals;
+        var counted = WithRunningScore(detail.Events).LastOrDefault().Score ?? NoGoals;
+        if (counted != score)
+        {
+            return;
+        }
+
+        var keys = detail.Events.Select(EventKey).ToHashSet();
+        foreach (var (key, goal) in live.AnnouncedGoals.Where(g => !keys.Contains(g.Key)).ToList())
+        {
+            live.AnnouncedGoals.Remove(key);
+            live.DisallowedGoals[key] = (goal, now);
+        }
+
+        foreach (var (key, (goal, at)) in live.DisallowedGoals)
+        {
+            if (now - at <= EventNewsFor)
+            {
+                await SendAsync($"disallowed:{match.Id}:{key}", followers,
+                    s => MatchNotificationText.GoalDisallowed(match, goal, score, key, s.Language), now, cancellationToken);
+            }
+        }
+    }
+
+    private static bool IsGoal(MatchEventType type) => type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal;
+
+    private static bool IsNotified(MatchEventType type) => IsGoal(type)
+        || type is MatchEventType.PenaltyMissed or MatchEventType.RedCard or MatchEventType.PenaltyAwarded;
 
     /// <summary>
     /// What tells an event apart: the provider's id, which survives corrections (another scorer, another minute),
@@ -194,7 +233,7 @@ public sealed partial class MatchNotifier(
         var score = NoGoals;
         foreach (var matchEvent in events)
         {
-            if (matchEvent.Type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal)
+            if (IsGoal(matchEvent.Type))
             {
                 score = matchEvent.Side == TeamSide.Home ? score with { Home = score.Home + 1 } : score with { Away = score.Away + 1 };
             }

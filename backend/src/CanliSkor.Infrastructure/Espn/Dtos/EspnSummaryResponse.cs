@@ -58,7 +58,10 @@ internal sealed record EspnKeyEvent(
     string? Id = null);
 
 /// <summary>One line of the written commentary; those that are a play (a shot, a foul) carry it.</summary>
-internal sealed record EspnCommentary(EspnCommentaryPlay? Play);
+/// <param name="Text">E.g. "Penalty conceded by Dean Huijsen (Real Madrid) after a foul in the penalty area."</param>
+/// <param name="Sequence">The line's place in the commentary, from 0.</param>
+/// <param name="Time">The match time of the line; also there when it carries no play.</param>
+internal sealed record EspnCommentary(EspnCommentaryPlay? Play, string? Text = null, int? Sequence = null, EspnClock? Time = null);
 
 /// <param name="Type">Among others "penalty---saved", "penalty---missed", "penalty---hit-woodwork".</param>
 /// <param name="Team">Named only, without an id.</param>

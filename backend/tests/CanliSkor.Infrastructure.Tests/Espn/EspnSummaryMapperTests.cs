@@ -102,6 +102,36 @@ public class EspnSummaryMapperTests
     }
 
     [Fact]
+    public void A_penalty_given_comes_from_the_commentary_for_the_team_that_was_fouled()
+    {
+        // Valencia (home) against Real Sociedad (away).
+        var summary = FixtureLoader.LoadSummary("summary-esp1-finished.json");
+        var commentary = new List<EspnCommentary>
+        {
+            // With the foul: the play names the team that gave it away exactly.
+            new(new EspnCommentaryPlay("p1", new EspnKeyEventType("foul"), new EspnClock("49'", 2937), new EspnCommentaryTeam("Valencia"), null),
+                "Penalty conceded by Dean Huijsen (Valencia) after a foul in the penalty area.", 49, new EspnClock("49'", 2937)),
+            // The line after it says the same again; it is no second penalty.
+            new(new EspnCommentaryPlay("p1", new EspnKeyEventType("foul"), new EspnClock("49'", 2937), new EspnCommentaryTeam("Valencia"), null),
+                "Penalty Real Sociedad. Takefusa Kubo draws a foul in the penalty area.", 50, new EspnClock("49'", 2937)),
+            // A handball comes without a play, and the text spells the team its own way.
+            new(null, "Penalty conceded by Igor Zubeldia (Real Sociedad de Fútbol) with a handball in the penalty area.", 70, new EspnClock("70'", 4150)),
+            // A team that isn't playing: nobody's penalty.
+            new(null, "Penalty conceded by Someone (Barcelona) with a handball in the penalty area.", 71, new EspnClock("71'", 4200)),
+        };
+
+        var penalties = EspnSummaryMapper.Map(summary with { Commentary = commentary }, "esp.1")!.Events
+            .Where(e => e.Type == MatchEventType.PenaltyAwarded)
+            .ToList();
+
+        Assert.Equal(
+        [
+            new MatchEvent(MatchEventType.PenaltyAwarded, "49'", TeamSide.Away, null, "Dean Huijsen", Id: "p1"),
+            new MatchEvent(MatchEventType.PenaltyAwarded, "70'", TeamSide.Home, null, "Igor Zubeldia", Id: "commentary:70"),
+        ], penalties);
+    }
+
+    [Fact]
     public void Substitutions_list_the_player_coming_on_first()
     {
         var sub = EventsOf(MapFinished()).First(e => e.Type == MatchEventType.Substitution);

@@ -102,6 +102,12 @@ public sealed class LiveMatchLog
     /// <summary>When the match was seen going from play to finished; null if it wasn't (yet).</summary>
     public DateTimeOffset? FullTimeAt { get; set; }
 
+    /// <summary>Goals that were announced, by event key, so one taken back can be announced too.</summary>
+    public Dictionary<string, MatchEvent> AnnouncedGoals { get; } = [];
+
+    /// <summary>Announced goals that were taken back, by event key: the goal and when that was seen.</summary>
+    public Dictionary<string, (MatchEvent Goal, DateTimeOffset At)> DisallowedGoals { get; } = [];
+
     /// <summary>When the event was first seen; now, if this is the first time.</summary>
     public DateTimeOffset FirstSeen(string eventKey, DateTimeOffset now)
     {

@@ -260,6 +260,72 @@ public class MatchNotifierTests
     }
 
     [Fact]
+    public async Task Announces_a_penalty_given()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"], language: "tr");
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match, new MatchEvent(MatchEventType.PenaltyAwarded, "34'", TeamSide.Away, null, "Player C", Id: "p1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var penalty = _sender.Sent[^1].Notification;
+        Assert.Equal("⚠️ Penaltı! Home 0 - 0 Away", penalty.Title);
+        Assert.Equal("34' Away penaltı kazandı", penalty.Body);
+        Assert.Equal(AwayCrest, penalty.Icon);
+    }
+
+    [Fact]
+    public async Task A_goal_taken_back_is_announced_with_the_score_change()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var scored = match with { Score = new Score(1, 0) };
+        _provider.Returns(Detail(scored, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // VAR: the goal is gone from the events and from the score.
+        _provider.Returns(Detail(match with { Score = new Score(0, 0) }));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        _time.Advance(TimeSpan.FromSeconds(15));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(3, _sender.Sent.Count);
+        var disallowed = _sender.Sent[^1].Notification;
+        Assert.Equal("🚫 GOAL DISALLOWED! Home 0 - 0 Away", disallowed.Title);
+        Assert.Equal("12' Player A (Home) · 1 - 0 → 0 - 0", disallowed.Body);
+        Assert.Equal(HomeCrest, disallowed.Icon);
+    }
+
+    [Fact]
+    public async Task A_goal_missing_from_events_that_do_not_add_up_to_the_score_is_not_taken_back()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var scored = match with { Score = new Score(1, 0) };
+        _provider.Returns(Detail(scored, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // The events came back empty while the score still says 1-0: a hiccup, not VAR.
+        _provider.Returns(Detail(scored));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(2, _sender.Sent.Count);
+    }
+
+    [Fact]
     public async Task Yellow_cards_and_substitutions_are_not_notified()
     {
         var match = Playing(InPlay("1'"));

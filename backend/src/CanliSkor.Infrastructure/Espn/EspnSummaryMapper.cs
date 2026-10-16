@@ -1,4 +1,7 @@
 using System.Globalization;
+using System.Text;
+using Regex = System.Text.RegularExpressions.Regex;
+using GeneratedRegexAttribute = System.Text.RegularExpressions.GeneratedRegexAttribute;
 using CanliSkor.Core.Domain;
 using CanliSkor.Infrastructure.Espn.Dtos;
 
@@ -9,7 +12,7 @@ namespace CanliSkor.Infrastructure.Espn;
 /// kickoff, half time, delays etc.; only goals, cards and substitutions are kept. Unknown or malformed events
 /// and statistics are skipped rather than failing the whole match.
 /// </summary>
-internal static class EspnSummaryMapper
+internal static partial class EspnSummaryMapper
 {
     // ESPN statistic name → ours. Other statistics (passes, tackles, ...) aren't shown.
     // Before kickoff ESPN sends season totals here instead (goal difference etc.), which don't match any name.
@@ -49,7 +52,7 @@ internal static class EspnSummaryMapper
 
         var events = MergeInOrder(
             (response.KeyEvents ?? []).Select(e => (Event: MapEvent(e, match), e.Clock?.Value)),
-            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match), c.Play?.Clock?.Value)));
+            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match) ?? MapPenaltyAwarded(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
 
         return new MatchDetail(
             match,
@@ -101,8 +104,8 @@ internal static class EspnSummaryMapper
     private static string? Text(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     /// <summary>
-    /// The key events in ESPN's order, with the missed penalties (only found in the commentary) slotted in by the
-    /// clock: after every key event of the same second or earlier.
+    /// The key events in ESPN's order, with the penalties given and missed (only found in the commentary) slotted
+    /// in by the clock: after every key event of the same second or earlier.
     /// </summary>
     private static List<MatchEvent> MergeInOrder(
         IEnumerable<(MatchEvent? Event, double? Seconds)> keyEvents,
@@ -118,6 +121,69 @@ internal static class EspnSummaryMapper
         return [.. merged.Select(e => e.Event!)];
     }
 
+    /// <summary>
+    /// "Penalty conceded by Dean Huijsen (Real Madrid) after a foul in the penalty area." ESPN has no event type for
+    /// a penalty given, but writes this line for every one, also when VAR gives it; a penalty VAR takes back gets
+    /// none. The team in brackets gave it away, so the other one gets it.
+    /// </summary>
+    private static MatchEvent? MapPenaltyAwarded(EspnCommentary line, Match match)
+    {
+        var text = PenaltyConceded.Match(line.Text ?? "");
+        if (!text.Success || string.IsNullOrEmpty(line.Time?.DisplayValue))
+        {
+            return null;
+        }
+
+        // The foul it comes with names the team exactly; a handball comes without one, and the text's spelling
+        // of the team can differ from the header's ("Atletico Madrid", "Racing de Santander").
+        var conceding = SideOf(line.Play?.Team?.DisplayName, match) ?? LooseSideOf(text.Groups["team"].Value, match);
+        if (conceding is null)
+        {
+            return null;
+        }
+
+        return new MatchEvent(
+            MatchEventType.PenaltyAwarded,
+            line.Time.DisplayValue,
+            conceding == TeamSide.Home ? TeamSide.Away : TeamSide.Home,
+            Player: null,
+            RelatedPlayer: text.Groups["player"].Value,
+            Id: !string.IsNullOrEmpty(line.Play?.Id) ? line.Play.Id : line.Sequence is { } sequence ? $"commentary:{sequence}" : null);
+    }
+
+    [GeneratedRegex(@"^Penalty conceded by (?<player>.+?) \((?<team>[^)]+)\)")]
+    private static partial Regex PenaltyConcededPattern();
+
+    private static readonly Regex PenaltyConceded = PenaltyConcededPattern();
+
+    private static TeamSide? SideOf(string? teamName, Match match) => teamName switch
+    {
+        null => null,
+        var name when name == match.HomeTeam.Name => TeamSide.Home,
+        var name when name == match.AwayTeam.Name => TeamSide.Away,
+        _ => null,
+    };
+
+    /// <summary>The side whose name or short name matches, ignoring accents, case and spaces; null unless exactly one does.</summary>
+    private static TeamSide? LooseSideOf(string teamName, Match match)
+    {
+        var name = Plain(teamName);
+        bool Matches(Team team) => new[] { Plain(team.Name), Plain(team.ShortName) }
+            .Any(n => n.Length >= 4 && (n == name || name.Contains(n, StringComparison.Ordinal) || n.Contains(name, StringComparison.Ordinal)));
+
+        return (Matches(match.HomeTeam), Matches(match.AwayTeam)) switch
+        {
+            (true, false) => TeamSide.Home,
+            (false, true) => TeamSide.Away,
+            _ => null,
+        };
+    }
+
+    /// <summary>"Atlético Madrid" → "atleticomadrid".</summary>
+    private static string Plain(string text) => string.Concat(text.Normalize(NormalizationForm.FormD)
+        .Where(char.IsLetterOrDigit)
+        .Select(char.ToLowerInvariant));
+
     private static MatchEvent? MapMissedPenalty(EspnCommentaryPlay? play, Match match)
     {
         if (play?.Type?.Type is not ("penalty---saved" or "penalty---missed" or "penalty---hit-woodwork")
@@ -127,13 +193,7 @@ internal static class EspnSummaryMapper
         }
 
         // The commentary names the team but gives no id.
-        TeamSide? side = play.Team?.DisplayName switch
-        {
-            null => null,
-            var name when name == match.HomeTeam.Name => TeamSide.Home,
-            var name when name == match.AwayTeam.Name => TeamSide.Away,
-            _ => null,
-        };
+        var side = SideOf(play.Team?.DisplayName, match);
         if (side is null)
         {
             return null;

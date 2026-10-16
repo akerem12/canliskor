@@ -59,7 +59,7 @@ public static class MatchNotificationText
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:full-time", LiveTimeToLive, icon);
     }
 
-    /// <summary>A goal, a missed penalty or a red card, with the crest of the team it is about.</summary>
+    /// <summary>A goal, a penalty given or missed, or a red card, with the crest of the team it is about.</summary>
     /// <param name="score">The score right after the event.</param>
     /// <param name="key">Tells the event apart from the others of the match (see <see cref="MatchNotifier"/>).</param>
     /// <returns>Null for events that aren't notified (yellow cards, substitutions).</returns>
@@ -79,12 +79,30 @@ public static class MatchNotificationText
             MatchEventType.PenaltyMissed => (tr ? $"❌ Penaltı Kaçtı! {scoreline}" : $"❌ Penalty missed! {scoreline}", Who(matchEvent, team)),
             MatchEventType.RedCard => (tr ? $"🟥 Kırmızı Kart! {team.ShortName}" : $"🟥 Red card! {team.ShortName}",
                 $"{Minute(matchEvent)}{matchEvent.Player ?? team.ShortName} ({scoreline})"),
+            MatchEventType.PenaltyAwarded => (tr ? $"⚠️ Penaltı! {scoreline}" : $"⚠️ Penalty! {scoreline}",
+                tr ? $"{Minute(matchEvent)}{team.ShortName} penaltı kazandı" : $"{Minute(matchEvent)}Penalty to {team.ShortName}"),
             _ => null,
         };
 
         return text is { } t
             ? new PushNotification(t.Title, t.Body, MatchUrl(match), $"{match.Id}:event:{key}", LiveTimeToLive, team.LogoUrl)
             : null;
+    }
+
+    /// <summary>A goal that was announced and then taken back (VAR, offside): the corrected score, and the change.</summary>
+    /// <param name="goal">The goal as it was announced.</param>
+    /// <param name="score">The score now, without it.</param>
+    public static PushNotification GoalDisallowed(Match match, MatchEvent goal, Score score, string key, string language)
+    {
+        var tr = language == "tr";
+        var team = goal.Side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
+        var scorerTeam = goal.Type == MatchEventType.OwnGoal ? (goal.Side == TeamSide.Home ? match.AwayTeam : match.HomeTeam) : team;
+        var before = goal.Side == TeamSide.Home ? score with { Home = score.Home + 1 } : score with { Away = score.Away + 1 };
+
+        var title = tr ? $"🚫 GOL İPTAL! {Scoreline(match, score)}" : $"🚫 GOAL DISALLOWED! {Scoreline(match, score)}";
+        var body = $"{Who(goal, scorerTeam)} · {before.Home} - {before.Away} → {score.Home} - {score.Away}";
+
+        return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:disallowed:{key}", LiveTimeToLive, team.LogoUrl);
     }
 
     private static string Goal(bool tr, string scoreline) => tr ? $"⚽ GOL! {scoreline}" : $"⚽ GOAL! {scoreline}";
