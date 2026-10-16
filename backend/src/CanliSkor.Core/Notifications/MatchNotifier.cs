@@ -12,7 +12,7 @@ namespace CanliSkor.Core.Notifications;
 /// One round of match notifications. For every match about to kick off that a subscriber follows: the reminder
 /// half an hour before kickoff, and "line-ups are out" as soon as the provider has both starting elevens. For
 /// every followed match in play: the kickoff, then each goal, missed penalty and red card as it appears in the
-/// match's events. Works from the scoreboards the poller keeps in the store, so a kickoff that was moved moves its
+/// match's events, half time and full time. Works from the scoreboards the poller keeps in the store, so a kickoff that was moved moves its
 /// reminder, and a match postponed or cancelled gets none. Kept separate from the hosted service so it can be
 /// unit-tested.
 /// </summary>
@@ -118,6 +118,19 @@ public sealed partial class MatchNotifier(
             }
         }
 
+        // Half time and full time are only told when seen happening, not when the server starts in the break.
+        var before = live.LastStatus;
+        live.LastStatus = match.Status;
+        if (before == MatchStatus.Live && match.Status == MatchStatus.HalfTime)
+        {
+            live.HalfTimeAt ??= now;
+        }
+
+        if (before is (MatchStatus.Live or MatchStatus.HalfTime) && match.Status == MatchStatus.Finished)
+        {
+            live.FullTimeAt ??= now;
+        }
+
         if (live.SawKickoff && now - live.StartedAt <= EventNewsFor)
         {
             await SendAsync($"kickoff:{match.Id}", followers,
@@ -145,8 +158,21 @@ public sealed partial class MatchNotifier(
             }
         }
 
-        // The last round for a finished match: its final events have just been dealt with.
-        if (match.Status == MatchStatus.Finished)
+        // After the goals, so the final score comes last.
+        if (live.HalfTimeAt is { } halfTime && now - halfTime <= EventNewsFor)
+        {
+            await SendAsync($"half-time:{match.Id}", followers,
+                s => MatchNotificationText.HalfTime(match, s.Language, CrestFor(s, match)), now, cancellationToken);
+        }
+
+        if (live.FullTimeAt is { } fullTime && now - fullTime <= EventNewsFor)
+        {
+            await SendAsync($"full-time:{match.Id}", followers,
+                s => MatchNotificationText.FullTime(match, s.Language, CrestFor(s, match)), now, cancellationToken);
+        }
+
+        // A finished match is followed a little longer, for phones the full time didn't reach yet, then let go.
+        if (match.Status == MatchStatus.Finished && (live.FullTimeAt is null || now - live.FullTimeAt > EventNewsFor))
         {
             live.Over = true;
         }

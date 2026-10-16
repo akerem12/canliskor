@@ -91,7 +91,7 @@ export interface PushWishes {
 
 /**
  * What to ask the server for: everything it sends (reminder, line-ups, kick-off, goals, missed penalties, red
- * cards), for the favourite teams and the watched matches. Null if there are neither, so the browser needn't be
+ * cards, half time, full time), for the favourite teams and the watched matches. Null if there are neither, so the browser needn't be
  * subscribed at all.
  */
 export function pushWishes(settings: AlertSettings, favoriteTeamIds: ReadonlySet<string>, language: string): PushWishes | null {

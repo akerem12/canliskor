@@ -350,12 +350,62 @@ public class MatchNotifierTests
         _provider.Returns(Detail(finished, Event(MatchEventType.Goal, "90'+3'", TeamSide.Home, "Player A", "g1")));
         _time.Advance(TimeSpan.FromMinutes(1));
         await _notifier.RunAsync(CancellationToken.None);
-        Assert.Equal("⚽ GOAL! Home 1 - 0 Away", _sender.Sent[^1].Notification.Title);
+        Assert.Equal("⚽ GOAL! Home 1 - 0 Away", _sender.Sent[^2].Notification.Title);
 
+        Assert.Equal("Full-time: Home 1 - 0 Away", _sender.Sent[^1].Notification.Title);
+
+        // Kept a while for phones the full time didn't reach, then nothing is looked at any more.
+        _time.Advance(EventNewsForAndABit);
+        await _notifier.RunAsync(CancellationToken.None);
         var requests = _provider.DetailRequests.Count;
         _time.Advance(TimeSpan.FromMinutes(1));
         await _notifier.RunAsync(CancellationToken.None);
         Assert.Equal(requests, _provider.DetailRequests.Count);
+    }
+
+    [Fact]
+    public async Task Announces_half_time_and_full_time_with_the_score()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["2"], language: "tr");
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Playing(match with { Status = MatchStatus.HalfTime, Clock = "45'+2'", Score = new Score(1, 1) });
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        _time.Advance(TimeSpan.FromSeconds(15));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Playing(match with { Status = MatchStatus.Live, Clock = "46'", Score = new Score(1, 1) });
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Playing(match with { Status = MatchStatus.Finished, Clock = "90'+4'", Score = new Score(2, 1) });
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        _time.Advance(TimeSpan.FromSeconds(15));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(
+        [
+            ("Maç Başladı: Home 0 - 0 Away", "Karşılaşmada ilk düdük çaldı."),
+            ("Devre Arası: Home 1 - 1 Away", "İlk yarı sona erdi."),
+            ("Maç Sonu: Home 2 - 1 Away", "Karşılaşma sona erdi."),
+        ], _sender.Sent.Select(s => (s.Notification.Title, s.Notification.Body)));
+        Assert.All(_sender.Sent, s => Assert.Equal(AwayCrest, s.Notification.Icon));
+    }
+
+    [Fact]
+    public async Task A_server_started_during_half_time_does_not_announce_it()
+    {
+        var match = Playing(InPlay("45'+2'", new Score(0, 0)) with { Status = MatchStatus.HalfTime });
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Empty(_sender.Sent);
     }
 
     [Fact]

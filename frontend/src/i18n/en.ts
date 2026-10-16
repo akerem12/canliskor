@@ -327,12 +327,12 @@ export const en = {
     denied: "Notifications are blocked for this site. Allow them in the browser's site settings (the icon left of the address) to use alerts.",
     // The same for the Android app.
     deniedApp: "Notifications are switched off for this app. Allow them in the phone's settings (Apps, this app, Notifications) to use alerts.",
-    enableHint: "Turn on notifications to hear about your teams' matches: line-ups, kick-off, goals and red cards.",
+    enableHint: "Turn on notifications to hear about your teams' matches: line-ups, kick-off, goals, red cards, half-time and full-time.",
     enable: 'Turn on',
     // The name of the app's notifications in the phone's settings.
     channelName: 'Match alerts',
     stop: 'Stop alerts for this match',
-    start: 'Get notifications for this match: reminder, line-ups, kick-off, goals and red cards',
+    start: 'Get notifications for this match: reminder, line-ups, kick-off, goals, red cards, half-time and full-time',
     // The notifications themselves.
     goalRuledOut: 'Goal ruled out',
     goalFor: (team: string) => `⚽ Goal for ${team}!`,

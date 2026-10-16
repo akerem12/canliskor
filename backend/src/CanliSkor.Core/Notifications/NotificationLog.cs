@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using CanliSkor.Core.Domain;
 
 namespace CanliSkor.Core.Notifications;
 
@@ -91,6 +92,15 @@ public sealed class LiveMatchLog
 
     /// <summary>The final whistle was dealt with; nothing more is sent for this match.</summary>
     public bool Over { get; set; }
+
+    /// <summary>The status in the previous round; null in the first.</summary>
+    public MatchStatus? LastStatus { get; set; }
+
+    /// <summary>When the match was seen going from play to half time; null if it wasn't (yet).</summary>
+    public DateTimeOffset? HalfTimeAt { get; set; }
+
+    /// <summary>When the match was seen going from play to finished; null if it wasn't (yet).</summary>
+    public DateTimeOffset? FullTimeAt { get; set; }
 
     /// <summary>When the event was first seen; now, if this is the first time.</summary>
     public DateTimeOffset FirstSeen(string eventKey, DateTimeOffset now)

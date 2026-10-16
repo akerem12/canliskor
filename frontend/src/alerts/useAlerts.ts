@@ -61,7 +61,8 @@ function writeStored(settings: AlertSettings) {
  * in localStorage). Favouriting a team is all it takes; there is nothing else to switch on.
  *
  * The server sends them all as push notifications, which arrive also while the site or the app is closed: the
- * reminder half an hour before kick-off, the line-ups, the kick-off, goals, missed penalties and red cards. For
+ * reminder half an hour before kick-off, the line-ups, the kick-off, goals, missed penalties, red cards, half time
+ * and full time. For
  * that it is told what this browser or phone follows (see push.ts). A browser without push (one that can only
  * show notifications from an open page) gets goals, kick-off, half time and full time from the live updates this
  * page receives instead, while it is open.

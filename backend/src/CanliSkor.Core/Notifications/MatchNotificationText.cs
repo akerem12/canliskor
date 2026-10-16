@@ -39,6 +39,26 @@ public static class MatchNotificationText
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:kickoff", LiveTimeToLive, icon);
     }
 
+    public static PushNotification HalfTime(Match match, string language, string? icon)
+    {
+        var score = Scoreline(match, match.Score ?? new Score(0, 0));
+        var (title, body) = language == "tr"
+            ? ($"Devre Arası: {score}", "İlk yarı sona erdi.")
+            : ($"Half-time: {score}", "The first half is over.");
+
+        return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:half-time", LiveTimeToLive, icon);
+    }
+
+    public static PushNotification FullTime(Match match, string language, string? icon)
+    {
+        var score = Scoreline(match, match.Score ?? new Score(0, 0));
+        var (title, body) = language == "tr"
+            ? ($"Maç Sonu: {score}", "Karşılaşma sona erdi.")
+            : ($"Full-time: {score}", "The match is over.");
+
+        return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:full-time", LiveTimeToLive, icon);
+    }
+
     /// <summary>A goal, a missed penalty or a red card, with the crest of the team it is about.</summary>
     /// <param name="score">The score right after the event.</param>
     /// <param name="key">Tells the event apart from the others of the match (see <see cref="MatchNotifier"/>).</param>
