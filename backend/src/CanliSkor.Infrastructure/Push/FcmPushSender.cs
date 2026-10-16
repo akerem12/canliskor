@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CanliSkor.Core.Notifications;
 using Microsoft.Extensions.Logging;
 
@@ -15,6 +17,12 @@ internal sealed partial class FcmPushSender(HttpClient httpClient, FirebaseAcces
 {
     /// <summary>The notification channel the app creates on the phone; its settings there decide sound and pop-up.</summary>
     public const string AndroidChannelId = "matches";
+
+    // A notification without a crest leaves "image" out rather than sending it empty.
+    private static readonly JsonSerializerOptions MessageJson = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
 
     public async Task<PushOutcome> SendAsync(PushSubscriber subscriber, PushNotification notification, CancellationToken cancellationToken)
     {
@@ -34,7 +42,8 @@ internal sealed partial class FcmPushSender(HttpClient httpClient, FirebaseAcces
                 message = new
                 {
                     token = subscriber.Endpoint,
-                    notification = new { title = notification.Title, body = notification.Body },
+                    // The image (the team's crest) shows beside the text, and larger when the notification is opened up.
+                    notification = new { title = notification.Title, body = notification.Body, image = notification.Icon },
                     // Read by the app: where a tap leads, and the same again for when the app is open and has to
                     // show the notification itself.
                     data = new { url = notification.Url, tag = notification.Tag, title = notification.Title, body = notification.Body },
@@ -46,7 +55,7 @@ internal sealed partial class FcmPushSender(HttpClient httpClient, FirebaseAcces
                         notification = new { tag = notification.Tag, channel_id = AndroidChannelId },
                     },
                 },
-            });
+            }, options: MessageJson);
 
             using var response = await httpClient.SendAsync(request, cancellationToken);
             if (response.IsSuccessStatusCode)

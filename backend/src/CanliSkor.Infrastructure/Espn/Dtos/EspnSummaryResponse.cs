@@ -12,7 +12,8 @@ internal sealed record EspnSummaryResponse(
     IReadOnlyList<EspnRoster>? Rosters = null,
     IReadOnlyList<EspnOdds?>? Pickcenter = null,
     EspnGameInfo? GameInfo = null,
-    IReadOnlyList<EspnSeries>? Seasonseries = null);
+    IReadOnlyList<EspnSeries>? Seasonseries = null,
+    IReadOnlyList<EspnCommentary>? Commentary = null);
 
 /// <param name="Attendance">0 until the crowd is reported, which for most leagues is never.</param>
 /// <param name="Officials">The referee, where ESPN knows one (few leagues).</param>
@@ -47,17 +48,35 @@ internal sealed record EspnBoxscoreTeam(string? HomeAway, IReadOnlyList<EspnStat
 internal sealed record EspnStatistic(string? Name, string? DisplayValue);
 
 /// <param name="Participants">Goal: scorer, then assist. Substitution: player on, then player off.</param>
+/// <param name="Id">The same for as long as the event exists, also when ESPN corrects its details.</param>
 internal sealed record EspnKeyEvent(
     EspnKeyEventType? Type,
     EspnClock? Clock,
     bool ScoringPlay,
     EspnEventTeam? Team,
+    IReadOnlyList<EspnParticipant>? Participants,
+    string? Id = null);
+
+/// <summary>One line of the written commentary; those that are a play (a shot, a foul) carry it.</summary>
+internal sealed record EspnCommentary(EspnCommentaryPlay? Play);
+
+/// <param name="Type">Among others "penalty---saved", "penalty---missed", "penalty---hit-woodwork".</param>
+/// <param name="Team">Named only, without an id.</param>
+/// <param name="Participants">The player who did it, e.g. took the penalty.</param>
+internal sealed record EspnCommentaryPlay(
+    string? Id,
+    EspnKeyEventType? Type,
+    EspnClock? Clock,
+    EspnCommentaryTeam? Team,
     IReadOnlyList<EspnParticipant>? Participants);
+
+internal sealed record EspnCommentaryTeam(string? DisplayName);
 
 /// <param name="Type">Slug such as "goal", "goal---header", "penalty---scored", "own-goal", "yellow-card".</param>
 internal sealed record EspnKeyEventType(string? Type);
 
-internal sealed record EspnClock(string? DisplayValue);
+/// <param name="Value">Seconds played, e.g. 785 for "14'"; added time counts as the end of the half (2700 for "45'+1'").</param>
+internal sealed record EspnClock(string? DisplayValue, double? Value = null);
 
 internal sealed record EspnEventTeam(string? Id);
 

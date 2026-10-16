@@ -3,15 +3,16 @@ using CanliSkor.Core.Notifications;
 namespace CanliSkor.Api.Workers;
 
 /// <summary>
-/// Thin hosting loop for <see cref="MatchNotifier"/>: every half minute, so a kickoff reminder is at most that late.
-/// A round without subscribers does nothing, and one with them reads the scoreboards already in memory.
+/// Thin hosting loop for <see cref="MatchNotifier"/>: every 15 seconds, so a goal is announced at most that long
+/// after the poller has it. A round without subscribers does nothing, and one with them reads the scoreboards and
+/// match details already in memory (a live match's details are reloaded at most once per poll interval).
 /// </summary>
 internal sealed partial class MatchNotificationWorker(
     IServiceScopeFactory scopeFactory,
     TimeProvider timeProvider,
     ILogger<MatchNotificationWorker> logger) : BackgroundService
 {
-    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(15);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

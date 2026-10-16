@@ -94,6 +94,7 @@ export const tr: Dictionary = {
     ownGoal: '(K.K.)',
     penaltyShort: '(P)',
     penaltyTitle: 'Penaltı',
+    penaltyMissed: 'Penaltı kaçtı',
     scorers: 'Gol atanlar',
     ownGoalShort: 'KK',
     assist: 'Asist',

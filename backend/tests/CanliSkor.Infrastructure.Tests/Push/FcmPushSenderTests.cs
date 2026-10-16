@@ -43,6 +43,17 @@ public sealed class FcmPushSenderTests : IDisposable
     }
 
     [Fact]
+    public async Task A_team_crest_goes_along_as_the_image_and_is_left_out_when_there_is_none()
+    {
+        const string crest = "https://a.espncdn.com/i/teamlogos/soccer/500/436.png";
+        await Sender().SendAsync(Phone(), Reminder with { Icon = crest }, CancellationToken.None);
+        await Sender().SendAsync(Phone(), Reminder, CancellationToken.None);
+
+        Assert.Equal(crest, _google.Sends[0].Body.GetProperty("message").GetProperty("notification").GetProperty("image").GetString());
+        Assert.False(_google.Sends[1].Body.GetProperty("message").GetProperty("notification").TryGetProperty("image", out _));
+    }
+
+    [Fact]
     public async Task The_note_to_google_is_signed_with_the_accounts_key()
     {
         await Sender().SendAsync(Phone(), Reminder, CancellationToken.None);

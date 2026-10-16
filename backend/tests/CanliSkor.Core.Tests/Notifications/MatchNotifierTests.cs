@@ -51,8 +51,8 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
 
         var (_, reminder) = Assert.Single(_sender.Sent);
-        Assert.Equal("Match Reminder: Home vs Away", reminder.Title);
-        Assert.Equal("Kickoff in 30 minutes! Tap to view pre-match stats and odds.", reminder.Body);
+        Assert.Equal("⏰ Kick-off in 30 minutes", reminder.Title);
+        Assert.Equal("Home - Away", reminder.Body);
         Assert.Equal($"/?league=tur.1&match={match.Id}", reminder.Url);
     }
 
@@ -65,8 +65,8 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
 
         var (_, reminder) = Assert.Single(_sender.Sent);
-        Assert.Equal("Maç hatırlatması: Home - Away", reminder.Title);
-        Assert.StartsWith("Maç 12 dakika sonra başlıyor!", reminder.Body);
+        Assert.Equal("⏰ Maça 12 Dakika Kaldı", reminder.Title);
+        Assert.Equal("Home - Away", reminder.Body);
     }
 
     [Fact]
@@ -89,8 +89,7 @@ public class MatchNotifierTests
     [Theory]
     [InlineData(MatchStatus.Postponed)]
     [InlineData(MatchStatus.Cancelled)]
-    [InlineData(MatchStatus.Live)]
-    public async Task Stays_quiet_for_a_match_that_is_off_or_already_running(MatchStatus status)
+    public async Task Stays_quiet_for_a_match_that_is_off(MatchStatus status)
     {
         var match = Playing(TestData.Match(status, Now.AddMinutes(10)));
         _provider.Returns(Detail(match, withLineups: true));
@@ -131,7 +130,8 @@ public class MatchNotifierTests
         }
 
         var (_, lineups) = Assert.Single(_sender.Sent);
-        Assert.Equal("Lineups Confirmed: Home vs Away", lineups.Title);
+        Assert.Equal("📋 Line-ups are out", lineups.Title);
+        Assert.Equal("Home - Away", lineups.Body);
         Assert.Equal($"/?league=tur.1&match={match.Id}&tab=lineups", lineups.Url);
     }
 
@@ -199,6 +199,197 @@ public class MatchNotifierTests
         var (_, reminder) = Assert.Single(_sender.Sent);
         Assert.EndsWith(":reminder", reminder.Tag);
     }
+
+    [Fact]
+    public async Task Announces_the_kickoff_and_each_goal_once_with_the_scoring_team_crest()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["2"]);
+
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var (_, kickoff) = Assert.Single(_sender.Sent);
+        Assert.Equal("Kick-off: Home 0 - 0 Away", kickoff.Title);
+        Assert.Equal("The match is under way.", kickoff.Body);
+        // The subscriber's own team is the away side.
+        Assert.Equal(AwayCrest, kickoff.Icon);
+
+        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
+        for (var round = 0; round < 3; round++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(15));
+            await _notifier.RunAsync(CancellationToken.None);
+        }
+
+        Assert.Equal(2, _sender.Sent.Count);
+        var goal = _sender.Sent[1].Notification;
+        Assert.Equal("⚽ GOAL! Home 1 - 0 Away", goal.Title);
+        Assert.Equal("12' Player A (Home)", goal.Body);
+        Assert.Equal(HomeCrest, goal.Icon);
+        Assert.Equal($"/?league=tur.1&match={match.Id}", goal.Url);
+    }
+
+    [Fact]
+    public async Task Writes_penalties_own_goals_and_misses_in_turkish()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(matchIds: [match.Id], language: "tr");
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match,
+            Event(MatchEventType.PenaltyGoal, "10'", TeamSide.Home, "P1", "e1"),
+            // Scored by a home player, so it counts for the away team.
+            Event(MatchEventType.OwnGoal, "20'", TeamSide.Away, "P2", "e2"),
+            Event(MatchEventType.PenaltyMissed, "45'+2'", TeamSide.Home, "P3", "e3"),
+            Event(MatchEventType.RedCard, "50'", TeamSide.Away, "P4", "e4")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(
+        [
+            ("Maç Başladı: Home 0 - 0 Away", "Karşılaşmada ilk düdük çaldı."),
+            ("⚽ GOL! Home 1 - 0 Away", "10' P1 (Home) (P)"),
+            ("⚽ GOL! Home 1 - 1 Away", "20' P2 (Home) (K.K.)"),
+            ("❌ Penaltı Kaçtı! Home 1 - 1 Away", "45'+2' P3 (Home)"),
+            ("🟥 Kırmızı Kart! Away", "50' P4 (Home 1 - 1 Away)"),
+        ], _sender.Sent.Select(s => (s.Notification.Title, s.Notification.Body)));
+        // The own goal shows the crest of the team it counts for.
+        Assert.Equal(AwayCrest, _sender.Sent[2].Notification.Icon);
+    }
+
+    [Fact]
+    public async Task Yellow_cards_and_substitutions_are_not_notified()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match,
+            Event(MatchEventType.YellowCard, "5'", TeamSide.Home, "P1", "y1"),
+            Event(MatchEventType.Substitution, "6'", TeamSide.Home, "P2", "s1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Single(_sender.Sent);
+    }
+
+    [Fact]
+    public async Task After_a_restart_mid_match_only_what_happens_from_then_on_is_sent()
+    {
+        var match = Playing(InPlay("60'", new Score(1, 0)));
+        var goal = Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1");
+        _provider.Returns(Detail(match, goal));
+        Subscribe(teamIds: ["1"]);
+
+        // No kickoff and no goal: both happened before this server was watching.
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Empty(_sender.Sent);
+
+        _provider.Returns(Detail(match, goal, Event(MatchEventType.RedCard, "70'", TeamSide.Away, "Player B", "r1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var (_, card) = Assert.Single(_sender.Sent);
+        Assert.Equal("🟥 Red card! Away", card.Title);
+        Assert.Equal("70' Player B (Home 1 - 0 Away)", card.Body);
+        Assert.Equal(AwayCrest, card.Icon);
+    }
+
+    [Fact]
+    public async Task A_corrected_event_is_not_sent_again()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // The provider credits the goal to someone else a minute later: same event, same id.
+        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "13'", TeamSide.Home, "Player C", "g1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(2, _sender.Sent.Count);
+    }
+
+    [Fact]
+    public async Task Someone_who_follows_later_gets_new_events_but_not_old_ones()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "2'", TeamSide.Home, "Player A", "g1")));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Equal(2, _sender.Sent.Count);
+
+        _time.Advance(EventNewsForAndABit);
+        Subscribe(matchIds: [match.Id], endpoint: "https://fcm.googleapis.com/fcm/send/late");
+        _provider.Returns(Detail(match,
+            Event(MatchEventType.Goal, "2'", TeamSide.Home, "Player A", "g1"),
+            Event(MatchEventType.Goal, "14'", TeamSide.Away, "Player B", "g2")));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var late = _sender.Sent.Where(s => s.Subscriber.Endpoint.EndsWith("late")).Select(s => s.Notification.Title);
+        Assert.Equal(["⚽ GOAL! Home 1 - 1 Away"], late);
+    }
+
+    [Fact]
+    public async Task A_goal_that_comes_with_the_final_whistle_is_still_sent_and_then_the_match_is_left_alone()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var finished = Playing(match with { Status = MatchStatus.Finished, Clock = "90'+4'", Score = new Score(1, 0) });
+        _provider.Returns(Detail(finished, Event(MatchEventType.Goal, "90'+3'", TeamSide.Home, "Player A", "g1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Equal("⚽ GOAL! Home 1 - 0 Away", _sender.Sent[^1].Notification.Title);
+
+        var requests = _provider.DetailRequests.Count;
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Equal(requests, _provider.DetailRequests.Count);
+    }
+
+    [Fact]
+    public async Task A_match_in_play_with_no_followers_costs_nothing()
+    {
+        Playing(InPlay("30'"));
+        Subscribe(teamIds: ["999"]);
+
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Empty(_provider.DetailRequests);
+    }
+
+    private const string HomeCrest = "https://a.espncdn.com/i/teamlogos/soccer/500/1.png";
+    private const string AwayCrest = "https://a.espncdn.com/i/teamlogos/soccer/500/2.png";
+
+    private static readonly TimeSpan EventNewsForAndABit = MatchNotifier.EventNewsFor + TimeSpan.FromMinutes(1);
+
+    /// <summary>A match in play, with crests, kicked off at <paramref name="clock"/> minutes ago (roughly).</summary>
+    private static Match InPlay(string clock, Score? score = null)
+    {
+        var match = TestData.Match(MatchStatus.Live, Now.AddMinutes(-1), score: score ?? new Score(0, 0));
+        return match with
+        {
+            Clock = clock,
+            HomeTeam = match.HomeTeam with { LogoUrl = HomeCrest },
+            AwayTeam = match.AwayTeam with { LogoUrl = AwayCrest },
+        };
+    }
+
+    private static MatchEvent Event(MatchEventType type, string clock, TeamSide side, string player, string id) =>
+        new(type, clock, side, player, null, Id: id);
+
+    private static MatchDetail Detail(Match match, params MatchEvent[] events) => new(match, events, []);
 
     private Match Playing(params Match[] matches)
     {

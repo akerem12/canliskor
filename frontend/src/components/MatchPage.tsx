@@ -253,6 +253,8 @@ function EventIcon({ type }: { type: MatchEvent['type'] }) {
       return <span className="event__icon" role="img" aria-label={t.match.substitution}>⇄</span>
     case 'OwnGoal':
       return <OwnGoalMark />
+    case 'PenaltyMissed':
+      return <span className="event__icon" role="img" aria-label={t.match.penaltyMissed}>❌</span>
     default:
       return <span className="event__icon" role="img" aria-label={t.match.goal}>⚽</span>
   }
@@ -277,6 +279,8 @@ function EventText({ event, leagueCode }: { event: MatchEvent; leagueCode: strin
       )
     case 'PenaltyGoal':
       return <span className="event__player">{player} <span className="event__note">{t.match.penalty}</span></span>
+    case 'PenaltyMissed':
+      return <span className="event__player">{player} <span className="event__note">{t.match.penaltyMissed}</span></span>
     case 'OwnGoal':
       return <span className="event__player">{player} <span className="event__note event__note--own-goal" title={t.lineups.ownGoal}>{t.match.ownGoal}</span></span>
     case 'Goal':

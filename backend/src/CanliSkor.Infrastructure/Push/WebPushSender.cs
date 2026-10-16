@@ -38,7 +38,7 @@ internal sealed partial class WebPushSender : IPushSender
         subscription.SetKey(PushEncryptionKeyName.Auth, subscriber.Auth);
 
         // What sw.js reads.
-        var payload = JsonSerializer.Serialize(new { notification.Title, notification.Body, notification.Url, notification.Tag }, PayloadJson);
+        var payload = JsonSerializer.Serialize(new { notification.Title, notification.Body, notification.Url, notification.Tag, notification.Icon }, PayloadJson);
         var message = new PushMessage(payload)
         {
             TimeToLive = Math.Max(60, (int)notification.TimeToLive.TotalSeconds),

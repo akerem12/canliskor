@@ -1,11 +1,12 @@
 // The site's service worker. Its only job is notifications: the server pushes one (a kick-off reminder, line-ups
-// announced), the browser wakes this file even when the site is closed, and it shows the notification and opens the
+// announced, a goal), the browser wakes this file even when the site is closed, and it shows the notification and opens the
 // match when it is tapped. It caches nothing, so it can never serve an old version of the site.
 
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()))
 
-// The payload is written by the server (backend WebPushSender): { title, body, url, tag }.
+// The payload is written by the server (backend WebPushSender): { title, body, url, tag, icon }. The icon is the crest
+// of the team the notification is about; Safari on the iPhone ignores it and always shows the site's own icon.
 self.addEventListener('push', event => {
   let data = {}
   try {
@@ -19,7 +20,7 @@ self.addEventListener('push', event => {
       body: data.body || '',
       // The same tag replaces the earlier notification instead of adding a second one.
       tag: data.tag,
-      icon: '/icon-192.png',
+      icon: data.icon || '/icon-192.png',
       data: { url: data.url || '/' },
     }),
   )

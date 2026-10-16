@@ -3,33 +3,83 @@ using CanliSkor.Core.Domain;
 namespace CanliSkor.Core.Notifications;
 
 /// <summary>
-/// The words of the notifications, in the subscriber's language. They are written here and not in the browser
-/// because they are shown while the site is closed. Team names are the provider's (English) spelling.
+/// The words of the notifications, in the subscriber's language: short, the score in the title, the minute and
+/// the player in the body. They are written here and not in the browser because they are shown while the site is
+/// closed. Team names are the provider's (English) spelling.
 /// </summary>
 public static class MatchNotificationText
 {
-    public static PushNotification KickoffReminder(Match match, TimeSpan untilKickoff, string language)
+    /// <summary>A goal or a card is old news after this; a phone that was off that long isn't sent it any more.</summary>
+    public static readonly TimeSpan LiveTimeToLive = TimeSpan.FromMinutes(15);
+
+    /// <param name="icon">The crest to show: the subscriber's own team's, if it plays.</param>
+    public static PushNotification KickoffReminder(Match match, TimeSpan untilKickoff, string language, string? icon)
     {
         var minutes = Math.Max(1, (int)Math.Ceiling(untilKickoff.TotalMinutes));
-        var (title, body) = language == "tr"
-            ? ($"Maç hatırlatması: {Teams(match, " - ")}",
-                $"Maç {minutes} dakika sonra başlıyor! Maç öncesi istatistikler ve oranlar için dokunun.")
-            : ($"Match Reminder: {Teams(match, " vs ")}",
-                $"Kickoff in {minutes} {(minutes == 1 ? "minute" : "minutes")}! Tap to view pre-match stats and odds.");
+        var title = language == "tr"
+            ? $"⏰ Maça {minutes} Dakika Kaldı"
+            : $"⏰ Kick-off in {minutes} {(minutes == 1 ? "minute" : "minutes")}";
 
-        return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:reminder", untilKickoff);
+        return new PushNotification(title, Teams(match), MatchUrl(match), $"{match.Id}:reminder", untilKickoff, icon);
     }
 
-    public static PushNotification LineupsAnnounced(Match match, TimeSpan untilKickoff, string language)
+    public static PushNotification LineupsAnnounced(Match match, TimeSpan untilKickoff, string language, string? icon)
+    {
+        var title = language == "tr" ? "📋 İlk 11'ler Açıklandı" : "📋 Line-ups are out";
+
+        return new PushNotification(title, Teams(match), $"{MatchUrl(match)}&tab=lineups", $"{match.Id}:lineups", untilKickoff, icon);
+    }
+
+    public static PushNotification Kickoff(Match match, string language, string? icon)
     {
         var (title, body) = language == "tr"
-            ? ($"Kadrolar açıklandı: {Teams(match, " - ")}", "İlk 11'ler belli oldu! Dizilişlere ve öne çıkan oyunculara göz atın.")
-            : ($"Lineups Confirmed: {Teams(match, " vs ")}", "Official starting XIs are out! Check out the formations and key players.");
+            ? ($"Maç Başladı: {Scoreline(match, new Score(0, 0))}", "Karşılaşmada ilk düdük çaldı.")
+            : ($"Kick-off: {Scoreline(match, new Score(0, 0))}", "The match is under way.");
 
-        return new PushNotification(title, body, $"{MatchUrl(match)}&tab=lineups", $"{match.Id}:lineups", untilKickoff);
+        return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:kickoff", LiveTimeToLive, icon);
     }
 
-    private static string Teams(Match match, string separator) => $"{match.HomeTeam.ShortName}{separator}{match.AwayTeam.ShortName}";
+    /// <summary>A goal, a missed penalty or a red card, with the crest of the team it is about.</summary>
+    /// <param name="score">The score right after the event.</param>
+    /// <param name="key">Tells the event apart from the others of the match (see <see cref="MatchNotifier"/>).</param>
+    /// <returns>Null for events that aren't notified (yellow cards, substitutions).</returns>
+    public static PushNotification? Event(Match match, MatchEvent matchEvent, Score score, string key, string language)
+    {
+        var tr = language == "tr";
+        var team = matchEvent.Side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
+        var opponent = matchEvent.Side == TeamSide.Home ? match.AwayTeam : match.HomeTeam;
+        var scoreline = Scoreline(match, score);
+
+        (string Title, string Body)? text = matchEvent.Type switch
+        {
+            MatchEventType.Goal => (Goal(tr, scoreline), Who(matchEvent, team)),
+            MatchEventType.PenaltyGoal => (Goal(tr, scoreline), $"{Who(matchEvent, team)} {(tr ? "(P)" : "(pen)")}"),
+            // Counted for the team it helps, but scored by a player of the other one.
+            MatchEventType.OwnGoal => (Goal(tr, scoreline), $"{Who(matchEvent, opponent)} {(tr ? "(K.K.)" : "(OG)")}"),
+            MatchEventType.PenaltyMissed => (tr ? $"❌ Penaltı Kaçtı! {scoreline}" : $"❌ Penalty missed! {scoreline}", Who(matchEvent, team)),
+            MatchEventType.RedCard => (tr ? $"🟥 Kırmızı Kart! {team.ShortName}" : $"🟥 Red card! {team.ShortName}",
+                $"{Minute(matchEvent)}{matchEvent.Player ?? team.ShortName} ({scoreline})"),
+            _ => null,
+        };
+
+        return text is { } t
+            ? new PushNotification(t.Title, t.Body, MatchUrl(match), $"{match.Id}:event:{key}", LiveTimeToLive, team.LogoUrl)
+            : null;
+    }
+
+    private static string Goal(bool tr, string scoreline) => tr ? $"⚽ GOL! {scoreline}" : $"⚽ GOAL! {scoreline}";
+
+    /// <summary>"57' Mauro Icardi (Galatasaray)"; just the team if the player isn't known.</summary>
+    private static string Who(MatchEvent matchEvent, Team team) =>
+        matchEvent.Player is null ? $"{Minute(matchEvent)}{team.ShortName}" : $"{Minute(matchEvent)}{matchEvent.Player} ({team.ShortName})";
+
+    // The provider's clock already ends in "'", e.g. "57'" or "45'+2'".
+    private static string Minute(MatchEvent matchEvent) => string.IsNullOrEmpty(matchEvent.Clock) ? "" : $"{matchEvent.Clock} ";
+
+    private static string Teams(Match match) => $"{match.HomeTeam.ShortName} - {match.AwayTeam.ShortName}";
+
+    private static string Scoreline(Match match, Score score) =>
+        $"{match.HomeTeam.ShortName} {score.Home} - {score.Away} {match.AwayTeam.ShortName}";
 
     // The same address the site itself gives a match page (frontend/src/route.ts).
     private static string MatchUrl(Match match) =>

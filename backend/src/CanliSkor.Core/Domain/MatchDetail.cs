@@ -35,6 +35,10 @@ public sealed record PreviousMeeting(
 /// <param name="RelatedPlayer">Assist provider, or the player going off. Null if none or unknown.</param>
 /// <param name="PlayerId">The provider's id of <paramref name="Player"/>, for opening their profile. Null if unknown.</param>
 /// <param name="RelatedPlayerId">The provider's id of <paramref name="RelatedPlayer"/>. Null if unknown.</param>
+/// <param name="Id">
+/// The provider's id of the event, which stays the same when its details are corrected; null if it has none.
+/// What notifications are told apart by.
+/// </param>
 public sealed record MatchEvent(
     MatchEventType Type,
     string Clock,
@@ -42,7 +46,8 @@ public sealed record MatchEvent(
     string? Player,
     string? RelatedPlayer,
     string? PlayerId = null,
-    string? RelatedPlayerId = null);
+    string? RelatedPlayerId = null,
+    string? Id = null);
 
 public enum MatchEventType
 {
@@ -52,6 +57,9 @@ public enum MatchEventType
     YellowCard,
     RedCard,
     Substitution,
+
+    /// <summary>A penalty that didn't go in: saved, wide, or off the woodwork. <see cref="MatchEvent.Side"/> is the team that took it.</summary>
+    PenaltyMissed,
 }
 
 public enum TeamSide

@@ -95,6 +95,7 @@ export const en = {
     ownGoal: '(OG)',
     penaltyShort: '(P)',
     penaltyTitle: 'Penalty',
+    penaltyMissed: 'Penalty missed',
     scorers: 'Goalscorers',
     ownGoalShort: 'OG',
     assist: 'Assist',

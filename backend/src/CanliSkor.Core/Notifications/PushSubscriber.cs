@@ -80,7 +80,8 @@ public enum PushChannel
 /// <param name="Url">Relative to the site, e.g. "/?league=tur.1&amp;match=401888379".</param>
 /// <param name="Tag">Notifications with the same tag replace each other on the device instead of piling up.</param>
 /// <param name="TimeToLive">How long the push service keeps trying a device that is offline.</param>
-public sealed record PushNotification(string Title, string Body, string Url, string Tag, TimeSpan TimeToLive);
+/// <param name="Icon">The crest of the team it is about (an https address); null for the site's own icon.</param>
+public sealed record PushNotification(string Title, string Body, string Url, string Tag, TimeSpan TimeToLive, string? Icon = null);
 
 public enum PushOutcome
 {

@@ -47,10 +47,9 @@ internal static class EspnSummaryMapper
         // The header carries no odds; the summary has them in a section of its own.
         match = match with { Odds = EspnOddsMapper.Map(response.Pickcenter) };
 
-        var events = (response.KeyEvents ?? [])
-            .Select(e => MapEvent(e, match))
-            .OfType<MatchEvent>()
-            .ToList();
+        var events = MergeInOrder(
+            (response.KeyEvents ?? []).Select(e => (Event: MapEvent(e, match), e.Clock?.Value)),
+            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match), c.Play?.Clock?.Value)));
 
         return new MatchDetail(
             match,
@@ -101,6 +100,56 @@ internal static class EspnSummaryMapper
 
     private static string? Text(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+    /// <summary>
+    /// The key events in ESPN's order, with the missed penalties (only found in the commentary) slotted in by the
+    /// clock: after every key event of the same second or earlier.
+    /// </summary>
+    private static List<MatchEvent> MergeInOrder(
+        IEnumerable<(MatchEvent? Event, double? Seconds)> keyEvents,
+        IEnumerable<(MatchEvent? Event, double? Seconds)> missedPenalties)
+    {
+        var merged = keyEvents.Where(e => e.Event is not null).ToList();
+        foreach (var missed in missedPenalties.Where(e => e.Event is not null))
+        {
+            var at = merged.FindIndex(e => e.Seconds > missed.Seconds);
+            merged.Insert(at < 0 ? merged.Count : at, missed);
+        }
+
+        return [.. merged.Select(e => e.Event!)];
+    }
+
+    private static MatchEvent? MapMissedPenalty(EspnCommentaryPlay? play, Match match)
+    {
+        if (play?.Type?.Type is not ("penalty---saved" or "penalty---missed" or "penalty---hit-woodwork")
+            || string.IsNullOrEmpty(play.Clock?.DisplayValue))
+        {
+            return null;
+        }
+
+        // The commentary names the team but gives no id.
+        TeamSide? side = play.Team?.DisplayName switch
+        {
+            null => null,
+            var name when name == match.HomeTeam.Name => TeamSide.Home,
+            var name when name == match.AwayTeam.Name => TeamSide.Away,
+            _ => null,
+        };
+        if (side is null)
+        {
+            return null;
+        }
+
+        var taker = play.Participants?.ElementAtOrDefault(0)?.Athlete;
+        return new MatchEvent(
+            MatchEventType.PenaltyMissed,
+            play.Clock.DisplayValue,
+            side.Value,
+            Player: taker?.DisplayName,
+            RelatedPlayer: null,
+            PlayerId: string.IsNullOrEmpty(taker?.Id) ? null : taker.Id,
+            Id: string.IsNullOrEmpty(play.Id) ? null : play.Id);
+    }
+
     private static MatchEvent? MapEvent(EspnKeyEvent e, Match match)
     {
         var slug = e.Type?.Type;
@@ -140,7 +189,8 @@ internal static class EspnSummaryMapper
             Player: player?.DisplayName,
             RelatedPlayer: related?.DisplayName,
             PlayerId: string.IsNullOrEmpty(player?.Id) ? null : player.Id,
-            RelatedPlayerId: string.IsNullOrEmpty(related?.Id) ? null : related.Id);
+            RelatedPlayerId: string.IsNullOrEmpty(related?.Id) ? null : related.Id,
+            Id: string.IsNullOrEmpty(e.Id) ? null : e.Id);
     }
 
     private static List<MatchStat> MapStats(EspnBoxscore? boxscore)

@@ -54,7 +54,8 @@ export interface MatchDay {
   leagues: LeagueMatches[]
 }
 
-export type MatchEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'RedCard' | 'Substitution'
+/** PenaltyMissed: saved, wide or off the woodwork; its side is the team that took it. */
+export type MatchEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'RedCard' | 'Substitution' | 'PenaltyMissed'
 
 export interface MatchEvent {
   type: MatchEventType

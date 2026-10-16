@@ -3,8 +3,10 @@ using System.Collections.Concurrent;
 namespace CanliSkor.Core.Notifications;
 
 /// <summary>
-/// What has been sent already, so no browser is told the same thing twice however often the notifier runs, and
-/// when each match's line-ups were last looked for.
+/// What has been sent already, so no browser is told the same thing twice however often the notifier runs, when
+/// each match's line-ups were last looked for, and which events of the matches in play have been seen. Kept in
+/// memory: after a restart, what happened before is taken as known (<see cref="StartLiveMatch"/>), so nothing is
+/// sent twice; what happens while the server is down is not sent at all.
 /// </summary>
 public sealed class NotificationLog
 {
@@ -13,6 +15,7 @@ public sealed class NotificationLog
 
     private readonly ConcurrentDictionary<(string Notification, string Endpoint), DateTimeOffset> _sent = new();
     private readonly ConcurrentDictionary<string, LineupCheck> _lineupChecks = new();
+    private readonly ConcurrentDictionary<string, LiveMatchLog> _liveMatches = new();
 
     public bool WasSent(string notification, string endpoint) => _sent.ContainsKey((notification, endpoint));
 
@@ -22,6 +25,14 @@ public sealed class NotificationLog
     public LineupCheck? LastLineupCheck(string matchId) => _lineupChecks.GetValueOrDefault(matchId);
 
     public void RecordLineupCheck(string matchId, LineupCheck check) => _lineupChecks[matchId] = check;
+
+    /// <summary>What is known of a match in play; null if it hasn't been looked at since the server started.</summary>
+    public LiveMatchLog? LiveMatch(string matchId) => _liveMatches.GetValueOrDefault(matchId);
+
+    /// <param name="alreadyHappened">Events from before the server was watching, which are no news any more.</param>
+    /// <param name="sawKickoff">The match was seen in its first minutes, so its kickoff is news.</param>
+    public LiveMatchLog StartLiveMatch(string matchId, IEnumerable<string> alreadyHappened, DateTimeOffset now, bool sawKickoff) =>
+        _liveMatches[matchId] = new LiveMatchLog(now, alreadyHappened, sawKickoff);
 
     public void ForgetOld(DateTimeOffset now)
     {
@@ -40,8 +51,55 @@ public sealed class NotificationLog
                 _lineupChecks.TryRemove(matchId, out _);
             }
         }
+
+        foreach (var (matchId, live) in _liveMatches)
+        {
+            if (now - live.StartedAt > ForgetAfter)
+            {
+                _liveMatches.TryRemove(matchId, out _);
+            }
+        }
     }
 }
 
 /// <param name="Announced">Both teams' starting elevens were there.</param>
 public sealed record LineupCheck(DateTimeOffset At, bool Announced);
+
+/// <summary>
+/// A match in play as the notifier has seen it: when each of its events was first seen, so every event is news
+/// only once and only for a while. Used by one notifier round at a time.
+/// </summary>
+public sealed class LiveMatchLog
+{
+    private readonly Dictionary<string, DateTimeOffset> _firstSeen = [];
+
+    public LiveMatchLog(DateTimeOffset startedAt, IEnumerable<string> alreadyHappened, bool sawKickoff)
+    {
+        StartedAt = startedAt;
+        SawKickoff = sawKickoff;
+        foreach (var key in alreadyHappened)
+        {
+            _firstSeen[key] = DateTimeOffset.MinValue;
+        }
+    }
+
+    /// <summary>When the notifier first saw the match in play.</summary>
+    public DateTimeOffset StartedAt { get; }
+
+    /// <summary>The match was first seen in its opening minutes, so its kickoff is announced.</summary>
+    public bool SawKickoff { get; }
+
+    /// <summary>The final whistle was dealt with; nothing more is sent for this match.</summary>
+    public bool Over { get; set; }
+
+    /// <summary>When the event was first seen; now, if this is the first time.</summary>
+    public DateTimeOffset FirstSeen(string eventKey, DateTimeOffset now)
+    {
+        if (!_firstSeen.TryGetValue(eventKey, out var seen))
+        {
+            _firstSeen[eventKey] = seen = now;
+        }
+
+        return seen;
+    }
+}

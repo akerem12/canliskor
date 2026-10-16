@@ -11,6 +11,9 @@ public class EspnSummaryMapperTests
     private static MatchDetail MapFinished() =>
         EspnSummaryMapper.Map(FixtureLoader.LoadSummary("summary-esp1-finished.json"), "esp.1")!;
 
+    /// <summary>The events without their ids, which <see cref="Events_keep_espn_ids"/> covers.</summary>
+    private static List<MatchEvent> EventsOf(MatchDetail detail) => [.. detail.Events.Select(e => e with { Id = null })];
+
     [Fact]
     public void Maps_the_match_from_the_header()
     {
@@ -29,7 +32,7 @@ public class EspnSummaryMapperTests
     [Fact]
     public void Keeps_goals_cards_and_substitutions_in_order()
     {
-        var events = MapFinished().Events;
+        var events = EventsOf(MapFinished());
 
         // Kickoff, half time, delays etc. are left out: 5 goals, 4 yellows, 1 red, 10 substitutions.
         Assert.Equal(20, events.Count);
@@ -40,7 +43,7 @@ public class EspnSummaryMapperTests
     [Fact]
     public void Goals_carry_scorer_assist_kind_and_player_ids()
     {
-        var goals = MapFinished().Events
+        var goals = EventsOf(MapFinished())
             .Where(e => e.Type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal)
             .ToList();
 
@@ -61,9 +64,47 @@ public class EspnSummaryMapperTests
     }
 
     [Fact]
+    public void Events_keep_espn_ids()
+    {
+        var events = MapFinished().Events;
+
+        Assert.Equal("52750336", events[0].Id);
+        Assert.Equal("52762040", events[^1].Id);
+        Assert.All(events, e => Assert.NotNull(e.Id));
+    }
+
+    [Theory]
+    [InlineData("penalty---saved")]
+    [InlineData("penalty---missed")]
+    [InlineData("penalty---hit-woodwork")]
+    public void Missed_penalties_come_from_the_commentary_in_match_order(string kind)
+    {
+        var summary = FixtureLoader.LoadSummary("summary-esp1-finished.json");
+        var missed = new EspnCommentaryPlay(
+            "99", new EspnKeyEventType(kind), new EspnClock("50'", 2940), new EspnCommentaryTeam("Real Sociedad"),
+            [new EspnParticipant(new EspnAthlete("Carlos Soler", "235072"))]);
+        // Other commentary is no event, and neither is a penalty of a team that isn't playing.
+        var commentary = new List<EspnCommentary>
+        {
+            new(null),
+            new(missed with { Id = "1", Type = new EspnKeyEventType("shot-off-target") }),
+            new(missed with { Id = "2", Team = new EspnCommentaryTeam("Barcelona") }),
+            new(missed),
+        };
+
+        var events = EspnSummaryMapper.Map(summary with { Commentary = commentary }, "esp.1")!.Events;
+
+        var penalty = Assert.Single(events, e => e.Type == MatchEventType.PenaltyMissed);
+        Assert.Equal(new MatchEvent(MatchEventType.PenaltyMissed, "50'", TeamSide.Away, "Carlos Soler", null, "235072", Id: "99"), penalty);
+        // After everything up to the 49th minute, before everything from the 50th on.
+        var before = summary.KeyEvents!.Count(k => k.Clock?.Value <= 2940 && MapFinished().Events.Any(e => e.Id == k.Id));
+        Assert.Equal(before, events.ToList().IndexOf(penalty));
+    }
+
+    [Fact]
     public void Substitutions_list_the_player_coming_on_first()
     {
-        var sub = MapFinished().Events.First(e => e.Type == MatchEventType.Substitution);
+        var sub = EventsOf(MapFinished()).First(e => e.Type == MatchEventType.Substitution);
 
         Assert.Equal(new MatchEvent(MatchEventType.Substitution, "45'", TeamSide.Home, "David Otorbi", "Filip Ugrinic", "377768", "248681"), sub);
     }
