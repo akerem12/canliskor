@@ -53,6 +53,12 @@ internal static class EspnLineupMapper
         LineupPlayer ToPlayer(EspnRosterEntry e) => MapPlayer(e, positions.GetValueOrDefault(e.Athlete!.Id!));
 
         var keepers = starters.Where(e => e.Position?.Abbreviation == Goalkeeper).ToList();
+        if (keepers.Count == 0)
+        {
+            // Positions not given (yet): the goalkeeper is still the one in formation place 1.
+            keepers = starters.Where(e => e.FormationPlace == "1").Take(1).ToList();
+        }
+
         var outfield = starters.Except(keepers).ToList();
         var outfieldRows = Arrange(outfield, e => e.Position?.Abbreviation, ParseFormation(roster!.Formation));
 
@@ -65,10 +71,15 @@ internal static class EspnLineupMapper
             entries.Where(e => !e.Starter).Select(ToPlayer).ToList());
     }
 
+    /// <summary>A row wider than this can't be a line of a real formation.</summary>
+    private const int MaxRowSize = 5;
+
     /// <summary>Cuts outfield players into rows, defence first, each row left to right.</summary>
     /// <param name="rowSizes">
     /// From the formation. If null, or it doesn't add up to the number of players (a formation ESPN got wrong,
-    /// or fewer than ten outfield starters), players of the same depth form a row instead.
+    /// or fewer than ten outfield starters), players of the same depth form a row instead. If the positions are
+    /// missing too, that would put everyone in one row across the pitch, so then they are spread over a plain
+    /// 4-3-3 (or as close as the number of players allows).
     /// </param>
     internal static IReadOnlyList<IReadOnlyList<T>> Arrange<T>(
         IReadOnlyList<T> outfield, Func<T, string?> position, IReadOnlyList<int>? rowSizes)
@@ -79,6 +90,10 @@ internal static class EspnLineupMapper
         var rows = rowSizes is not null && rowSizes.Sum() == byDepth.Count
             ? SplitBySizes(byDepth, rowSizes)
             : byDepth.GroupBy(p => Depth(position(p))).Select(g => g.ToList()).ToList();
+        if (rows.Any(row => row.Count > MaxRowSize))
+        {
+            rows = SplitBySizes(byDepth, DefaultRowSizes(byDepth.Count));
+        }
 
         return rows
             .Select(row => (IReadOnlyList<T>)row.OrderBy(p => Lateral(position(p))).ToList())
@@ -101,6 +116,20 @@ internal static class EspnLineupMapper
         }
 
         return sizes.Count > 0 ? sizes : null;
+    }
+
+    /// <summary>4-3-3 for ten players; for fewer, four at the back and the rest shared out, the midfield first.</summary>
+    internal static IReadOnlyList<int> DefaultRowSizes(int players)
+    {
+        if (players <= 4)
+        {
+            return [players];
+        }
+
+        var defence = 4;
+        var midfield = (players - defence + 1) / 2;
+        var attack = players - defence - midfield;
+        return attack > 0 ? [defence, midfield, attack] : [defence, midfield];
     }
 
     private static List<List<T>> SplitBySizes<T>(List<T> players, IReadOnlyList<int> sizes)

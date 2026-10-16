@@ -46,6 +46,21 @@ public class EspnLineupMapperTests
     }
 
     [Fact]
+    public void Line_up_sent_without_positions_or_formation_still_has_a_goalkeeper_and_three_lines()
+    {
+        var summary = FixtureLoader.LoadSummary("summary-tur1-lineups.json");
+        var rosters = summary.Rosters!
+            .Select(r => r with { Formation = null, Roster = [.. r.Roster!.Select(e => e with { Position = null })] })
+            .ToList();
+
+        var home = EspnSummaryMapper.Map(summary with { Rosters = rosters }, "tur.1")!.Lineups!.Home;
+
+        Assert.Equal("4-3-3", home.Formation);
+        Assert.Equal(["Alban Lafont"], Names(home)[0]);
+        Assert.Equal([1, 4, 3, 3], home.Rows.Select(r => r.Count));
+    }
+
+    [Fact]
     public void Maps_shirt_colours_and_bench()
     {
         var lineups = MapFinished();
@@ -180,5 +195,29 @@ public class EspnLineupMapperTests
         var rows = EspnLineupMapper.Arrange(positions, p => p, EspnLineupMapper.ParseFormation("4-3-3"));
 
         Assert.Equal("LM ?? RM", string.Join(' ', rows[1]));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("4-2-3-1-x")]
+    public void Spreads_players_without_positions_or_formation_over_a_4_3_3_instead_of_one_row(string? formation)
+    {
+        // ESPN sometimes sends the starters before their positions (and the formation).
+        var positions = Enumerable.Repeat<string?>(null, 10).ToList();
+
+        var rows = EspnLineupMapper.Arrange(positions, p => p, EspnLineupMapper.ParseFormation(formation));
+
+        Assert.Equal([4, 3, 3], rows.Select(r => r.Count));
+    }
+
+    [Theory]
+    [InlineData(10, "4-3-3")]
+    [InlineData(9, "4-3-2")]
+    [InlineData(8, "4-2-2")]
+    [InlineData(5, "4-1")]
+    [InlineData(3, "3")]
+    public void Default_rows_fit_the_number_of_players(int players, string expected)
+    {
+        Assert.Equal(expected, string.Join('-', EspnLineupMapper.DefaultRowSizes(players)));
     }
 }

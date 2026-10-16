@@ -79,6 +79,7 @@ internal sealed record EspnUniform(string? Color);
 /// <param name="SubbedIn">ESPN sends true/false for most matches and {"didSub": false} for some; both are read.</param>
 /// <param name="SubbedInFor">The player this substitute replaced.</param>
 /// <param name="Plays">The player's cards, goals and substitutions, in match order.</param>
+/// <param name="FormationPlace">"1" to "11" for starters, "1" being the goalkeeper; "0" or missing on the bench.</param>
 internal sealed record EspnRosterEntry(
     bool Starter,
     string? Jersey,
@@ -88,7 +89,8 @@ internal sealed record EspnRosterEntry(
     [property: JsonConverter(typeof(EspnSubstitutionFlagConverter))] bool SubbedOut,
     EspnSubstitutionPartner? SubbedInFor,
     IReadOnlyList<EspnPlayerStat>? Stats,
-    IReadOnlyList<EspnPlayerPlay>? Plays);
+    IReadOnlyList<EspnPlayerPlay>? Plays,
+    string? FormationPlace = null);
 
 /// <param name="Abbreviation">"G", "CD-L", "LB", "DM", "AM-R", "F", ...; "SUB" for everyone on the bench.</param>
 internal sealed record EspnPosition(string? Abbreviation);

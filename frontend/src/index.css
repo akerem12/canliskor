@@ -375,7 +375,8 @@ h1, h2 { margin: 0; }
   font-size: 0.75rem; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
 }
 .pitch__half--away .pitch__team { top: auto; bottom: 8px; }
-.pitch__row { display: flex; justify-content: space-evenly; }
+/* Every line centred on the pitch's middle, whatever the names under the shirts. */
+.pitch__row { display: flex; justify-content: space-evenly; align-items: flex-start; width: 100%; box-sizing: border-box; padding: 0 4px; }
 /* A guess, not the real thing: a dashed outline under a gold title. */
 .pitch--possible { border-style: dashed; }
 .pitch--single::before { display: none; }
@@ -384,7 +385,7 @@ h1, h2 { margin: 0; }
 
 .player {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  flex: 0 1 20%; min-width: 0; padding: 2px;
+  flex: 0 1 20%; min-width: 0; max-width: 96px; padding: 2px; text-align: center;
   font: inherit; color: #fff; cursor: pointer; background: none; border: none; border-radius: 8px;
 }
 .player:hover { background: rgb(255 255 255 / 0.12); }
@@ -474,6 +475,7 @@ h1, h2 { margin: 0; }
   .pitch__half { gap: 10px; padding-left: 2px; padding-right: 2px; }
   .player__shirt { width: 30px; height: 30px; font-size: 0.78rem; }
   .player__name { font-size: 0.7rem; }
+  .player { max-width: 64px; }
   .benches { grid-template-columns: 1fr; gap: 16px; }
   .squads { gap: 10px; }
   .detail__tabs { gap: 6px; }
