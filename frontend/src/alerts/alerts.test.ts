@@ -94,13 +94,12 @@ describe('describeUpdate', () => {
 describe('wantsAlert', () => {
   const game = match('Live', [0, 0])
 
-  it('alerts for a favourite team only while team alerts are on', () => {
-    expect(wantsAlert(game, { ...noAlerts, teamAlerts: true }, new Set(['fb']))).toBe(true)
-    expect(wantsAlert(game, noAlerts, new Set(['fb']))).toBe(false)
-    expect(wantsAlert(game, { ...noAlerts, teamAlerts: true }, new Set(['bjk']))).toBe(false)
+  it('alerts whenever a favourite team plays', () => {
+    expect(wantsAlert(game, noAlerts, new Set(['fb']))).toBe(true)
+    expect(wantsAlert(game, noAlerts, new Set(['bjk']))).toBe(false)
   })
 
-  it('alerts for a watched match whoever plays and whatever the team switch says', () => {
+  it('alerts for a watched match whoever plays', () => {
     expect(wantsAlert(game, toggleMatch(noAlerts, game), new Set())).toBe(true)
   })
 })
@@ -119,24 +118,13 @@ describe('toggleMatch', () => {
 describe('pushWishes', () => {
   const game = match('Scheduled', null)
 
-  it('asks for the favourite teams only while team alerts are on, and always for watched matches', () => {
-    const watching = toggleMatch(noAlerts, game)
-
-    expect(pushWishes(watching, new Set(['gs']), 'tr')).toEqual({ language: 'tr', teamIds: [], matchIds: ['77'], kickoffReminder: true, lineupAlerts: true })
-    expect(pushWishes({ ...watching, teamAlerts: true }, new Set(['gs', 'fb']), 'en')?.teamIds).toEqual(['fb', 'gs'])
+  it('asks for everything about the favourite teams and the watched matches', () => {
+    expect(pushWishes(toggleMatch(noAlerts, game), new Set(['gs', 'fb']), 'tr'))
+      .toEqual({ language: 'tr', teamIds: ['fb', 'gs'], matchIds: ['77'], kickoffReminder: true, lineupAlerts: true })
   })
 
-  it('asks for nothing when there is nothing to follow or both notifications are off', () => {
-    expect(pushWishes(noAlerts, new Set(['gs']), 'en')).toBeNull()
-    expect(pushWishes({ ...noAlerts, teamAlerts: true }, new Set(), 'en')).toBeNull()
-    expect(pushWishes({ ...noAlerts, teamAlerts: true, kickoffReminder: false, lineupAlerts: false }, new Set(['gs']), 'en')).toBeNull()
-  })
-
-  it('passes on which of the two are wanted', () => {
-    const wishes = pushWishes({ ...noAlerts, teamAlerts: true, lineupAlerts: false }, new Set(['gs']), 'en')
-
-    expect(wishes?.kickoffReminder).toBe(true)
-    expect(wishes?.lineupAlerts).toBe(false)
+  it('asks for nothing when there is nothing to follow', () => {
+    expect(pushWishes(noAlerts, new Set(), 'en')).toBeNull()
   })
 })
 
@@ -145,27 +133,26 @@ describe('parseAlertSettings', () => {
   const at = (iso: string) => Date.parse(iso)
 
   it('reads back what was stored', () => {
-    const settings = { teamAlerts: true, matches: [{ id: '77', leagueCode: 'tur.1', kickoff }], kickoffReminder: false, lineupAlerts: true }
+    const settings = { matches: [{ id: '77', leagueCode: 'tur.1', kickoff }] }
 
     expect(parseAlertSettings(JSON.stringify(settings), at('2026-10-09T18:00:00Z'))).toEqual(settings)
   })
 
-  it('has the reminder and the line-ups alert on for settings stored before they existed', () => {
-    const settings = parseAlertSettings('{"teamAlerts":true,"matches":[]}', 0)
+  it('keeps the watched matches of settings stored by earlier versions and drops their switches', () => {
+    const stored = JSON.stringify({ teamAlerts: false, matches: [{ id: '77', leagueCode: 'tur.1', kickoff }], kickoffReminder: false, lineupAlerts: true })
 
-    expect(settings.kickoffReminder).toBe(true)
-    expect(settings.lineupAlerts).toBe(true)
+    expect(parseAlertSettings(stored, at('2026-10-09T18:00:00Z'))).toEqual({ matches: [{ id: '77', leagueCode: 'tur.1', kickoff }] })
   })
 
   it('forgets matches a day after kickoff', () => {
-    const stored = JSON.stringify({ teamAlerts: false, matches: [{ id: '77', leagueCode: 'tur.1', kickoff }] })
+    const stored = JSON.stringify({ matches: [{ id: '77', leagueCode: 'tur.1', kickoff }] })
 
     expect(parseAlertSettings(stored, at('2026-10-10T16:59:00Z')).matches).toHaveLength(1)
     expect(parseAlertSettings(stored, at('2026-10-10T17:00:00Z')).matches).toEqual([])
   })
 
-  it('starts with everything off when nothing usable is stored', () => {
-    for (const stored of [null, '', '{broken', '"text"', 'null', '{"teamAlerts":"yes","matches":[{"id":1}, null]}']) {
+  it('starts with nothing watched when nothing usable is stored', () => {
+    for (const stored of [null, '', '{broken', '"text"', 'null', '{"matches":[{"id":1}, null]}']) {
       expect(parseAlertSettings(stored, 0)).toEqual(noAlerts)
     }
   })

@@ -325,21 +325,14 @@ export const en = {
   alerts: {
     unsupported: "This browser doesn't support notifications. On an iPhone or iPad, add the site to the Home Screen first and open it from there.",
     denied: "Notifications are blocked for this site. Allow them in the browser's site settings (the icon left of the address) to use alerts.",
-    heading: '🔔 Match alerts for your teams',
-    starFirst: 'Star a team first: alerts are sent for favourite teams, not for whole leagues.',
-    description: 'Goals, kick-off, half time and full time of your favourite teams, while this site is open in a tab.',
-    pushLegend: 'Also when the site is closed, for your teams and the matches you put a bell on:',
-    // The same three for the Android app.
+    // The same for the Android app.
     deniedApp: "Notifications are switched off for this app. Allow them in the phone's settings (Apps, this app, Notifications) to use alerts.",
-    descriptionApp: 'Goals, kick-off, half time and full time of your favourite teams, while the app is open.',
-    pushLegendApp: 'Also when the app is closed, for your teams and the matches you put a bell on:',
+    enableHint: "Turn on notifications to hear about your teams' matches: line-ups, kick-off, goals and red cards.",
+    enable: 'Turn on',
     // The name of the app's notifications in the phone's settings.
     channelName: 'Match alerts',
-    kickoffReminder: 'Notify 30 minutes before kick-off',
-    lineupAlerts: 'Notify when line-ups are announced',
-    switchLabel: 'Match alerts for favourite teams',
     stop: 'Stop alerts for this match',
-    start: 'Get a reminder, the line-ups, goals and full time of this match as notifications',
+    start: 'Get notifications for this match: reminder, line-ups, kick-off, goals and red cards',
     // The notifications themselves.
     goalRuledOut: 'Goal ruled out',
     goalFor: (team: string) => `⚽ Goal for ${team}!`,

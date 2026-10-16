@@ -4,8 +4,7 @@ import type { Dictionary } from '../i18n/en'
 import type { AlertSettings } from './alerts'
 import { AlertsStorageKey, describeUpdate, isMatchWatched, noAlerts, parseAlertSettings, pushWishes, toggleMatch, wantsAlert } from './alerts'
 import { isNativeApp, onAppActiveChange } from '../native/app'
-import { nativePermission, requestNativePermission, showNative, startNativeNotifications } from '../native/notifications'
-import { routeToSearch } from '../route'
+import { nativePermission, requestNativePermission, startNativeNotifications } from '../native/notifications'
 import { pushSupported, syncPush } from './push'
 
 /** "unsupported": this browser has no notifications at all. Otherwise the browser's own permission state. */
@@ -13,21 +12,14 @@ export type AlertPermission = 'unsupported' | NotificationPermission
 
 export interface AlertsContextValue {
   permission: AlertPermission
-  /** Alerts for every match of a favourite team are switched on. */
-  teamAlerts: boolean
-  /** Switches team alerts; switching on asks the browser for permission first if needed. */
-  setTeamAlerts: (on: boolean) => Promise<void>
+  /**
+   * Asks the browser (or the phone) for permission to notify, if the visitor hasn't decided yet. Called when a team
+   * is starred, since that switches its alerts on; it must run straight from the click, or Safari won't ask.
+   */
+  askPermission: () => Promise<void>
   isWatched: (matchId: string) => boolean
   /** Starts or stops alerts for one match; starting asks for permission first if needed. */
   toggleMatch: (match: Match) => Promise<void>
-  /** False if this browser can't be notified while the site is closed; the two options below then do nothing. */
-  pushSupported: boolean
-  /** The reminder half an hour before kick-off is wanted. */
-  kickoffReminder: boolean
-  setKickoffReminder: (on: boolean) => void
-  /** The notification for announced line-ups is wanted. */
-  lineupAlerts: boolean
-  setLineupAlerts: (on: boolean) => void
 }
 
 /** How often an open page repeats what it wants to the server, in case the server lost it. */
@@ -65,16 +57,14 @@ function writeStored(settings: AlertSettings) {
 }
 
 /**
- * Match alerts as browser notifications: goals, kick-off, half time and full time, for every match of a favourite
- * team (if switched on) and for single matches the visitor picked. Settings live in localStorage.
+ * Match alerts, for every match of a favourite team and for single matches the visitor picked with the bell (kept
+ * in localStorage). Favouriting a team is all it takes; there is nothing else to switch on.
  *
- * Those alerts come from the live updates this page already receives, so they work while the site is open in a
- * tab, also in the background, but not once the tab or the browser is closed. Two more are sent by the server as
- * push notifications and arrive either way: a reminder half an hour before kick-off, and the line-ups being
- * announced. For those the server is told what this browser follows (see push.ts).
- *
- * The Android app does the same through the phone's own notifications (native/notifications.ts). Its live
- * connection rests while the app is in the background, so there the first kind only arrives while the app is open.
+ * The server sends them all as push notifications, which arrive also while the site or the app is closed: the
+ * reminder half an hour before kick-off, the line-ups, the kick-off, goals, missed penalties and red cards. For
+ * that it is told what this browser or phone follows (see push.ts). A browser without push (one that can only
+ * show notifications from an open page) gets goals, kick-off, half time and full time from the live updates this
+ * page receives instead, while it is open.
  *
  * @param favoriteTeamIds Ids of the favourite teams. Favourite leagues don't alert.
  * @param onOpenMatch Called when a notification is clicked.
@@ -135,10 +125,9 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
     return result === 'granted'
   }, [])
 
-  const setTeamAlerts = useCallback(async (on: boolean) => {
-    if (on && !(await ensurePermission())) return
-    update(current => ({ ...current, teamAlerts: on }))
-  }, [ensurePermission, update])
+  const askPermission = useCallback(async () => {
+    await ensurePermission()
+  }, [ensurePermission])
 
   const toggle = useCallback(async (match: Match) => {
     const starting = !isMatchWatched(settingsRef.current, match.id)
@@ -167,17 +156,12 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
   }, [wishes])
 
   const handleUpdate = useCallback((message: MatchUpdatedMessage, previous: Match | undefined) => {
-    if (permissionRef.current !== 'granted') return
+    // Where push works the server sends all of it, also while the page is open; this would say it twice.
+    if (permissionRef.current !== 'granted' || pushSupported()) return
     if (!wantsAlert(message.match, settingsRef.current, favoritesRef.current)) return
 
     const alert = describeUpdate(previous, message, dictionaryRef.current)
     if (!alert) return
-
-    if (isNativeApp) {
-      const { leagueCode, id } = message.match
-      showNative({ ...alert, url: `/${routeToSearch({ view: 'match', leagueCode, matchId: id }, '')}` })
-      return
-    }
 
     const notification = new Notification(alert.title, { body: alert.body, tag: alert.tag, icon: '/favicon.svg' })
     notification.onclick = () => {
@@ -189,15 +173,9 @@ export function useAlertsController(favoriteTeamIds: ReadonlySet<string>, onOpen
 
   const value: AlertsContextValue = {
     permission,
-    teamAlerts: settings.teamAlerts && permission === 'granted',
-    setTeamAlerts,
+    askPermission,
     isWatched: matchId => permission === 'granted' && isMatchWatched(settings, matchId),
     toggleMatch: toggle,
-    pushSupported: pushSupported(),
-    kickoffReminder: settings.kickoffReminder,
-    setKickoffReminder: on => update(current => ({ ...current, kickoffReminder: on })),
-    lineupAlerts: settings.lineupAlerts,
-    setLineupAlerts: on => update(current => ({ ...current, lineupAlerts: on })),
   }
 
   return { value, handleUpdate }

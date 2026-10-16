@@ -12,44 +12,22 @@ function blockedReason(permission: AlertPermission, t: Dictionary): string | nul
   return null
 }
 
-/** The switch for alerts on every match of a favourite team. Shown on the Favourites page. */
-export function TeamAlertsSwitch({ teamCount }: { teamCount: number }) {
+/**
+ * Favourite teams always alert, so there is nothing to switch. This only speaks up, on the Favourites page, when
+ * notifications aren't allowed: why not, or a button to allow them (for teams starred before permission was asked).
+ */
+export function TeamAlertsNotice({ teamCount }: { teamCount: number }) {
   const { t } = useI18n()
-  const { permission, teamAlerts, setTeamAlerts, pushSupported, kickoffReminder, setKickoffReminder, lineupAlerts, setLineupAlerts } = useAlerts()
-  const blocked = blockedReason(permission, t)
+  const { permission, askPermission } = useAlerts()
+  if (teamCount === 0 || permission === 'granted') return null
 
+  const blocked = blockedReason(permission, t)
   return (
-    <div className="alerts">
+    <div className="alerts" role="status">
       <div className="alerts__row">
-        <div className="alerts__text">
-          <strong>{t.alerts.heading}</strong>
-          <span>{blocked ?? (teamCount === 0 ? t.alerts.starFirst : isNativeApp ? t.alerts.descriptionApp : t.alerts.description)}</span>
-        </div>
-        <button
-          className={teamAlerts ? 'switch switch--on' : 'switch'}
-          role="switch"
-          aria-checked={teamAlerts}
-          aria-label={t.alerts.switchLabel}
-          disabled={blocked !== null}
-          onClick={() => void setTeamAlerts(!teamAlerts)}
-        >
-          <span className="switch__knob" />
-        </button>
+        <span className="alerts__text">{blocked ?? t.alerts.enableHint}</span>
+        {!blocked && <button className="cta cta--small" onClick={() => void askPermission()}>{t.alerts.enable}</button>}
       </div>
-      {/* The two the server sends. They also cover matches picked with the bell, so they show whatever the switch says. */}
-      {blocked === null && pushSupported && (
-        <fieldset className="alerts__options">
-          <legend>{isNativeApp ? t.alerts.pushLegendApp : t.alerts.pushLegend}</legend>
-          <label>
-            <input type="checkbox" checked={kickoffReminder} onChange={event => setKickoffReminder(event.target.checked)} />
-            {t.alerts.kickoffReminder}
-          </label>
-          <label>
-            <input type="checkbox" checked={lineupAlerts} onChange={event => setLineupAlerts(event.target.checked)} />
-            {t.alerts.lineupAlerts}
-          </label>
-        </fieldset>
-      )}
     </div>
   )
 }
