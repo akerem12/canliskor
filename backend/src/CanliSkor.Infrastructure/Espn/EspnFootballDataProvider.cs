@@ -56,7 +56,7 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         var url = $"{Uri.EscapeDataString(leagueCode)}/summary?event={Uri.EscapeDataString(matchId)}";
         var response = await GetOrNullAsync<EspnSummaryResponse>(url, $"summary for match '{matchId}' in '{leagueCode}'", cancellationToken);
 
-        return response is null ? null : EspnSummaryMapper.Map(response, leagueCode);
+        return response is null || EspnSummaryMapper.Map(response, leagueCode) is not { } detail ? null : EspnCorrections.Apply(detail);
     }
 
     public async Task<Squad?> GetSquadAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
@@ -65,7 +65,7 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         var url = $"{Uri.EscapeDataString(leagueCode)}/teams/{Uri.EscapeDataString(teamId)}/roster";
         var response = await GetOrNullAsync<EspnRosterResponse>(url, $"roster for team '{teamId}' in '{leagueCode}'", cancellationToken);
 
-        return response is null ? null : EspnRosterMapper.Map(response, leagueCode);
+        return response is null || EspnRosterMapper.Map(response, leagueCode) is not { } squad ? null : EspnCorrections.Apply(squad);
     }
 
     public async Task<LeagueStandings?> GetStandingsAsync(string leagueCode, CancellationToken cancellationToken = default)
@@ -146,7 +146,7 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         // The season's numbers per competition are a page of their own; a player ESPN has none for is still a player.
         var overview = await GetOrNullAsync<EspnAthleteOverviewResponse>(url + "/overview", $"statistics of player '{playerId}'", cancellationToken);
 
-        return EspnAthleteMapper.Map(athlete, overview);
+        return EspnAthleteMapper.Map(athlete, overview) is { } profile ? EspnCorrections.Apply(profile) : null;
     }
 
     /// <returns>Null if ESPN doesn't know the resource: it answers an unknown id with 404 (and some malformed ids with 400).</returns>

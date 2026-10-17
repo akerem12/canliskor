@@ -25,15 +25,18 @@ internal static class EspnRosterMapper
                 a.Age,
                 string.IsNullOrEmpty(a.Citizenship) ? null : a.Citizenship,
                 string.IsNullOrWhiteSpace(a.Flag?.Href) ? null : a.Flag.Href,
-                MapSeason(a.Statistics)))
-            // Unknown positions and players without a number go last.
-            .OrderBy(p => p.Position ?? (PlayerPosition)int.MaxValue)
-            .ThenBy(p => int.TryParse(p.Jersey, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : int.MaxValue)
-            .ThenBy(p => p.Name, StringComparer.Ordinal)
-            .ToList();
+                MapSeason(a.Statistics)));
 
-        return new Squad(leagueCode, response.Team.Id, response.Team.DisplayName, players);
+        return new Squad(leagueCode, response.Team.Id, response.Team.DisplayName, InSquadOrder(players));
     }
+
+    /// <summary>Goalkeepers, defenders, midfielders, forwards; by shirt number within each.</summary>
+    internal static List<SquadPlayer> InSquadOrder(IEnumerable<SquadPlayer> players) => players
+        // Unknown positions and players without a number go last.
+        .OrderBy(p => p.Position ?? (PlayerPosition)int.MaxValue)
+        .ThenBy(p => int.TryParse(p.Jersey, NumberStyles.None, CultureInfo.InvariantCulture, out var number) ? number : int.MaxValue)
+        .ThenBy(p => p.Name, StringComparer.Ordinal)
+        .ToList();
 
     private static SquadPlayerSeason? MapSeason(EspnRosterStatistics? statistics)
     {
