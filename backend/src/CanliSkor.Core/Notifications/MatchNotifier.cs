@@ -49,10 +49,11 @@ public sealed partial class MatchNotifier(
     private static readonly Score NoGoals = new(0, 0);
 
     /// <summary>
-    /// A goal the score already has is announced without its scorer once its entry is this late. Usually the entry
-    /// comes within seconds, and is waited for so the notification can say who scored.
+    /// How long a goal or a missed penalty waits for the provider to say who: a goal the score has without an
+    /// entry, or a miss entered only as the goalkeeper's save. Usually the name comes within seconds; after this the
+    /// notification goes out with the team alone.
     /// </summary>
-    public static readonly TimeSpan UnnamedGoalAfter = TimeSpan.FromSeconds(30);
+    public static readonly TimeSpan NameWait = TimeSpan.FromSeconds(30);
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -184,7 +185,7 @@ public sealed partial class MatchNotifier(
     /// <summary>
     /// The events of a match in play, in order. Goals go by the score that comes with the events: an entry beyond
     /// it is a goal entered twice (or one the score hasn't caught up with yet) and isn't counted, a goal the
-    /// score has without an entry is announced without its scorer once <see cref="UnnamedGoalAfter"/> has passed,
+    /// score has without an entry is announced without its scorer once <see cref="NameWait"/> has passed,
     /// and a goal is taken back only when the score goes down, whatever happens to its entry. The provider's entries
     /// come and go (entered twice, removed, entered again); the score is what it settles on.
     /// </summary>
@@ -232,7 +233,10 @@ public sealed partial class MatchNotifier(
                 continue;
             }
 
-            if (IsNotified(matchEvent.Type) && isNews)
+            // A miss known only from the goalkeeper's save: the taker's entry usually follows within seconds.
+            var waitingForName = matchEvent.Type == MatchEventType.PenaltyMissed && matchEvent.Player is null
+                && now - live.FirstSeen(key, now) < NameWait;
+            if (IsNotified(matchEvent.Type) && isNews && !waitingForName)
             {
                 var at = counted;
                 await SendAsync($"event:{match.Id}:{key}", followers,
@@ -268,7 +272,7 @@ public sealed partial class MatchNotifier(
         }
 
         var since = live.UnnamedGoalSince.TryGetValue(side, out var first) ? first : live.UnnamedGoalSince[side] = now;
-        if (!silently && now - since < UnnamedGoalAfter)
+        if (!silently && now - since < NameWait)
         {
             return;
         }

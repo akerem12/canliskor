@@ -99,7 +99,7 @@ public static class MatchNotificationText
             : null;
     }
 
-    /// <summary>A goal that was announced and then taken back (VAR, offside): the corrected score, and the change.</summary>
+    /// <summary>A goal that was announced and then taken back (VAR, offside): the score without it, and whose goal it was.</summary>
     /// <param name="side">The team the goal counted for.</param>
     /// <param name="goal">The goal as it was announced; null if it was announced without its scorer.</param>
     /// <param name="score">The score now, without it.</param>
@@ -108,11 +108,8 @@ public static class MatchNotificationText
         var tr = language == "tr";
         var team = side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
         var scorerTeam = goal?.Type == MatchEventType.OwnGoal ? (side == TeamSide.Home ? match.AwayTeam : match.HomeTeam) : team;
-        var before = side == TeamSide.Home ? score with { Home = score.Home + 1 } : score with { Away = score.Away + 1 };
-
         var title = tr ? $"🚫 GOL İPTAL! {Scoreline(match, score)}" : $"🚫 GOAL DISALLOWED! {Scoreline(match, score)}";
-        var who = goal is null ? team.ShortName : Who(goal, scorerTeam);
-        var body = $"{who} · {before.Home} - {before.Away} → {score.Home} - {score.Away}";
+        var body = goal is null ? team.ShortName : Who(goal, scorerTeam);
 
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:disallowed:{key}", LiveTimeToLive, team.LogoUrl);
     }

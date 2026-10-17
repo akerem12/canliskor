@@ -300,7 +300,7 @@ public class MatchNotifierTests
         Assert.Equal(3, _sender.Sent.Count);
         var disallowed = _sender.Sent[^1].Notification;
         Assert.Equal("🚫 GOAL DISALLOWED! Home 0 - 0 Away", disallowed.Title);
-        Assert.Equal("12' Player A (Home) · 1 - 0 → 0 - 0", disallowed.Body);
+        Assert.Equal("12' Player A (Home)", disallowed.Body);
         Assert.Equal(HomeCrest, disallowed.Icon);
     }
 
@@ -382,7 +382,7 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
         Assert.Single(_sender.Sent);
 
-        _time.Advance(MatchNotifier.UnnamedGoalAfter);
+        _time.Advance(MatchNotifier.NameWait);
         await _notifier.RunAsync(CancellationToken.None);
         var goal = _sender.Sent[^1].Notification;
         Assert.Equal("⚽ GOAL! Home 0 - 1 Away", goal.Title);
@@ -458,6 +458,47 @@ public class MatchNotifierTests
 
         Assert.Equal(2, _sender.Sent.Count);
         Assert.Equal("17' Taker (Home)", _sender.Sent[^1].Notification.Body);
+    }
+
+    [Fact]
+    public async Task A_miss_known_only_from_the_goalkeepers_save_waits_for_the_takers_name()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match, new MatchEvent(MatchEventType.PenaltyMissed, "17'", TeamSide.Home, null, null, Id: "keeper-entry")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        _time.Advance(TimeSpan.FromSeconds(15));
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Single(_sender.Sent);
+
+        // The taker's entry comes before the wait is over.
+        _provider.Returns(Detail(match, Event(MatchEventType.PenaltyMissed, "17'", TeamSide.Home, "Taker", "taker-entry")));
+        _time.Advance(TimeSpan.FromSeconds(15));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(2, _sender.Sent.Count);
+        Assert.Equal("17' Taker (Home)", _sender.Sent[^1].Notification.Body);
+    }
+
+    [Fact]
+    public async Task A_miss_whose_taker_never_comes_is_sent_with_the_team_after_the_wait()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match, new MatchEvent(MatchEventType.PenaltyMissed, "17'", TeamSide.Home, null, null, Id: "keeper-entry")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        _time.Advance(MatchNotifier.NameWait);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal("17' Home", _sender.Sent[^1].Notification.Body);
     }
 
     [Fact]
