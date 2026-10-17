@@ -4,8 +4,8 @@ namespace CanliSkor.Core.Notifications;
 
 /// <summary>
 /// The words of the notifications, in the subscriber's language: short, the match in the title, the minute and
-/// the player in the body. The score is in the title only where it is the news: a goal, a goal taken back,
-/// half-time and full-time. They are written here and not in the browser because they are shown while the site is
+/// the player in the body. The score is in the title only for a goal, a goal taken back, half-time, the second
+/// half's start and full-time. They are written here and not in the browser because they are shown while the site is
 /// closed. Team names are the provider's (English) spelling.
 /// </summary>
 public static class MatchNotificationText
@@ -52,9 +52,10 @@ public static class MatchNotificationText
 
     public static PushNotification SecondHalf(Match match, string language, string? icon)
     {
+        var score = Scoreline(match, match.Score ?? new Score(0, 0));
         var (title, body) = language == "tr"
-            ? ($"İkinci Yarı Başladı: {Teams(match)}", "Karşılaşmada ikinci yarı başladı.")
-            : ($"Second half: {Teams(match)}", "The second half is under way.");
+            ? ($"İkinci Yarı Başladı: {score}", "Karşılaşmada ikinci yarı başladı.")
+            : ($"Second half: {score}", "The second half is under way.");
 
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:second-half", LiveTimeToLive, icon);
     }

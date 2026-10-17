@@ -633,7 +633,7 @@ public class MatchNotifierTests
         [
             ("Maç Başladı: Home - Away", "Karşılaşmada ilk düdük çaldı."),
             ("Devre Arası: Home 1 - 1 Away", "İlk yarı sona erdi."),
-            ("İkinci Yarı Başladı: Home - Away", "Karşılaşmada ikinci yarı başladı."),
+            ("İkinci Yarı Başladı: Home 1 - 1 Away", "Karşılaşmada ikinci yarı başladı."),
             ("Maç Sonu: Home 2 - 1 Away", "Karşılaşma sona erdi."),
         ], _sender.Sent.Select(s => (s.Notification.Title, s.Notification.Body)));
         Assert.All(_sender.Sent, s => Assert.Equal(AwayCrest, s.Notification.Icon));
