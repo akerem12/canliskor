@@ -53,7 +53,7 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
 
     public async Task<MatchDetail?> GetMatchDetailAsync(string leagueCode, string matchId, CancellationToken cancellationToken = default)
     {
-        var url = $"{Uri.EscapeDataString(leagueCode)}/summary?event={Uri.EscapeDataString(matchId)}";
+        var url = Fresh($"{Uri.EscapeDataString(leagueCode)}/summary?event={Uri.EscapeDataString(matchId)}");
         var response = await GetOrNullAsync<EspnSummaryResponse>(url, $"summary for match '{matchId}' in '{leagueCode}'", cancellationToken);
 
         return response is null || EspnSummaryMapper.Map(response, leagueCode) is not { } detail ? null : EspnCorrections.Apply(detail);
@@ -173,11 +173,18 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
         return response ?? throw new FootballDataProviderException($"ESPN returned an empty {what}.");
     }
 
+    /// <summary>
+    /// ESPN lets caches serve the scoreboard and match summaries up to 7 seconds old, which on top of our own
+    /// polling made a goal or a whistle arrive half a minute late. A query value of our own makes every request
+    /// a new address, so the answer comes fresh. Only for the scoreboards and summaries we poll ourselves.
+    /// </summary>
+    internal static string Fresh(string url) => $"{url}&_={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+
     /// <param name="espnDate">The date in ESPN's (US Eastern) calendar.</param>
     /// <param name="date">The Istanbul date being assembled.</param>
     private async Task<LeagueScoreboard> FetchEspnDayAsync(string leagueCode, DateOnly espnDate, DateOnly date, CancellationToken cancellationToken)
     {
-        var url = $"{Uri.EscapeDataString(leagueCode)}/scoreboard?dates={espnDate.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}";
+        var url = Fresh($"{Uri.EscapeDataString(leagueCode)}/scoreboard?dates={espnDate.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}");
 
         EspnScoreboardResponse? response;
         try

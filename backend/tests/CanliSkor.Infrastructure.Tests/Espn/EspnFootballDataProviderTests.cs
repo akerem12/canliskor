@@ -19,7 +19,7 @@ public class EspnFootballDataProviderTests
 
         Assert.Equal(
             ["https://espn.test/soccer/tur.1/scoreboard?dates=20260919", "https://espn.test/soccer/tur.1/scoreboard?dates=20260920"],
-            handler.RequestUris.Select(u => u.ToString()));
+            handler.RequestUris.Select(WithoutCacheBuster));
         Assert.Equal(4, scoreboard.Matches.Count); // same response twice: no duplicates
         Assert.Equal(new DateOnly(2026, 9, 20), scoreboard.Date);
     }
@@ -77,7 +77,7 @@ public class EspnFootballDataProviderTests
 
         var detail = await CreateProvider(handler).GetMatchDetailAsync("esp.1", "401882858");
 
-        Assert.Equal("https://espn.test/soccer/esp.1/summary?event=401882858", Assert.Single(handler.RequestUris).ToString());
+        Assert.Equal("https://espn.test/soccer/esp.1/summary?event=401882858", WithoutCacheBuster(Assert.Single(handler.RequestUris)));
         Assert.Equal("401882858", detail?.Match.Id);
     }
 
@@ -215,4 +215,15 @@ public class EspnFootballDataProviderTests
             return Task.FromResult(respond(request));
         }
     }
+
+    [Fact]
+    public void Polled_addresses_get_a_value_of_their_own_so_no_cache_answers_them()
+    {
+        var url = EspnFootballDataProvider.Fresh("tur.1/scoreboard?dates=20261017");
+
+        Assert.Matches(@"^tur\.1/scoreboard\?dates=20261017&_=\d{13}$", url);
+    }
+
+    /// <summary>The address without the value that keeps caches out (see <see cref="EspnFootballDataProvider.Fresh"/>).</summary>
+    private static string WithoutCacheBuster(Uri uri) => System.Text.RegularExpressions.Regex.Replace(uri.ToString(), @"&_=\d+$", "");
 }
