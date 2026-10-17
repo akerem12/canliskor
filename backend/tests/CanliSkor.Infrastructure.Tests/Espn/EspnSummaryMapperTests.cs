@@ -127,6 +127,33 @@ public class EspnSummaryMapperTests
     }
 
     [Fact]
+    public void A_miss_entered_twice_as_the_takers_miss_and_the_goalkeepers_save_is_one_miss()
+    {
+        // Fenerbahçe - Alanyaspor as ESPN had it in the end; the commentary gives names only, no ids.
+        var summary = FixtureLoader.LoadSummary("summary-esp1-finished.json");
+        EspnCommentary Line(string id, string type, string team, string player, string text) => new(
+            new EspnCommentaryPlay(id, new EspnKeyEventType(type), new EspnClock("17'", 1000), new EspnCommentaryTeam(team),
+                [new EspnParticipant(new EspnAthlete(player))]),
+            text);
+        var commentary = new List<EspnCommentary>
+        {
+            Line("1", "penalty---missed", "Valencia", "Hugo Duro", "Hugo Duro (Valencia) Penalty - Missed at 17'"),
+            Line("2", "penalty---saved", "Real Sociedad", "Alex Remiro", "Alex Remiro (Real Sociedad) Penalty - Saved at 17'"),
+        };
+        var rosters = new List<EspnRoster>
+        {
+            new("away", null, null, [new EspnRosterEntry(true, "1", new EspnAthlete("Álex Remiro", "1"), new EspnPosition("G"), false, false, null, null, null)]),
+        };
+
+        var missed = EspnSummaryMapper.Map(summary with { Commentary = commentary, Rosters = rosters }, "esp.1")!.Events
+            .Where(e => e.Type == MatchEventType.PenaltyMissed)
+            .ToList();
+
+        var only = Assert.Single(missed);
+        Assert.Equal((TeamSide.Home, "Hugo Duro"), (only.Side, only.Player));
+    }
+
+    [Fact]
     public void A_penalty_given_comes_from_the_commentary_for_the_team_that_was_fouled()
     {
         // Valencia (home) against Real Sociedad (away).

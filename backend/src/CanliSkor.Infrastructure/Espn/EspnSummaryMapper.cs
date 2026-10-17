@@ -50,16 +50,18 @@ internal static partial class EspnSummaryMapper
         // The header carries no odds; the summary has them in a section of its own.
         match = match with { Odds = EspnOddsMapper.Map(response.Pickcenter) };
 
-        // Who keeps goal for each side today, to tell a saved penalty's taker from the goalkeeper who saved it.
-        var goalkeepers = (response.Rosters ?? [])
-            .SelectMany(r => r.Roster ?? [])
-            .Where(e => e.Position?.Abbreviation == "G" && !string.IsNullOrEmpty(e.Athlete?.Id))
-            .Select(e => e.Athlete!.Id!)
-            .ToHashSet();
+        // Who keeps goal for each side today, to tell a saved penalty's taker from the goalkeeper who saved it. By
+        // id, and by name too: the commentary names its players without their ids.
+        var keepers = (response.Rosters ?? []).SelectMany(r => r.Roster ?? []).Where(e => e.Position?.Abbreviation == "G").ToList();
+        var keeperIds = keepers.Select(e => e.Athlete?.Id).OfType<string>().Where(id => id.Length > 0).ToHashSet();
+        var keeperNames = keepers.Select(e => e.Athlete?.DisplayName).OfType<string>().Select(Plain).Where(n => n.Length > 0).ToHashSet();
+        bool IsGoalkeeper(EspnAthlete? athlete) =>
+            athlete is not null && (athlete.Id is { Length: > 0 } id ? keeperIds.Contains(id) : athlete.DisplayName is { } name && keeperNames.Contains(Plain(name)));
 
         var events = MergeInOrder(
             (response.KeyEvents ?? []).Select(e => (Event: MapEvent(e, match), e.Clock?.Value)),
-            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match, goalkeepers) ?? MapPenaltyAwarded(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
+            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match, IsGoalkeeper) ?? MapPenaltyAwarded(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
+        events = OnePerMissedPenalty(events);
 
         return new MatchDetail(
             match,
@@ -126,6 +128,33 @@ internal static partial class EspnSummaryMapper
         }
 
         return [.. merged.Select(e => e.Event!)];
+    }
+
+    /// <summary>
+    /// ESPN can enter one missed penalty twice: as the taker's miss and, a few minutes later and under another id,
+    /// as the goalkeeper's save (Fenerbahçe - Alanyaspor, both at 17'). One team can't take two penalties at the
+    /// same moment of the match, so misses of the same team at the same clock are one; the entry naming the taker
+    /// is kept, in the place of the first.
+    /// </summary>
+    private static List<MatchEvent> OnePerMissedPenalty(List<MatchEvent> events)
+    {
+        var result = new List<MatchEvent>();
+        foreach (var matchEvent in events)
+        {
+            var same = matchEvent.Type == MatchEventType.PenaltyMissed
+                ? result.FindIndex(e => e.Type == MatchEventType.PenaltyMissed && e.Side == matchEvent.Side && e.Clock == matchEvent.Clock)
+                : -1;
+            if (same < 0)
+            {
+                result.Add(matchEvent);
+            }
+            else if (result[same].Player is null && matchEvent.Player is not null)
+            {
+                result[same] = matchEvent;
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -197,8 +226,8 @@ internal static partial class EspnSummaryMapper
     /// who saved it ("Paulo Victor (Alanyaspor) Penalty - Saved at 17'", first entered as Mason Greenwood of
     /// Fenerbahçe). A goalkeeper of the line-ups is no taker: then the other team missed, taker unknown.
     /// </remarks>
-    /// <param name="goalkeepers">The ids of both teams' goalkeepers in this match.</param>
-    private static MatchEvent? MapMissedPenalty(EspnCommentaryPlay? play, Match match, IReadOnlySet<string> goalkeepers)
+    /// <param name="isGoalkeeper">True for either team's goalkeeper in this match.</param>
+    private static MatchEvent? MapMissedPenalty(EspnCommentaryPlay? play, Match match, Func<EspnAthlete?, bool> isGoalkeeper)
     {
         if (play?.Type?.Type is not ("penalty---saved" or "penalty---missed" or "penalty---hit-woodwork")
             || string.IsNullOrEmpty(play.Clock?.DisplayValue))
@@ -214,7 +243,7 @@ internal static partial class EspnSummaryMapper
         }
 
         var named = play.Participants?.ElementAtOrDefault(0)?.Athlete;
-        var savedByGoalkeeper = named?.Id is { } namedId && goalkeepers.Contains(namedId);
+        var savedByGoalkeeper = isGoalkeeper(named);
         if (savedByGoalkeeper)
         {
             side = side == TeamSide.Home ? TeamSide.Away : TeamSide.Home;

@@ -440,6 +440,27 @@ public class MatchNotifierTests
     }
 
     [Fact]
+    public async Task A_missed_penalty_entered_again_under_another_id_is_not_sent_again()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match, Event(MatchEventType.PenaltyMissed, "17'", TeamSide.Home, "Taker", "taker-entry")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // Later the goalkeeper's save of the same penalty, a new entry: the same miss.
+        _provider.Returns(Detail(match, new MatchEvent(MatchEventType.PenaltyMissed, "17'", TeamSide.Home, null, null, Id: "keeper-entry")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(2, _sender.Sent.Count);
+        Assert.Equal("17' Taker (Home)", _sender.Sent[^1].Notification.Body);
+    }
+
+    [Fact]
     public async Task Yellow_cards_and_substitutions_are_not_notified()
     {
         var match = Playing(InPlay("1'"));
