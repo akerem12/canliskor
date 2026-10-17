@@ -50,9 +50,16 @@ internal static partial class EspnSummaryMapper
         // The header carries no odds; the summary has them in a section of its own.
         match = match with { Odds = EspnOddsMapper.Map(response.Pickcenter) };
 
+        // Who keeps goal for each side today, to tell a saved penalty's taker from the goalkeeper who saved it.
+        var goalkeepers = (response.Rosters ?? [])
+            .SelectMany(r => r.Roster ?? [])
+            .Where(e => e.Position?.Abbreviation == "G" && !string.IsNullOrEmpty(e.Athlete?.Id))
+            .Select(e => e.Athlete!.Id!)
+            .ToHashSet();
+
         var events = MergeInOrder(
             (response.KeyEvents ?? []).Select(e => (Event: MapEvent(e, match), e.Clock?.Value)),
-            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c, match) ?? MapPenaltyAwarded(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
+            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match, goalkeepers) ?? MapPenaltyAwarded(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
 
         return new MatchDetail(
             match,
@@ -151,11 +158,6 @@ internal static partial class EspnSummaryMapper
             Id: !string.IsNullOrEmpty(line.Play?.Id) ? line.Play.Id : line.Sequence is { } sequence ? $"commentary:{sequence}" : null);
     }
 
-    [GeneratedRegex(@"\) Penalty - Saved at ")]
-    private static partial Regex ShortSaveLinePattern();
-
-    private static readonly Regex ShortSaveLine = ShortSaveLinePattern();
-
     [GeneratedRegex(@"^Penalty conceded by (?<player>.+?) \((?<team>[^)]+)\)")]
     private static partial Regex PenaltyConcededPattern();
 
@@ -190,13 +192,14 @@ internal static partial class EspnSummaryMapper
         .Select(char.ToLowerInvariant));
 
     /// <remarks>
-    /// The full commentary (Premier League, LaLiga, ...) names the taker: "Penalty saved. Enzo Le Fée (Sunderland)
-    /// right footed shot saved ...". The short one of some leagues (Süper Lig) gives the save to the goalkeeper:
-    /// "Paulo Victor (Alanyaspor) Penalty - Saved at 17'", so there the other team missed and the taker is unknown.
+    /// The play names the taker and his team ("Penalty saved. Enzo Le Fée (Sunderland) right footed shot saved
+    /// ...") - or, in the short commentary of some leagues and sometimes only after a correction, the goalkeeper
+    /// who saved it ("Paulo Victor (Alanyaspor) Penalty - Saved at 17'", first entered as Mason Greenwood of
+    /// Fenerbahçe). A goalkeeper of the line-ups is no taker: then the other team missed, taker unknown.
     /// </remarks>
-    private static MatchEvent? MapMissedPenalty(EspnCommentary line, Match match)
+    /// <param name="goalkeepers">The ids of both teams' goalkeepers in this match.</param>
+    private static MatchEvent? MapMissedPenalty(EspnCommentaryPlay? play, Match match, IReadOnlySet<string> goalkeepers)
     {
-        var play = line.Play;
         if (play?.Type?.Type is not ("penalty---saved" or "penalty---missed" or "penalty---hit-woodwork")
             || string.IsNullOrEmpty(play.Clock?.DisplayValue))
         {
@@ -210,13 +213,14 @@ internal static partial class EspnSummaryMapper
             return null;
         }
 
-        var savedByGoalkeeper = play.Type.Type == "penalty---saved" && ShortSaveLine.IsMatch(line.Text ?? "");
+        var named = play.Participants?.ElementAtOrDefault(0)?.Athlete;
+        var savedByGoalkeeper = named?.Id is { } namedId && goalkeepers.Contains(namedId);
         if (savedByGoalkeeper)
         {
             side = side == TeamSide.Home ? TeamSide.Away : TeamSide.Home;
         }
 
-        var taker = savedByGoalkeeper ? null : play.Participants?.ElementAtOrDefault(0)?.Athlete;
+        var taker = savedByGoalkeeper ? null : named;
         return new MatchEvent(
             MatchEventType.PenaltyMissed,
             play.Clock.DisplayValue,

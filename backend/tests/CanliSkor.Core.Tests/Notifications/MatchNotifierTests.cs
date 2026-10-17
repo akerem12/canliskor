@@ -215,7 +215,7 @@ public class MatchNotifierTests
         // The subscriber's own team is the away side.
         Assert.Equal(AwayCrest, kickoff.Icon);
 
-        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
+        _provider.Returns(Scored(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
         for (var round = 0; round < 3; round++)
         {
             _time.Advance(TimeSpan.FromSeconds(15));
@@ -238,7 +238,7 @@ public class MatchNotifierTests
         Subscribe(matchIds: [match.Id], language: "tr");
         await _notifier.RunAsync(CancellationToken.None);
 
-        _provider.Returns(Detail(match,
+        _provider.Returns(Scored(match,
             Event(MatchEventType.PenaltyGoal, "10'", TeamSide.Home, "P1", "e1"),
             // Scored by a home player, so it counts for the away team.
             Event(MatchEventType.OwnGoal, "20'", TeamSide.Away, "P2", "e2"),
@@ -353,7 +353,7 @@ public class MatchNotifierTests
     }
 
     [Fact]
-    public async Task A_real_brace_is_two_goals()
+    public async Task Two_quick_goals_by_one_player_are_two_goals_when_the_score_says_so()
     {
         var match = Playing(InPlay("1'"));
         _provider.Returns(Detail(match));
@@ -362,11 +362,60 @@ public class MatchNotifierTests
 
         _provider.Returns(Detail(match with { Score = new Score(2, 0) },
             Event(MatchEventType.Goal, "17'", TeamSide.Home, "Player A", "a"),
-            Event(MatchEventType.Goal, "24'", TeamSide.Home, "Player A", "b")));
+            Event(MatchEventType.Goal, "19'", TeamSide.Home, "Player A", "b")));
         _time.Advance(TimeSpan.FromMinutes(1));
         await _notifier.RunAsync(CancellationToken.None);
 
         Assert.Equal(["⚽ GOAL! Home 1 - 0 Away", "⚽ GOAL! Home 2 - 0 Away"], _sender.Sent.Skip(1).Select(s => s.Notification.Title));
+    }
+
+    [Fact]
+    public async Task A_goal_the_score_has_but_no_entry_names_is_announced_without_scorer_after_a_while()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match with { Score = new Score(0, 1) }));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Single(_sender.Sent);
+
+        _time.Advance(MatchNotifier.UnnamedGoalAfter);
+        await _notifier.RunAsync(CancellationToken.None);
+        var goal = _sender.Sent[^1].Notification;
+        Assert.Equal("⚽ GOAL! Home 0 - 1 Away", goal.Title);
+        Assert.Equal("Away", goal.Body);
+        Assert.Equal(AwayCrest, goal.Icon);
+
+        // The entry comes after all: no second notification for the same goal.
+        _provider.Returns(Scored(match, Event(MatchEventType.Goal, "20'", TeamSide.Away, "Player B", "g1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Equal(2, _sender.Sent.Count);
+    }
+
+    [Fact]
+    public async Task A_goal_entry_waits_for_the_score_and_is_named_once_it_counts()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // The entry is there before the score: not counted yet.
+        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Single(_sender.Sent);
+
+        // The scoreboard shows the goal, so the detail is loaded again.
+        _time.Advance(TimeSpan.FromSeconds(15));
+        Playing(match with { Score = new Score(1, 0) });
+        _provider.Returns(Scored(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
+        await _notifier.RunAsync(CancellationToken.None);
+        Assert.Equal("12' Player A (Home)", _sender.Sent[^1].Notification.Body);
     }
 
     [Fact]
@@ -437,12 +486,12 @@ public class MatchNotifierTests
         Subscribe(teamIds: ["1"]);
         await _notifier.RunAsync(CancellationToken.None);
 
-        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
+        _provider.Returns(Scored(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
         _time.Advance(TimeSpan.FromMinutes(1));
         await _notifier.RunAsync(CancellationToken.None);
 
         // The provider credits the goal to someone else a minute later: same event, same id.
-        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "13'", TeamSide.Home, "Player C", "g1")));
+        _provider.Returns(Scored(match, Event(MatchEventType.Goal, "13'", TeamSide.Home, "Player C", "g1")));
         _time.Advance(TimeSpan.FromMinutes(1));
         await _notifier.RunAsync(CancellationToken.None);
 
@@ -453,14 +502,14 @@ public class MatchNotifierTests
     public async Task Someone_who_follows_later_gets_new_events_but_not_old_ones()
     {
         var match = Playing(InPlay("1'"));
-        _provider.Returns(Detail(match, Event(MatchEventType.Goal, "2'", TeamSide.Home, "Player A", "g1")));
+        _provider.Returns(Scored(match, Event(MatchEventType.Goal, "2'", TeamSide.Home, "Player A", "g1")));
         Subscribe(teamIds: ["1"]);
         await _notifier.RunAsync(CancellationToken.None);
         Assert.Equal(2, _sender.Sent.Count);
 
         _time.Advance(EventNewsForAndABit);
         Subscribe(matchIds: [match.Id], endpoint: "https://fcm.googleapis.com/fcm/send/late");
-        _provider.Returns(Detail(match,
+        _provider.Returns(Scored(match,
             Event(MatchEventType.Goal, "2'", TeamSide.Home, "Player A", "g1"),
             Event(MatchEventType.Goal, "14'", TeamSide.Away, "Player B", "g2")));
         await _notifier.RunAsync(CancellationToken.None);
@@ -572,6 +621,14 @@ public class MatchNotifierTests
         new(type, clock, side, player, null, Id: id);
 
     private static MatchDetail Detail(Match match, params MatchEvent[] events) => new(match, events, []);
+
+    /// <summary>The detail with the score its goals make, as the provider sends it.</summary>
+    private static MatchDetail Scored(Match match, params MatchEvent[] events)
+    {
+        bool IsGoal(MatchEvent e) => e.Type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal;
+        var score = new Score(events.Count(e => IsGoal(e) && e.Side == TeamSide.Home), events.Count(e => IsGoal(e) && e.Side == TeamSide.Away));
+        return Detail(match with { Score = score }, events);
+    }
 
     private Match Playing(params Match[] matches)
     {

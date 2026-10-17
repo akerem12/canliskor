@@ -49,10 +49,10 @@ public sealed partial class MatchNotifier(
     private static readonly Score NoGoals = new(0, 0);
 
     /// <summary>
-    /// Two goals of the same team and scorer this close together are one goal the provider entered twice (seen on
-    /// Fenerbahçe - Alanyaspor: one goal as 17' and 19'). A real brace this quick is rarer than that mistake.
+    /// A goal the score already has is announced without its scorer once its entry is this late. Usually the entry
+    /// comes within seconds, and is waited for so the notification can say who scored.
     /// </summary>
-    public const int DuplicateGoalMinutes = 3;
+    public static readonly TimeSpan UnnamedGoalAfter = TimeSpan.FromSeconds(30);
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -121,6 +121,7 @@ public sealed partial class MatchNotifier(
                 }
 
                 live = log.StartLiveMatch(match.Id, known.Events.Select(EventKey), now, sawKickoff: false);
+                await NotifyEventsAsync(match, known, live, followers, now, silently: true, cancellationToken);
             }
         }
 
@@ -151,34 +152,7 @@ public sealed partial class MatchNotifier(
         var detail = await DetailAsync(match, cancellationToken);
         if (detail is not null)
         {
-            foreach (var (matchEvent, score) in WithRunningScore(WithoutDuplicateGoals(detail.Events)))
-            {
-                if (!IsNotified(matchEvent.Type))
-                {
-                    continue;
-                }
-
-                var key = EventKey(matchEvent);
-                if (IsGoal(matchEvent.Type) && IsAnotherEntryOfAnAnnouncedGoal(live, key, matchEvent))
-                {
-                    continue;
-                }
-
-                if (now - live.FirstSeen(key, now) > EventNewsFor)
-                {
-                    continue;
-                }
-
-                await SendAsync($"event:{match.Id}:{key}", followers,
-                    s => MatchNotificationText.Event(match, matchEvent, score, key, s.Language)!, now, cancellationToken);
-                if (IsGoal(matchEvent.Type))
-                {
-                    live.AnnouncedGoals[key] = matchEvent;
-                    live.GoalEntries[key] = key;
-                }
-            }
-
-            await NotifyDisallowedGoalsAsync(match, detail, live, followers, now, cancellationToken);
+            await NotifyEventsAsync(match, detail, live, followers, now, silently: false, cancellationToken);
         }
 
         // After the goals, so the final score comes last.
@@ -208,83 +182,132 @@ public sealed partial class MatchNotifier(
     }
 
     /// <summary>
-    /// An announced goal that is gone from the events was taken back. Only believed when the events add up to the
-    /// score they came with, so a detail that is briefly incomplete or behind doesn't take goals away.
+    /// The events of a match in play, in order. Goals go by the score that comes with the events: an entry beyond
+    /// it is a goal entered twice (or one the score hasn't caught up with yet) and isn't counted, a goal the
+    /// score has without an entry is announced without its scorer once <see cref="UnnamedGoalAfter"/> has passed,
+    /// and a goal is taken back only when the score goes down, whatever happens to its entry. The provider's entries
+    /// come and go (entered twice, removed, entered again); the score is what it settles on.
     /// </summary>
-    private async Task NotifyDisallowedGoalsAsync(
-        Match match, MatchDetail detail, LiveMatchLog live, List<PushSubscriber> followers, DateTimeOffset now, CancellationToken cancellationToken)
+    /// <param name="silently">Only take note of what is there (the server started mid-match): it is no news.</param>
+    private async Task NotifyEventsAsync(
+        Match match, MatchDetail detail, LiveMatchLog live, List<PushSubscriber> followers, DateTimeOffset now, bool silently, CancellationToken cancellationToken)
     {
         var score = detail.Match.Score ?? NoGoals;
-        var counted = WithRunningScore(WithoutDuplicateGoals(detail.Events)).LastOrDefault().Score ?? NoGoals;
-        if (counted != score)
+        // The score at each point of the match: goal entries so far, as far as the score has room for them.
+        var counted = NoGoals;
+        foreach (var matchEvent in detail.Events)
         {
-            return;
+            var key = EventKey(matchEvent);
+            var isNews = !silently && now - live.FirstSeen(key, now) <= EventNewsFor;
+
+            if (IsGoal(matchEvent.Type))
+            {
+                var side = matchEvent.Side;
+                if (Goals(counted, side) >= Goals(score, side))
+                {
+                    continue;
+                }
+
+                counted = WithGoal(counted, side);
+                var known = live.AnnouncedGoals.Any(g => g.Key == key);
+                if (!known)
+                {
+                    // Another entry of a goal already announced: the score has no room for one more.
+                    if (live.AnnouncedGoals.Count(g => g.Side == side) >= Goals(score, side))
+                    {
+                        continue;
+                    }
+
+                    live.AnnouncedGoals.Add(new AnnouncedGoal(key, side, matchEvent));
+                }
+
+                // Sent again each round while news: SendAsync skips whoever has it and retries a phone it couldn't reach.
+                if (isNews)
+                {
+                    var after = counted;
+                    await SendAsync($"event:{match.Id}:{key}", followers,
+                        s => MatchNotificationText.Event(match, matchEvent, after, key, s.Language)!, now, cancellationToken);
+                }
+
+                continue;
+            }
+
+            if (IsNotified(matchEvent.Type) && isNews)
+            {
+                var at = counted;
+                await SendAsync($"event:{match.Id}:{key}", followers,
+                    s => MatchNotificationText.Event(match, matchEvent, at, key, s.Language)!, now, cancellationToken);
+            }
         }
 
-        // Taken back only when none of its entries is left.
-        var keys = detail.Events.Select(EventKey).ToHashSet();
-        foreach (var (key, goal) in live.AnnouncedGoals.ToList())
+        foreach (var side in new[] { TeamSide.Home, TeamSide.Away })
         {
-            var entries = live.GoalEntries.Where(e => e.Value == key).Select(e => e.Key).ToList();
-            if (!entries.Any(keys.Contains))
-            {
-                live.AnnouncedGoals.Remove(key);
-                entries.ForEach(e => live.GoalEntries.Remove(e));
-                live.DisallowedGoals[key] = (goal, now);
-            }
+            await NotifyUnnamedGoalsAsync(match, side, score, live, followers, now, silently, cancellationToken);
+            TakeBackGoals(side, score, detail, live, now);
         }
 
         foreach (var (key, (goal, at)) in live.DisallowedGoals)
         {
-            if (now - at <= EventNewsFor)
+            if (!silently && now - at <= EventNewsFor)
             {
                 await SendAsync($"disallowed:{match.Id}:{key}", followers,
-                    s => MatchNotificationText.GoalDisallowed(match, goal, score, key, s.Language), now, cancellationToken);
+                    s => MatchNotificationText.GoalDisallowed(match, goal.Side, goal.Goal, score, key, s.Language), now, cancellationToken);
             }
         }
+    }
+
+    /// <summary>Goals the score has that no entry names yet: waited for a while, then announced without a scorer.</summary>
+    private async Task NotifyUnnamedGoalsAsync(
+        Match match, TeamSide side, Score score, LiveMatchLog live, List<PushSubscriber> followers, DateTimeOffset now, bool silently, CancellationToken cancellationToken)
+    {
+        var missing = Goals(score, side) - live.AnnouncedGoals.Count(g => g.Side == side);
+        if (missing <= 0)
+        {
+            live.UnnamedGoalSince.Remove(side);
+            return;
+        }
+
+        var since = live.UnnamedGoalSince.TryGetValue(side, out var first) ? first : live.UnnamedGoalSince[side] = now;
+        if (!silently && now - since < UnnamedGoalAfter)
+        {
+            return;
+        }
+
+        for (var i = 0; i < missing; i++)
+        {
+            var number = live.AnnouncedGoals.Count(g => g.Side == side) + 1;
+            var key = $"score:{side}:{number}";
+            live.AnnouncedGoals.Add(new AnnouncedGoal(key, side, null));
+            if (!silently)
+            {
+                await SendAsync($"event:{match.Id}:{key}", followers,
+                    s => MatchNotificationText.GoalWithoutScorer(match, side, score, key, s.Language), now, cancellationToken);
+            }
+        }
+
+        live.UnnamedGoalSince.Remove(side);
     }
 
     /// <summary>
-    /// True if the goal is an announced one entered again (or entered anew after its first entry was removed):
-    /// it is then remembered as an entry of that goal, and not announced a second time.
+    /// When the score has fewer goals for a side than were announced, the difference was taken back (VAR): the
+    /// goals whose entries are gone, else the latest ones.
     /// </summary>
-    private static bool IsAnotherEntryOfAnAnnouncedGoal(LiveMatchLog live, string key, MatchEvent goal)
+    private static void TakeBackGoals(TeamSide side, Score score, MatchDetail detail, LiveMatchLog live, DateTimeOffset now)
     {
-        if (live.GoalEntries.TryGetValue(key, out var announced))
+        var present = detail.Events.Select(EventKey).ToHashSet();
+        while (live.AnnouncedGoals.Count(g => g.Side == side) > Goals(score, side))
         {
-            return announced != key;
+            var ofSide = live.AnnouncedGoals.Where(g => g.Side == side).ToList();
+            var goal = ofSide.LastOrDefault(g => !present.Contains(g.Key)) ?? ofSide[^1];
+            live.AnnouncedGoals.Remove(goal);
+            live.DisallowedGoals[goal.Key] = (goal, now);
         }
-
-        var same = live.AnnouncedGoals.FirstOrDefault(g => SameGoal(g.Value, goal)).Key;
-        if (same is null)
-        {
-            return false;
-        }
-
-        live.GoalEntries[key] = same;
-        return true;
     }
 
-    /// <summary>The events with every goal entered more than once kept only once (its first entry).</summary>
-    private static List<MatchEvent> WithoutDuplicateGoals(IReadOnlyList<MatchEvent> events)
-    {
-        var kept = new List<MatchEvent>();
-        foreach (var matchEvent in events)
-        {
-            if (!kept.Any(k => SameGoal(k, matchEvent)))
-            {
-                kept.Add(matchEvent);
-            }
-        }
+    private static int Goals(Score score, TeamSide side) => side == TeamSide.Home ? score.Home : score.Away;
 
-        return kept;
-    }
-
-    /// <summary>Both goals, for the same team, by the same (known) player, within <see cref="DuplicateGoalMinutes"/>.</summary>
-    private static bool SameGoal(MatchEvent a, MatchEvent b) =>
-        IsGoal(a.Type) && IsGoal(b.Type) && a.Side == b.Side
-        && (a.PlayerId ?? a.Player) is { } scorer && scorer == (b.PlayerId ?? b.Player)
-        && Minute(a.Clock) is { } first && Minute(b.Clock) is { } second && Math.Abs(first - second) <= DuplicateGoalMinutes;
+    private static Score WithGoal(Score score, TeamSide side) =>
+        side == TeamSide.Home ? score with { Home = score.Home + 1 } : score with { Away = score.Away + 1 };
 
     private static bool IsGoal(MatchEventType type) => type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal;
 
@@ -297,21 +320,6 @@ public sealed partial class MatchNotifier(
     /// </summary>
     internal static string EventKey(MatchEvent matchEvent) =>
         matchEvent.Id ?? $"{matchEvent.Type}:{matchEvent.Side}:{matchEvent.PlayerId ?? matchEvent.Player}:{matchEvent.Clock}";
-
-    /// <summary>Each event with the score right after it. Events are in match order.</summary>
-    private static IEnumerable<(MatchEvent Event, Score Score)> WithRunningScore(IReadOnlyList<MatchEvent> events)
-    {
-        var score = NoGoals;
-        foreach (var matchEvent in events)
-        {
-            if (IsGoal(matchEvent.Type))
-            {
-                score = matchEvent.Side == TeamSide.Home ? score with { Home = score.Home + 1 } : score with { Away = score.Away + 1 };
-            }
-
-            yield return (matchEvent, score);
-        }
-    }
 
     /// <summary>The minute a clock shows, without added time: 57 for "57'", 45 for "45'+2'"; null without a clock.</summary>
     private static int? Minute(string? clock)

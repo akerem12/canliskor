@@ -100,19 +100,30 @@ public static class MatchNotificationText
     }
 
     /// <summary>A goal that was announced and then taken back (VAR, offside): the corrected score, and the change.</summary>
-    /// <param name="goal">The goal as it was announced.</param>
+    /// <param name="side">The team the goal counted for.</param>
+    /// <param name="goal">The goal as it was announced; null if it was announced without its scorer.</param>
     /// <param name="score">The score now, without it.</param>
-    public static PushNotification GoalDisallowed(Match match, MatchEvent goal, Score score, string key, string language)
+    public static PushNotification GoalDisallowed(Match match, TeamSide side, MatchEvent? goal, Score score, string key, string language)
     {
         var tr = language == "tr";
-        var team = goal.Side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
-        var scorerTeam = goal.Type == MatchEventType.OwnGoal ? (goal.Side == TeamSide.Home ? match.AwayTeam : match.HomeTeam) : team;
-        var before = goal.Side == TeamSide.Home ? score with { Home = score.Home + 1 } : score with { Away = score.Away + 1 };
+        var team = side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
+        var scorerTeam = goal?.Type == MatchEventType.OwnGoal ? (side == TeamSide.Home ? match.AwayTeam : match.HomeTeam) : team;
+        var before = side == TeamSide.Home ? score with { Home = score.Home + 1 } : score with { Away = score.Away + 1 };
 
         var title = tr ? $"🚫 GOL İPTAL! {Scoreline(match, score)}" : $"🚫 GOAL DISALLOWED! {Scoreline(match, score)}";
-        var body = $"{Who(goal, scorerTeam)} · {before.Home} - {before.Away} → {score.Home} - {score.Away}";
+        var who = goal is null ? team.ShortName : Who(goal, scorerTeam);
+        var body = $"{who} · {before.Home} - {before.Away} → {score.Home} - {score.Away}";
 
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:disallowed:{key}", LiveTimeToLive, team.LogoUrl);
+    }
+
+    /// <summary>A goal the score shows but the provider hasn't said who scored.</summary>
+    public static PushNotification GoalWithoutScorer(Match match, TeamSide side, Score score, string key, string language)
+    {
+        var team = side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
+        var title = Goal(language == "tr", Scoreline(match, score));
+
+        return new PushNotification(title, team.ShortName, MatchUrl(match), $"{match.Id}:event:{key}", LiveTimeToLive, team.LogoUrl);
     }
 
     private static string Goal(bool tr, string scoreline) => tr ? $"⚽ GOL! {scoreline}" : $"⚽ GOAL! {scoreline}";

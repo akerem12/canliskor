@@ -101,19 +101,29 @@ public class EspnSummaryMapperTests
         Assert.Equal(before, events.ToList().IndexOf(penalty));
     }
 
-    [Fact]
-    public void A_save_in_the_short_commentary_is_the_other_teams_miss()
+    [Theory]
+    // ESPN's first entry on Fenerbahçe - Alanyaspor named the taker...
+    [InlineData("Mason Greenwood", "7", "Valencia", TeamSide.Home, "Mason Greenwood")]
+    // ...and its correction the goalkeeper who saved it: then the other team missed, taker unknown.
+    [InlineData("Alex Remiro", "1", "Real Sociedad", TeamSide.Home, null)]
+    public void A_saved_penalty_is_the_takers_team_s_miss_whoever_the_entry_names(
+        string named, string namedId, string namedTeam, TeamSide missedBy, string? taker)
     {
-        // Süper Lig's short commentary credits the save to the goalkeeper: here Real Sociedad's, so Valencia missed.
         var summary = FixtureLoader.LoadSummary("summary-esp1-finished.json");
         var save = new EspnCommentary(
-            new EspnCommentaryPlay("s1", new EspnKeyEventType("penalty---saved"), new EspnClock("17'", 1000), new EspnCommentaryTeam("Real Sociedad"),
-                [new EspnParticipant(new EspnAthlete("Alex Remiro", "1"))]),
-            "Alex Remiro (Real Sociedad) Penalty - Saved at 17'");
+            new EspnCommentaryPlay("s1", new EspnKeyEventType("penalty---saved"), new EspnClock("17'", 1000), new EspnCommentaryTeam(namedTeam),
+                [new EspnParticipant(new EspnAthlete(named, namedId))]),
+            $"{named} ({namedTeam}) Penalty - Saved at 17'");
+        // Real Sociedad (away) have Alex Remiro in goal.
+        var rosters = new List<EspnRoster>
+        {
+            new("away", null, null, [new EspnRosterEntry(true, "1", new EspnAthlete("Alex Remiro", "1"), new EspnPosition("G"), false, false, null, null, null)]),
+        };
 
-        var missed = EspnSummaryMapper.Map(summary with { Commentary = [save] }, "esp.1")!.Events.Single(e => e.Type == MatchEventType.PenaltyMissed);
+        var missed = EspnSummaryMapper.Map(summary with { Commentary = [save], Rosters = rosters }, "esp.1")!.Events
+            .Single(e => e.Type == MatchEventType.PenaltyMissed);
 
-        Assert.Equal(new MatchEvent(MatchEventType.PenaltyMissed, "17'", TeamSide.Home, null, null, Id: "s1"), missed);
+        Assert.Equal((missedBy, taker), (missed.Side, missed.Player));
     }
 
     [Fact]

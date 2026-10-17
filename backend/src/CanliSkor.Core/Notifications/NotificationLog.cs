@@ -106,16 +106,16 @@ public sealed class LiveMatchLog
     public DateTimeOffset? FullTimeAt { get; set; }
 
     /// <summary>
-    /// Goals that were announced, by the key of the entry that was announced, so one taken back can be announced
-    /// too. A goal the provider entered more than once is one goal: see <see cref="GoalEntries"/>.
+    /// The goals announced (or, after a restart, already scored), in order. As many per side as the score has
+    /// goals: the score decides how many goals there are, the events only who scored them.
     /// </summary>
-    public Dictionary<string, MatchEvent> AnnouncedGoals { get; } = [];
+    public List<AnnouncedGoal> AnnouncedGoals { get; } = [];
 
-    /// <summary>Every entry of an announced goal, by event key: the key of the entry that was announced.</summary>
-    public Dictionary<string, string> GoalEntries { get; } = [];
+    /// <summary>Announced goals the score took back, by the announced goal's key: the goal and when that was seen.</summary>
+    public Dictionary<string, (AnnouncedGoal Goal, DateTimeOffset At)> DisallowedGoals { get; } = [];
 
-    /// <summary>Announced goals that were taken back, by the announced entry's key: the goal and when that was seen.</summary>
-    public Dictionary<string, (MatchEvent Goal, DateTimeOffset At)> DisallowedGoals { get; } = [];
+    /// <summary>Since when the score has had more goals for a side than its events name, per side.</summary>
+    public Dictionary<TeamSide, DateTimeOffset> UnnamedGoalSince { get; } = [];
 
     /// <summary>When the event was first seen; now, if this is the first time.</summary>
     public DateTimeOffset FirstSeen(string eventKey, DateTimeOffset now)
@@ -128,3 +128,7 @@ public sealed class LiveMatchLog
         return seen;
     }
 }
+
+/// <param name="Key">The event key of the goal's entry; for a goal the score had before its entry came, one of our own.</param>
+/// <param name="Goal">Who scored and when; null if the score had the goal and no entry did.</param>
+public sealed record AnnouncedGoal(string Key, TeamSide Side, MatchEvent? Goal);
