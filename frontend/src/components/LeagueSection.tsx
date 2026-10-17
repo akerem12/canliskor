@@ -1,15 +1,10 @@
 import type { LeagueMatches } from '../api/types'
 import { FavoriteButton } from '../favorites/FavoriteButton'
 import { useI18n } from '../i18n/useI18n'
+import { countryFlagUrl } from '../leagueCountry'
 import type { Route } from '../route'
 import { formatTime } from '../time'
 import { MatchRow } from './MatchRow'
-
-/** "tur.1" → Türkiye's flag. Competitions across countries ("uefa.champions") have none. */
-function countryFlagUrl(leagueCode: string): string | null {
-  const country = /^([a-z]{3})\.\d+$/.exec(leagueCode)?.[1]
-  return country ? `https://a.espncdn.com/i/teamlogos/countries/500/${country}.png` : null
-}
 
 interface Props {
   league: LeagueMatches

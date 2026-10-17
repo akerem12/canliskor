@@ -1,16 +1,18 @@
-import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode, Ref } from 'react'
+import { Fragment, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { getCompetitions, getMatchDetail, getStandings, getTeam } from '../api/http'
 import type { Match, TeamProfile } from '../api/types'
 import { isInPlay } from '../api/types'
 import { useFetch } from '../api/useFetch'
 import { FavoriteButton } from '../favorites/FavoriteButton'
 import type { Dictionary } from '../i18n/en'
+import { leagueCountryName } from '../i18n/names'
 import { useI18n } from '../i18n/useI18n'
+import { countryFlagUrl, domesticLeague, leagueCountryCode } from '../leagueCountry'
 import type { Route } from '../route'
 import { formGuide, isFriendly, resultFor } from '../teamForm'
 import { seasonTimeline, timelinePoints } from '../teamTimeline'
-import { formatMatchDate, formatTime } from '../time'
+import { formatMatchDate, formatNumericDate, formatTime } from '../time'
 import { tabFromUrl, writeTabToUrl } from '../urlTab'
 import { EmptyState, Skeleton, TeamLogo } from './common'
 import { OddsStrip } from './Odds'
@@ -25,7 +27,7 @@ interface Props {
   onBack: () => void
 }
 
-const tabs = ['overview', 'fixtures', 'standings', 'squad'] as const
+const tabs = ['fixtures', 'standings', 'squad'] as const
 type Tab = typeof tabs[number]
 
 /** What a fixture row needs to know about the competitions around it. */
@@ -51,8 +53,8 @@ function middleText(match: Match, t: Dictionary): string {
 }
 
 /**
- * One team: who they are and their form up top, then the next match, the whole season's matches, the table
- * around them and the squad, each on a tab of its own.
+ * One team: who they are, their form and the matches either side of now up top, then the whole season's matches,
+ * the table around them and the squad, each on a tab of its own.
  */
 export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }: Props) {
   const { t } = useI18n()
@@ -61,7 +63,7 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
   const followed = useFetch('competitions', getCompetitions)
   const league = standings.data?.leagueName ?? leagueName ?? leagueCode
 
-  const [tab, setTab] = useState<Tab>(() => tabFromUrl(tabs) ?? 'overview')
+  const [tab, setTab] = useState<Tab>(() => tabFromUrl(tabs) ?? 'fixtures')
   // A tab is built when it is first opened and kept from then on, so coming back to it loads nothing again.
   const [opened, setOpened] = useState<ReadonlySet<Tab>>(() => new Set([tab]))
   const pickTab = (picked: Tab) => {
@@ -91,7 +93,7 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
 
       {team.data && (
         <>
-          <Hero profile={team.data} league={league} competitions={competitions} />
+          <Hero profile={team.data} league={league} competitions={competitions} onNavigate={onNavigate} />
 
           <nav className="tabs team__tabs" aria-label={t.team.sections}>
             {tabs.map(known => (
@@ -106,8 +108,7 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
             ))}
           </nav>
 
-          {panel('overview', <Overview profile={team.data} competitions={competitions} onNavigate={onNavigate} />)}
-          {panel('fixtures', <Fixtures profile={team.data} competitions={competitions} active={tab === 'fixtures'} onNavigate={onNavigate} />)}
+          {panel('fixtures', <Fixtures profile={team.data} competitions={competitions} onNavigate={onNavigate} />)}
           {panel('standings', (
             <section className="panel" aria-label={t.leagues.standings}>
               <h3 className="panel__title">{t.team.standingsOf(league)}</h3>
@@ -130,53 +131,41 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
   )
 }
 
-/** Stays above the tabs: crest, name, where the team plays, and how its last official matches went. */
-function Hero({ profile, league, competitions }: { profile: TeamProfile; league: string; competitions: Competitions }) {
-  const { t } = useI18n()
-  const stadium = [profile.stadium, profile.stadiumCity].filter(Boolean).join(', ')
-  const others = profile.competitions.map(c => c.name).filter(name => name !== league)
+/**
+ * Stays above the tabs. On the left who the team is: crest, name, country, its last official results, where it
+ * plays and its league. On the right the match before and the match after, each a way into it.
+ */
+function Hero({ profile, league, competitions, onNavigate }: {
+  profile: TeamProfile
+  league: string
+  competitions: Competitions
+  onNavigate: (route: Route) => void
+}) {
+  const { t, language } = useI18n()
+  const home = domesticLeague([profile.leagueCode, ...profile.competitions.map(c => c.code)])
+  const homeCountry = home ? leagueCountryCode(home) : null
+  const country = profile.isNationalTeam ? t.team.nationalTeam : homeCountry && leagueCountryName(homeCountry, language)
+  const homeFlag = home ? countryFlagUrl(home) : null
+  // The summary names the team's own league, with its place in it.
+  const leagueLine = profile.standingSummary ?? (home ? competitionName(competitions, home) : league)
   const guide = formGuide(profile.recentMatches, profile.team.id, match => isFriendlyIn(competitions, match))
+  const previous = profile.recentMatches.find(match => match.status === 'Finished')
+  const next = profile.upcomingMatches.at(0)
 
   return (
     <div className="hero">
-      <TeamLogo team={profile.team} size={72} />
-      <div className="hero__text">
-        <h2>
-          {profile.team.name}
-          <FavoriteButton
-            team={{ leagueCode: profile.leagueCode, teamId: profile.team.id, name: profile.team.name, logoUrl: profile.team.logoUrl }}
-            size="large"
-          />
-        </h2>
-        <p className="hero__line">{profile.standingSummary ?? league}</p>
-        <dl className="hero__facts">
-          <div>
-            <dt>{t.team.competition}</dt>
-            <dd>{league}</dd>
-          </div>
-          {others.length > 0 && (
-            <div>
-              <dt>{t.team.alsoIn}</dt>
-              <dd>{others.join(', ')}</dd>
-            </div>
+      <div className="hero__identity">
+        <span className="hero__crest"><TeamLogo team={profile.team} size={80} /></span>
+        <div className="hero__text">
+          <h2 className="hero__name">{profile.team.name}</h2>
+          {country && (
+            <span className="hero__country">
+              {homeFlag && !profile.isNationalTeam && <Flag url={homeFlag} className="hero__flag" />}
+              {country}
+            </span>
           )}
-          {stadium && (
-            <div>
-              <dt>{t.team.stadium}</dt>
-              <dd>{stadium}</dd>
-            </div>
-          )}
-          {profile.isNationalTeam && (
-            <div>
-              <dt>{t.team.type}</dt>
-              <dd>{t.team.nationalTeam}</dd>
-            </div>
-          )}
-        </dl>
-        {guide.length > 0 && (
-          <div className="hero__form" aria-label={t.team.form}>
-            <span className="hero__form-label">{t.team.formOfficial}</span>
-            <ol className="form" aria-label={t.team.formLabel}>
+          {guide.length > 0 && (
+            <ol className="form hero__form" aria-label={`${t.team.formOfficial} · ${t.team.formLabel}`}>
               {guide.map(({ match, result }) => (
                 <li
                   key={match.id}
@@ -187,73 +176,124 @@ function Hero({ profile, league, competitions }: { profile: TeamProfile; league:
                 </li>
               ))}
             </ol>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      <div className="hero__meta">
+        {profile.stadium && (
+          <span title={[profile.stadium, profile.stadiumCity].filter(Boolean).join(', ')} aria-label={t.team.stadium}>
+            <span aria-hidden>🏟️</span> {profile.stadium}
+          </span>
+        )}
+        <span>
+          {homeFlag ? <Flag url={homeFlag} className="hero__league-icon" /> : <span aria-hidden>🏆</span>} {leagueLine}
+        </span>
+      </div>
+
+      {(previous || next) && (
+        <div className="hero__matches">
+          {previous && (
+            <MatchCard label={t.team.previousMatch} match={previous} competitions={competitions} onNavigate={onNavigate} />
+          )}
+          {next && (
+            <MatchCard
+              label={isInPlay(next.status) ? t.team.liveNow : t.team.nextMatch}
+              match={next}
+              competitions={competitions}
+              onNavigate={onNavigate}
+            />
+          )}
+        </div>
+      )}
+
+      <span className="hero__favorite">
+        <FavoriteButton
+          team={{ leagueCode: profile.leagueCode, teamId: profile.team.id, name: profile.team.name, logoUrl: profile.team.logoUrl }}
+          size="large"
+        />
+      </span>
     </div>
   )
 }
 
-/** The next match, large; the season's other matches are on the Fixtures tab. */
-function Overview({ profile, competitions, onNavigate }: { profile: TeamProfile; competitions: Competitions; onNavigate: (route: Route) => void }) {
-  const { t } = useI18n()
-  const next = profile.upcomingMatches.at(0)
-  // With nothing left to play (the season is over), the last match takes its place.
-  const last = next ? undefined : profile.recentMatches.at(0)
-  const shown = next ?? last
-  const title = next ? t.team.nextMatch : t.team.lastMatch
-
-  return shown ? (
-    <section className="panel" aria-label={title}>
-      <h3 className="panel__title">{title}</h3>
-      <NextMatch match={shown} competitions={competitions} onNavigate={onNavigate} />
-    </section>
-  ) : (
-    <section className="panel">
-      <EmptyState icon="📅" title={t.team.noFixtures} hint={t.team.noFixturesHint} />
-    </section>
-  )
+/** A country's flag as a small round icon; nothing at all if the image doesn't load. */
+function Flag({ url, className }: { url: string; className: string }) {
+  const [broken, setBroken] = useState(false)
+  return broken ? null : <img className={className} src={url} alt="" loading="lazy" onError={() => setBroken(true)} />
 }
 
-/** The team's next match, large: who, when, where, and the odds once they are posted. */
-function NextMatch({ match, competitions, onNavigate }: { match: Match; competitions: Competitions; onNavigate: (route: Route) => void }) {
+/**
+ * One match in little room, for the header: competition, day and time (or the minute), both teams and the score.
+ * The loser of a finished match is dimmed. A match still to start shows its odds once they are posted.
+ */
+function MatchCard({ label, match, competitions, onNavigate }: {
+  label: string
+  match: Match
+  competitions: Competitions
+  onNavigate: (route: Route) => void
+}) {
   const { t } = useI18n()
   const canOpen = competitions.followed?.has(match.leagueCode) ?? true
-  // Odds are for matches still to start, and only matches of followed competitions can be asked about.
+  const live = isInPlay(match.status)
+  const finished = match.status === 'Finished'
+  const flag = countryFlagUrl(match.leagueCode)
   const mayHaveOdds = match.status === 'Scheduled' && competitions.followed?.has(match.leagueCode) === true
+  const { home, away } = match.score ?? { home: null, away: null }
+  const lost = (side: 'home' | 'away') =>
+    finished && home !== null && away !== null && (side === 'home' ? home < away : away < home)
+  const when = live ? (match.status === 'HalfTime' ? t.status.halfTimeShort : match.clock)
+    : finished ? t.status.fullTimeShort
+    : match.status === 'Postponed' ? t.status.postponedShort
+    : match.status === 'Cancelled' ? t.status.cancelledShort
+    : formatTime(match.kickoff)
+
+  const team = (side: 'home' | 'away') => {
+    const which = side === 'home' ? match.homeTeam : match.awayTeam
+    const goals = side === 'home' ? home : away
+    return (
+      <span className={lost(side) ? 'match-card__team match-card__team--lost' : 'match-card__team'}>
+        <TeamLogo team={which} size={16} />
+        <span className="match-card__name">{which.shortName}</span>
+        {goals !== null && <span className="match-card__goals">{goals}</span>}
+      </span>
+    )
+  }
 
   const content = (
     <>
-      <span className="next__meta">
-        <CompetitionLabel match={match} competitions={competitions} /> · {formatMatchDate(match.kickoff, t)}
+      <span className="match-card__league">
+        {flag && <Flag url={flag} className="match-card__flag" />}
+        <span className="match-card__league-name"><CompetitionLabel match={match} competitions={competitions} /></span>
       </span>
-      <span className="next__teams">
-        <span className="next__team">
-          <TeamLogo team={match.homeTeam} size={40} />
-          <span>{match.homeTeam.name}</span>
+      <span className="match-card__body">
+        <span className={live ? 'match-card__when match-card__when--live' : 'match-card__when'}>
+          {!live && <span>{formatNumericDate(match.kickoff, t)}</span>}
+          <span>{live ? `● ${when}` : when}</span>
         </span>
-        <span className="fixture__score">{middleText(match, t)}</span>
-        <span className="next__team">
-          <TeamLogo team={match.awayTeam} size={40} />
-          <span>{match.awayTeam.name}</span>
+        <span className="match-card__teams">
+          {team('home')}
+          {team('away')}
         </span>
       </span>
-      {match.venue && <span className="next__venue">📍 {match.venue}</span>}
     </>
   )
-  const className = isInPlay(match.status) ? 'next__match fixture--live' : 'next__match'
 
   return (
-    <div className="next">
+    <div className="match-card">
+      <span className="match-card__label">{label}</span>
       {canOpen ? (
-        <button className={className} onClick={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}>
+        <button
+          className="match-card__box"
+          onClick={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}
+        >
           {content}
         </button>
       ) : (
-        <div className={`${className} next__match--static`} title={t.team.notFollowed}>{content}</div>
+        <div className="match-card__box match-card__box--static" title={t.team.notFollowed}>{content}</div>
       )}
       {match.odds
-        ? <OddsStrip odds={match.odds} />
+        ? <OddsStrip odds={match.odds} className="match-card__odds" />
         : mayHaveOdds && <NextMatchOdds match={match} />}
     </div>
   )
@@ -263,91 +303,75 @@ function NextMatch({ match, competitions, onNavigate }: { match: Match; competit
 function NextMatchOdds({ match }: { match: Match }) {
   const detail = useFetch(`match/${match.leagueCode}/${match.id}`, () => getMatchDetail(match.leagueCode, match.id))
   const odds = detail.data?.match.odds
-  return odds ? <OddsStrip odds={odds} /> : null
+  return odds ? <OddsStrip odds={odds} className="match-card__odds" /> : null
 }
 
 /**
  * The whole season in one list, oldest at the top: results (friendlies included), the match in play, then every
- * match still to come; all competitions together or one at a time. Showing the tab puts the match in play or the
- * latest result at the top of the screen with what comes next below it; earlier results are a scroll up.
- * @param active The tab is the one shown: the list is only measured and scrolled to then.
+ * match still to come; all competitions together or one at a time. It starts at the match in play or the latest
+ * result, with what comes next below it; earlier results are a tap away, a few at a time, above it.
  */
-function Fixtures({ profile, competitions, active, onNavigate }: {
+function Fixtures({ profile, competitions, onNavigate }: {
   profile: TeamProfile
   competitions: Competitions
-  active: boolean
   onNavigate: (route: Route) => void
 }) {
   const { t } = useI18n()
   const [filter, setFilter] = useState<string | null>(null)
+  const [earlierShown, setEarlierShown] = useState(0)
   const season = useMemo(() => seasonTimeline(profile.recentMatches, profile.upcomingMatches), [profile])
   const codes = [...new Set(season.map(match => match.leagueCode))]
   const shown = filter ? season.filter(match => match.leagueCode === filter) : season
   const { anchor, upcomingFrom } = timelinePoints(shown)
-  const anchorId = anchor === null ? null : shown[anchor].id
+  const from = Math.max(0, (anchor ?? 0) - earlierShown)
   const played = shown.filter(match => match.status === 'Finished').length
   const anyFriendly = shown.some(match => isFriendlyIn(competitions, match))
-
-  const anchorRef = useRef<HTMLLIElement>(null)
-  const roomRef = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
-    const row = anchorRef.current
-    const room = roomRef.current
-    if (!active || !room) return
-    room.style.height = '0px'
-    if (!row) return
-
-    // Below the header that stays at the top of the screen.
-    const header = document.querySelector('.appbar')?.getBoundingClientRect().height ?? 0
-    const top = row.getBoundingClientRect().top + window.scrollY - header - 8
-    // With few matches to come the page may end too soon for the row to reach the top: make room below.
-    const short = top + window.innerHeight - document.documentElement.scrollHeight
-    if (short > 0) room.style.height = `${short}px`
-    window.scrollTo({ top, behavior: 'instant' })
-  }, [active, anchorId, filter])
+  const pick = (code: string | null) => {
+    setFilter(code)
+    setEarlierShown(0)
+  }
 
   return (
-    <>
-      <section className="panel" aria-label={t.team.fixtures}>
-        <h3 className="panel__title">{t.team.fixturesTitle(played, shown.length - played)}</h3>
-        {season.length === 0 ? (
-          <EmptyState icon="📅" title={t.team.noFixtures} hint={t.team.noFixturesHint} />
-        ) : (
-          <>
-            {codes.length > 1 && (
-              <div className="quickbar team__filter" role="group" aria-label={t.team.filterByCompetition}>
-                <button className={filter === null ? 'chip chip--active' : 'chip'} aria-pressed={filter === null} onClick={() => setFilter(null)}>
-                  {t.team.allCompetitions}
+    <section className="panel" aria-label={t.team.fixtures}>
+      <h3 className="panel__title">{t.team.fixturesTitle(played, shown.length - played)}</h3>
+      {season.length === 0 ? (
+        <EmptyState icon="📅" title={t.team.noFixtures} hint={t.team.noFixturesHint} />
+      ) : (
+        <>
+          {codes.length > 1 && (
+            <div className="quickbar team__filter" role="group" aria-label={t.team.filterByCompetition}>
+              <button className={filter === null ? 'chip chip--active' : 'chip'} aria-pressed={filter === null} onClick={() => pick(null)}>
+                {t.team.allCompetitions}
+              </button>
+              {codes.map(code => (
+                <button key={code} className={filter === code ? 'chip chip--active' : 'chip'} aria-pressed={filter === code} onClick={() => pick(code)}>
+                  {competitionName(competitions, code)}
                 </button>
-                {codes.map(code => (
-                  <button key={code} className={filter === code ? 'chip chip--active' : 'chip'} aria-pressed={filter === code} onClick={() => setFilter(code)}>
-                    {competitionName(competitions, code)}
-                  </button>
-                ))}
-              </div>
-            )}
-            <ul className="fixtures">
-              {shown.map((match, i) => (
-                <Fragment key={match.id}>
-                  {i === upcomingFrom && <li className="fixtures__divider">{t.team.upcomingDivider}</li>}
-                  <FixtureRow
-                    match={match}
-                    teamId={profile.team.id}
-                    competitions={competitions}
-                    rowRef={i === anchor ? anchorRef : undefined}
-                    onNavigate={onNavigate}
-                  />
-                </Fragment>
               ))}
-            </ul>
-            {anyFriendly && <p className="panel__note">{t.team.friendlyNote}</p>}
-          </>
-        )}
-      </section>
-      <div ref={roomRef} aria-hidden />
-    </>
+            </div>
+          )}
+          {from > 0 && (
+            <button className="fixtures__earlier" onClick={() => setEarlierShown(count => count + EarlierPerTap)}>
+              ↑ {t.team.earlierMatches(from)}
+            </button>
+          )}
+          <ul className="fixtures">
+            {shown.slice(from).map((match, offset) => (
+              <Fragment key={match.id}>
+                {from + offset === upcomingFrom && <li className="fixtures__divider">{t.team.upcomingDivider}</li>}
+                <FixtureRow match={match} teamId={profile.team.id} competitions={competitions} onNavigate={onNavigate} />
+              </Fragment>
+            ))}
+          </ul>
+          {anyFriendly && <p className="panel__note">{t.team.friendlyNote}</p>}
+        </>
+      )}
+    </section>
   )
 }
+
+/** How many earlier results each tap on "Earlier matches" brings in. */
+const EarlierPerTap = 10
 
 /** The competition's name, or a "Friendly" tag in its place for a match that doesn't count. */
 function CompetitionLabel({ match, competitions }: { match: Match; competitions: Competitions }) {
@@ -360,11 +384,10 @@ function CompetitionLabel({ match, competitions }: { match: Match; competitions:
 }
 
 /** One result or fixture of the team's. Leads to the match if its competition is one the site follows. */
-function FixtureRow({ match, teamId, competitions, rowRef, onNavigate }: {
+function FixtureRow({ match, teamId, competitions, onNavigate }: {
   match: Match
   teamId: string
   competitions: Competitions
-  rowRef?: Ref<HTMLLIElement>
   onNavigate: (route: Route) => void
 }) {
   const { t } = useI18n()
@@ -403,7 +426,7 @@ function FixtureRow({ match, teamId, competitions, rowRef, onNavigate }: {
   const className = isInPlay(match.status) ? 'fixture fixture--live' : 'fixture'
 
   return (
-    <li ref={rowRef}>
+    <li>
       {canOpen ? (
         <button className={className} onClick={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}>
           {content}
@@ -423,10 +446,11 @@ function TeamSkeleton() {
   return (
     <div aria-busy aria-label={t.team.loading}>
       <div className="hero">
-        <span className="skeleton skeleton--circle" style={{ width: 72, height: 72 }} />
-        <div className="hero__text"><Skeleton rows={3} /></div>
+        <div className="hero__identity">
+          <span className="skeleton skeleton--circle hero__crest" style={{ width: 72, height: 72 }} />
+          <div className="hero__text"><Skeleton rows={3} /></div>
+        </div>
       </div>
-      <section className="panel"><Skeleton rows={3} /></section>
       <section className="panel"><Skeleton rows={6} /></section>
     </div>
   )

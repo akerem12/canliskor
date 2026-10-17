@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  countryNameTr, leagueNameTr, localizeNames, searchQueryFor, sourceLeagueName, sourceTeamName,
+  countryNameTr, leagueCountryName, leagueNameTr, localizeNames, searchQueryFor, sourceLeagueName, sourceTeamName,
   standingSummaryTr, tablePhraseTr, teamNameTr,
 } from './names'
 
@@ -37,6 +37,20 @@ describe('Turkish names', () => {
     expect(tablePhraseTr('Something new')).toBe('Something new')
     expect(standingSummaryTr('2nd in Turkish Super Lig')).toBe('Süper Lig · 2. sıra')
     expect(standingSummaryTr('1st in Group A1')).toBe('A1 Grubu · 1. sıra')
+  })
+})
+
+describe('leagueCountryName', () => {
+  it('names the country of a domestic league in either language', () => {
+    expect(leagueCountryName('tur', 'tr')).toBe('Türkiye')
+    expect(leagueCountryName('esp', 'tr')).toBe('İspanya')
+    expect(leagueCountryName('esp', 'en')).toBe('Spain')
+    expect(leagueCountryName('eng', 'tr')).toBe('İngiltere')
+    expect(leagueCountryName('eng', 'en')).toBe('England')
+  })
+
+  it('knows nothing of a code it has no country for', () => {
+    expect(leagueCountryName('xyz', 'en')).toBeNull()
   })
 })
 

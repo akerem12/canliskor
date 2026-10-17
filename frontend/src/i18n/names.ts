@@ -193,6 +193,34 @@ export function countryNameTr(name: string): string {
   return countryNames().turkish.get(fold(name)) ?? name
 }
 
+/** The country part of a domestic competition's code ("tur" of "tur.1") → its region code, for the browser's names. */
+const leagueCountries: Readonly<Record<string, string>> = {
+  tur: 'TR', esp: 'ES', ger: 'DE', ita: 'IT', fra: 'FR', ned: 'NL', por: 'PT', bel: 'BE', aut: 'AT', sui: 'CH',
+  gre: 'GR', den: 'DK', nor: 'NO', swe: 'SE', rus: 'RU', ukr: 'UA', cze: 'CZ', pol: 'PL', cro: 'HR', srb: 'RS',
+  rou: 'RO', irl: 'IE', arg: 'AR', bra: 'BR', col: 'CO', chi: 'CL', uru: 'UY', par: 'PY', per: 'PE', ecu: 'EC',
+  bol: 'BO', ven: 'VE', mex: 'MX', usa: 'US', jpn: 'JP', kor: 'KR', chn: 'CN', ksa: 'SA', aus: 'AU', rsa: 'ZA',
+}
+
+/** The home nations have leagues of their own but no region code. */
+const homeNationLeagues: Readonly<Record<string, string>> = {
+  eng: 'England', sco: 'Scotland', wal: 'Wales', nir: 'Northern Ireland',
+}
+
+/** The country a domestic competition belongs to, in the site's language ("tur" → "Türkiye"); null if not known. */
+export function leagueCountryName(countryCode: string, language: Language): string | null {
+  const nation = homeNationLeagues[countryCode]
+  if (nation) return language === 'tr' ? countryNameTr(nation) : nation
+
+  const region = leagueCountries[countryCode]
+  if (!region) return null
+  const override = language === 'tr' ? turkishCountryOverrides[region] : undefined
+  try {
+    return override ?? new Intl.DisplayNames(language, { type: 'region' }).of(region) ?? null
+  } catch {
+    return null
+  }
+}
+
 /** A club's Turkish name or spelling, or a national team's country in Turkish ("Norway U21" → "Norveç U21"). */
 export function teamNameTr(name: string): string {
   const club = clubByEnglish.get(name)
