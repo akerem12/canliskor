@@ -210,7 +210,7 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
 
         var (_, kickoff) = Assert.Single(_sender.Sent);
-        Assert.Equal("Kick-off: Home 0 - 0 Away", kickoff.Title);
+        Assert.Equal("Kick-off: Home - Away", kickoff.Title);
         Assert.Equal("The match is under way.", kickoff.Body);
         // The subscriber's own team is the away side.
         Assert.Equal(AwayCrest, kickoff.Icon);
@@ -249,11 +249,11 @@ public class MatchNotifierTests
 
         Assert.Equal(
         [
-            ("Maç Başladı: Home 0 - 0 Away", "Karşılaşmada ilk düdük çaldı."),
+            ("Maç Başladı: Home - Away", "Karşılaşmada ilk düdük çaldı."),
             ("⚽ GOL! Home 1 - 0 Away", "10' P1 (Home) (P)"),
             ("⚽ GOL! Home 1 - 1 Away", "20' P2 (Home) (K.K.)"),
-            ("❌ Penaltı Kaçtı! Home 1 - 1 Away", "45'+2' P3 (Home)"),
-            ("🟥 Kırmızı Kart! Away", "50' P4 (Home 1 - 1 Away)"),
+            ("❌ Penaltı Kaçtı! Home - Away", "45'+2' P3 (Home)"),
+            ("🟥 Kırmızı Kart! Home - Away", "50' P4 (Away)"),
         ], _sender.Sent.Select(s => (s.Notification.Title, s.Notification.Body)));
         // The own goal shows the crest of the team it counts for.
         Assert.Equal(AwayCrest, _sender.Sent[2].Notification.Icon);
@@ -272,7 +272,7 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
 
         var penalty = _sender.Sent[^1].Notification;
-        Assert.Equal("⚠️ Penaltı! Home 0 - 0 Away", penalty.Title);
+        Assert.Equal("⚠️ Penaltı! Home - Away", penalty.Title);
         Assert.Equal("34' Away penaltı kazandı", penalty.Body);
         Assert.Equal(AwayCrest, penalty.Icon);
     }
@@ -326,7 +326,7 @@ public class MatchNotifierTests
 
         Assert.Equal(
         [
-            "Kick-off: Home 0 - 0 Away",
+            "Kick-off: Home - Away",
             "⚽ GOAL! Home 1 - 0 Away",
             "🚫 GOAL DISALLOWED! Home 0 - 0 Away",
         ], _sender.Sent.Select(s => s.Notification.Title));
@@ -535,8 +535,8 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
 
         var (_, card) = Assert.Single(_sender.Sent);
-        Assert.Equal("🟥 Red card! Away", card.Title);
-        Assert.Equal("70' Player B (Home 1 - 0 Away)", card.Body);
+        Assert.Equal("🟥 Red card! Home - Away", card.Title);
+        Assert.Equal("70' Player B (Away)", card.Body);
         Assert.Equal(AwayCrest, card.Icon);
     }
 
@@ -631,9 +631,9 @@ public class MatchNotifierTests
 
         Assert.Equal(
         [
-            ("Maç Başladı: Home 0 - 0 Away", "Karşılaşmada ilk düdük çaldı."),
+            ("Maç Başladı: Home - Away", "Karşılaşmada ilk düdük çaldı."),
             ("Devre Arası: Home 1 - 1 Away", "İlk yarı sona erdi."),
-            ("İkinci Yarı Başladı: Home 1 - 1 Away", "Karşılaşmada ikinci yarı başladı."),
+            ("İkinci Yarı Başladı: Home - Away", "Karşılaşmada ikinci yarı başladı."),
             ("Maç Sonu: Home 2 - 1 Away", "Karşılaşma sona erdi."),
         ], _sender.Sent.Select(s => (s.Notification.Title, s.Notification.Body)));
         Assert.All(_sender.Sent, s => Assert.Equal(AwayCrest, s.Notification.Icon));

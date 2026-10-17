@@ -511,16 +511,16 @@ h1, h2 { margin: 0; }
 }
 .hero__identity { grid-area: identity; display: flex; align-items: center; gap: 14px; min-width: 0; }
 .hero__crest { flex: none; display: flex; }
-.hero__crest .logo { width: 72px; height: 72px; object-fit: contain; }
+.hero__crest .logo { width: 64px; height: 64px; object-fit: contain; }
 .hero__text { display: grid; justify-items: start; gap: 6px; min-width: 0; }
 .hero__name { margin: 0; font-size: 1.6rem; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
 .hero__country { display: inline-flex; align-items: center; gap: 7px; font-size: 0.9rem; font-weight: 500; }
 .hero__flag { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
-.hero .hero__form { margin: 2px 0 0; }
+.hero .hero__form { flex-wrap: wrap; margin: 2px 0 0; }
 .hero__meta { grid-area: meta; align-self: end; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 0.8rem; color: var(--muted); }
 .hero__meta > span { display: inline-flex; align-items: center; gap: 6px; }
 .hero__league-icon { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
-.hero__matches { grid-area: matches; display: grid; grid-template-columns: repeat(2, minmax(190px, 220px)); gap: 12px; margin-top: 30px; }
+.hero__matches { grid-area: matches; display: grid; grid-template-columns: repeat(2, minmax(180px, 200px)); gap: 12px; margin-top: 30px; }
 .hero__favorite { position: absolute; top: 10px; right: 10px; }
 .hero__favorite .star {
   display: grid; place-items: center; width: 36px; height: 36px; margin: 0; padding: 0;
@@ -539,9 +539,9 @@ h1, h2 { margin: 0; }
 .match-card__league { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 0.7rem; color: var(--muted); }
 .match-card__league-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .match-card__flag { flex: none; width: 14px; height: 14px; border-radius: 50%; object-fit: cover; }
-.match-card__body { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.match-card__body { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; }
 .match-card__when {
-  display: grid; gap: 4px; padding-right: 10px; border-right: 1px solid var(--border);
+  display: grid; gap: 4px; padding-right: 8px; border-right: 1px solid var(--border);
   font-size: 0.7rem; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums;
 }
 .match-card__when--live { color: var(--live); font-weight: 700; }

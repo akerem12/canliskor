@@ -3,8 +3,9 @@ using CanliSkor.Core.Domain;
 namespace CanliSkor.Core.Notifications;
 
 /// <summary>
-/// The words of the notifications, in the subscriber's language: short, the score in the title, the minute and
-/// the player in the body. They are written here and not in the browser because they are shown while the site is
+/// The words of the notifications, in the subscriber's language: short, the match in the title, the minute and
+/// the player in the body. The score is in the title only where it is the news: a goal, a goal taken back,
+/// half-time and full-time. They are written here and not in the browser because they are shown while the site is
 /// closed. Team names are the provider's (English) spelling.
 /// </summary>
 public static class MatchNotificationText
@@ -33,8 +34,8 @@ public static class MatchNotificationText
     public static PushNotification Kickoff(Match match, string language, string? icon)
     {
         var (title, body) = language == "tr"
-            ? ($"Maç Başladı: {Scoreline(match, new Score(0, 0))}", "Karşılaşmada ilk düdük çaldı.")
-            : ($"Kick-off: {Scoreline(match, new Score(0, 0))}", "The match is under way.");
+            ? ($"Maç Başladı: {Teams(match)}", "Karşılaşmada ilk düdük çaldı.")
+            : ($"Kick-off: {Teams(match)}", "The match is under way.");
 
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:kickoff", LiveTimeToLive, icon);
     }
@@ -51,10 +52,9 @@ public static class MatchNotificationText
 
     public static PushNotification SecondHalf(Match match, string language, string? icon)
     {
-        var score = Scoreline(match, match.Score ?? new Score(0, 0));
         var (title, body) = language == "tr"
-            ? ($"İkinci Yarı Başladı: {score}", "Karşılaşmada ikinci yarı başladı.")
-            : ($"Second half: {score}", "The second half is under way.");
+            ? ($"İkinci Yarı Başladı: {Teams(match)}", "Karşılaşmada ikinci yarı başladı.")
+            : ($"Second half: {Teams(match)}", "The second half is under way.");
 
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:second-half", LiveTimeToLive, icon);
     }
@@ -70,7 +70,7 @@ public static class MatchNotificationText
     }
 
     /// <summary>A goal, a penalty given or missed, or a red card, with the crest of the team it is about.</summary>
-    /// <param name="score">The score right after the event.</param>
+    /// <param name="score">The score right after the event; shown for goals only.</param>
     /// <param name="key">Tells the event apart from the others of the match (see <see cref="MatchNotifier"/>).</param>
     /// <returns>Null for events that aren't notified (yellow cards, substitutions).</returns>
     public static PushNotification? Event(Match match, MatchEvent matchEvent, Score score, string key, string language)
@@ -79,6 +79,7 @@ public static class MatchNotificationText
         var team = matchEvent.Side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
         var opponent = matchEvent.Side == TeamSide.Home ? match.AwayTeam : match.HomeTeam;
         var scoreline = Scoreline(match, score);
+        var teams = Teams(match);
 
         (string Title, string Body)? text = matchEvent.Type switch
         {
@@ -86,10 +87,9 @@ public static class MatchNotificationText
             MatchEventType.PenaltyGoal => (Goal(tr, scoreline), $"{Who(matchEvent, team)} {(tr ? "(P)" : "(pen)")}"),
             // Counted for the team it helps, but scored by a player of the other one.
             MatchEventType.OwnGoal => (Goal(tr, scoreline), $"{Who(matchEvent, opponent)} {(tr ? "(K.K.)" : "(OG)")}"),
-            MatchEventType.PenaltyMissed => (tr ? $"❌ Penaltı Kaçtı! {scoreline}" : $"❌ Penalty missed! {scoreline}", Who(matchEvent, team)),
-            MatchEventType.RedCard => (tr ? $"🟥 Kırmızı Kart! {team.ShortName}" : $"🟥 Red card! {team.ShortName}",
-                $"{Minute(matchEvent)}{matchEvent.Player ?? team.ShortName} ({scoreline})"),
-            MatchEventType.PenaltyAwarded => (tr ? $"⚠️ Penaltı! {scoreline}" : $"⚠️ Penalty! {scoreline}",
+            MatchEventType.PenaltyMissed => (tr ? $"❌ Penaltı Kaçtı! {teams}" : $"❌ Penalty missed! {teams}", Who(matchEvent, team)),
+            MatchEventType.RedCard => (tr ? $"🟥 Kırmızı Kart! {teams}" : $"🟥 Red card! {teams}", Who(matchEvent, team)),
+            MatchEventType.PenaltyAwarded => (tr ? $"⚠️ Penaltı! {teams}" : $"⚠️ Penalty! {teams}",
                 tr ? $"{Minute(matchEvent)}{team.ShortName} penaltı kazandı" : $"{Minute(matchEvent)}Penalty to {team.ShortName}"),
             _ => null,
         };
