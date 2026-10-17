@@ -1,5 +1,6 @@
 using CanliSkor.Core.Abstractions;
 using CanliSkor.Core.Domain;
+using CanliSkor.Core.Notifications;
 using CanliSkor.Core.Options;
 using CanliSkor.Core.Time;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ public sealed partial class ScoreboardPoller(
     IMatchUpdatePublisher publisher,
     LiveDetailRefresher detailRefresher,
     PollSchedule schedule,
+    NotificationSignal notificationSignal,
     IOptionsMonitor<FootballOptions> footballOptions,
     IOptionsMonitor<PollingOptions> pollingOptions,
     TimeProvider timeProvider,
@@ -111,6 +113,9 @@ public sealed partial class ScoreboardPoller(
         {
             return;
         }
+
+        // A goal, kickoff or whistle is notified right away, not at the notifier's next regular round.
+        notificationSignal.Raise();
 
         try
         {

@@ -3,12 +3,14 @@ using CanliSkor.Core.Notifications;
 namespace CanliSkor.Api.Workers;
 
 /// <summary>
-/// Thin hosting loop for <see cref="MatchNotifier"/>: every 15 seconds, so a goal is announced at most that long
-/// after the poller has it. A round without subscribers does nothing, and one with them reads the scoreboards and
+/// Thin hosting loop for <see cref="MatchNotifier"/>: right after every poll that changed a scoreboard (see
+/// <see cref="NotificationSignal"/>), so a goal or a whistle goes out as soon as the poller has it, and every 15
+/// seconds besides, for what no scoreboard shows (a red card, a penalty given, line-ups). A round without subscribers does nothing, and one with them reads the scoreboards and
 /// match details already in memory (a live match's details are reloaded at most once per poll interval).
 /// </summary>
 internal sealed partial class MatchNotificationWorker(
     IServiceScopeFactory scopeFactory,
+    NotificationSignal signal,
     TimeProvider timeProvider,
     ILogger<MatchNotificationWorker> logger) : BackgroundService
 {
@@ -18,6 +20,8 @@ internal sealed partial class MatchNotificationWorker(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            // Taken before the round: a change the poller reports during it starts the next one at once.
+            var changed = signal.Next;
             try
             {
                 // New scope per round, like the poller: the notifier's HTTP clients are short-lived by design.
@@ -30,7 +34,8 @@ internal sealed partial class MatchNotificationWorker(
                 LogRoundCrashed(ex);
             }
 
-            await Task.Delay(Interval, timeProvider, stoppingToken);
+            await Task.WhenAny(Task.Delay(Interval, timeProvider, stoppingToken), changed.WaitAsync(stoppingToken));
+            stoppingToken.ThrowIfCancellationRequested();
         }
     }
 

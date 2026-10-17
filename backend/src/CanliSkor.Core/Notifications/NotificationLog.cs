@@ -99,6 +99,9 @@ public sealed class LiveMatchLog
     /// <summary>When the match was seen going from play to half time; null if it wasn't (yet).</summary>
     public DateTimeOffset? HalfTimeAt { get; set; }
 
+    /// <summary>When the match was seen going from half time back to play; null if it wasn't (yet).</summary>
+    public DateTimeOffset? SecondHalfAt { get; set; }
+
     /// <summary>When the match was seen going from play to finished; null if it wasn't (yet).</summary>
     public DateTimeOffset? FullTimeAt { get; set; }
 

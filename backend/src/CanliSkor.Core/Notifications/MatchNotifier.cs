@@ -12,7 +12,7 @@ namespace CanliSkor.Core.Notifications;
 /// One round of match notifications. For every match about to kick off that a subscriber follows: the reminder
 /// half an hour before kickoff, and "line-ups are out" as soon as the provider has both starting elevens. For
 /// every followed match in play: the kickoff, then each goal, missed penalty and red card as it appears in the
-/// match's events, a penalty given, a goal taken back (VAR), half time and full time. Works from the scoreboards the poller keeps in the store, so a kickoff that was moved moves its
+/// match's events, a penalty given, a goal taken back (VAR), half time, the second half and full time. Works from the scoreboards the poller keeps in the store, so a kickoff that was moved moves its
 /// reminder, and a match postponed or cancelled gets none. Kept separate from the hosted service so it can be
 /// unit-tested.
 /// </summary>
@@ -126,6 +126,11 @@ public sealed partial class MatchNotifier(
             live.HalfTimeAt ??= now;
         }
 
+        if (before == MatchStatus.HalfTime && match.Status == MatchStatus.Live)
+        {
+            live.SecondHalfAt ??= now;
+        }
+
         if (before is (MatchStatus.Live or MatchStatus.HalfTime) && match.Status == MatchStatus.Finished)
         {
             live.FullTimeAt ??= now;
@@ -169,6 +174,12 @@ public sealed partial class MatchNotifier(
         {
             await SendAsync($"half-time:{match.Id}", followers,
                 s => MatchNotificationText.HalfTime(match, s.Language, CrestFor(s, match)), now, cancellationToken);
+        }
+
+        if (live.SecondHalfAt is { } secondHalf && now - secondHalf <= EventNewsFor)
+        {
+            await SendAsync($"second-half:{match.Id}", followers,
+                s => MatchNotificationText.SecondHalf(match, s.Language, CrestFor(s, match)), now, cancellationToken);
         }
 
         if (live.FullTimeAt is { } fullTime && now - fullTime <= EventNewsFor)

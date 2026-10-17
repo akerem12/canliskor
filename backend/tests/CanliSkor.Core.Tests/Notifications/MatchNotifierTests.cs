@@ -430,7 +430,7 @@ public class MatchNotifierTests
     }
 
     [Fact]
-    public async Task Announces_half_time_and_full_time_with_the_score()
+    public async Task Announces_half_time_the_second_half_and_full_time_with_the_score()
     {
         var match = Playing(InPlay("1'"));
         _provider.Returns(Detail(match));
@@ -457,6 +457,7 @@ public class MatchNotifierTests
         [
             ("Maç Başladı: Home 0 - 0 Away", "Karşılaşmada ilk düdük çaldı."),
             ("Devre Arası: Home 1 - 1 Away", "İlk yarı sona erdi."),
+            ("İkinci Yarı Başladı: Home 1 - 1 Away", "Karşılaşmada ikinci yarı başladı."),
             ("Maç Sonu: Home 2 - 1 Away", "Karşılaşma sona erdi."),
         ], _sender.Sent.Select(s => (s.Notification.Title, s.Notification.Body)));
         Assert.All(_sender.Sent, s => Assert.Equal(AwayCrest, s.Notification.Icon));

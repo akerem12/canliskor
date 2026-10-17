@@ -49,6 +49,16 @@ public static class MatchNotificationText
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:half-time", LiveTimeToLive, icon);
     }
 
+    public static PushNotification SecondHalf(Match match, string language, string? icon)
+    {
+        var score = Scoreline(match, match.Score ?? new Score(0, 0));
+        var (title, body) = language == "tr"
+            ? ($"İkinci Yarı Başladı: {score}", "Karşılaşmada ikinci yarı başladı.")
+            : ($"Second half: {score}", "The second half is under way.");
+
+        return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:second-half", LiveTimeToLive, icon);
+    }
+
     public static PushNotification FullTime(Match match, string language, string? icon)
     {
         var score = Scoreline(match, match.Score ?? new Score(0, 0));

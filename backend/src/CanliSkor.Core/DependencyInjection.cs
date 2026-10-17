@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<LiveDetailRefresher>();
         services.AddSingleton<PushSubscriberRegistry>();
         services.AddSingleton<NotificationLog>();
+        services.AddSingleton<NotificationSignal>();
         services.AddScoped<MatchNotifier>();
 
         return services;

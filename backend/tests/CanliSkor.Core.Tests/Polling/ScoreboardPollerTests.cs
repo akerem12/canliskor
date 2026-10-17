@@ -1,4 +1,5 @@
 using CanliSkor.Core.Domain;
+using CanliSkor.Core.Notifications;
 using CanliSkor.Core.Options;
 using CanliSkor.Core.Polling;
 using CanliSkor.Core.Services;
@@ -22,6 +23,7 @@ public class ScoreboardPollerTests
 
     private readonly MatchViewerRegistry _viewers = new();
     private readonly PollSchedule _schedule = new();
+    private readonly NotificationSignal _signal = new();
 
     private ScoreboardPoller CreatePoller(params string[] leagues) => new(
         _provider,
@@ -41,6 +43,7 @@ public class ScoreboardPollerTests
             _publisher,
             NullLogger<LiveDetailRefresher>.Instance),
         _schedule,
+        _signal,
         TestOptions.Leagues(leagues),
         new StaticOptionsMonitor<PollingOptions>(TestOptions.Polling()),
         _time,
@@ -183,6 +186,23 @@ public class ScoreboardPollerTests
         var change = Assert.Single(_publisher.Published);
         Assert.Equal(MatchChangeKind.Score, change.Kinds);
         Assert.Equal(new Score(1, 0), change.Match.Score);
+    }
+
+    [Fact]
+    public async Task A_change_wakes_the_notifier_and_no_change_does_not()
+    {
+        var match = Match(MatchStatus.Live, Now.AddMinutes(-20), score: new Score(0, 0));
+        await _store.SetAsync(new ScoreboardSnapshot(Scoreboard("tur.1", Today, match), Now.AddSeconds(-30)));
+        _provider.Returns(Scoreboard("tur.1", Today, match));
+        var quiet = _signal.Next;
+
+        await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+        Assert.False(quiet.IsCompleted);
+
+        _provider.Returns(Scoreboard("tur.1", Today, match with { Status = MatchStatus.HalfTime }));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await CreatePoller("tur.1").PollAsync(CancellationToken.None);
+        Assert.True(quiet.IsCompleted);
     }
 
     [Fact]
