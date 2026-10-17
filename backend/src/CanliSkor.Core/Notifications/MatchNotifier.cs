@@ -48,6 +48,12 @@ public sealed partial class MatchNotifier(
 
     private static readonly Score NoGoals = new(0, 0);
 
+    /// <summary>
+    /// Two goals of the same team and scorer this close together are one goal the provider entered twice (seen on
+    /// Fenerbahçe - Alanyaspor: one goal as 17' and 19'). A real brace this quick is rarer than that mistake.
+    /// </summary>
+    public const int DuplicateGoalMinutes = 3;
+
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var everyone = subscribers.All();
@@ -145,7 +151,7 @@ public sealed partial class MatchNotifier(
         var detail = await DetailAsync(match, cancellationToken);
         if (detail is not null)
         {
-            foreach (var (matchEvent, score) in WithRunningScore(detail.Events))
+            foreach (var (matchEvent, score) in WithRunningScore(WithoutDuplicateGoals(detail.Events)))
             {
                 if (!IsNotified(matchEvent.Type))
                 {
@@ -153,6 +159,11 @@ public sealed partial class MatchNotifier(
                 }
 
                 var key = EventKey(matchEvent);
+                if (IsGoal(matchEvent.Type) && IsAnotherEntryOfAnAnnouncedGoal(live, key, matchEvent))
+                {
+                    continue;
+                }
+
                 if (now - live.FirstSeen(key, now) > EventNewsFor)
                 {
                     continue;
@@ -163,6 +174,7 @@ public sealed partial class MatchNotifier(
                 if (IsGoal(matchEvent.Type))
                 {
                     live.AnnouncedGoals[key] = matchEvent;
+                    live.GoalEntries[key] = key;
                 }
             }
 
@@ -203,17 +215,23 @@ public sealed partial class MatchNotifier(
         Match match, MatchDetail detail, LiveMatchLog live, List<PushSubscriber> followers, DateTimeOffset now, CancellationToken cancellationToken)
     {
         var score = detail.Match.Score ?? NoGoals;
-        var counted = WithRunningScore(detail.Events).LastOrDefault().Score ?? NoGoals;
+        var counted = WithRunningScore(WithoutDuplicateGoals(detail.Events)).LastOrDefault().Score ?? NoGoals;
         if (counted != score)
         {
             return;
         }
 
+        // Taken back only when none of its entries is left.
         var keys = detail.Events.Select(EventKey).ToHashSet();
-        foreach (var (key, goal) in live.AnnouncedGoals.Where(g => !keys.Contains(g.Key)).ToList())
+        foreach (var (key, goal) in live.AnnouncedGoals.ToList())
         {
-            live.AnnouncedGoals.Remove(key);
-            live.DisallowedGoals[key] = (goal, now);
+            var entries = live.GoalEntries.Where(e => e.Value == key).Select(e => e.Key).ToList();
+            if (!entries.Any(keys.Contains))
+            {
+                live.AnnouncedGoals.Remove(key);
+                entries.ForEach(e => live.GoalEntries.Remove(e));
+                live.DisallowedGoals[key] = (goal, now);
+            }
         }
 
         foreach (var (key, (goal, at)) in live.DisallowedGoals)
@@ -225,6 +243,48 @@ public sealed partial class MatchNotifier(
             }
         }
     }
+
+    /// <summary>
+    /// True if the goal is an announced one entered again (or entered anew after its first entry was removed):
+    /// it is then remembered as an entry of that goal, and not announced a second time.
+    /// </summary>
+    private static bool IsAnotherEntryOfAnAnnouncedGoal(LiveMatchLog live, string key, MatchEvent goal)
+    {
+        if (live.GoalEntries.TryGetValue(key, out var announced))
+        {
+            return announced != key;
+        }
+
+        var same = live.AnnouncedGoals.FirstOrDefault(g => SameGoal(g.Value, goal)).Key;
+        if (same is null)
+        {
+            return false;
+        }
+
+        live.GoalEntries[key] = same;
+        return true;
+    }
+
+    /// <summary>The events with every goal entered more than once kept only once (its first entry).</summary>
+    private static List<MatchEvent> WithoutDuplicateGoals(IReadOnlyList<MatchEvent> events)
+    {
+        var kept = new List<MatchEvent>();
+        foreach (var matchEvent in events)
+        {
+            if (!kept.Any(k => SameGoal(k, matchEvent)))
+            {
+                kept.Add(matchEvent);
+            }
+        }
+
+        return kept;
+    }
+
+    /// <summary>Both goals, for the same team, by the same (known) player, within <see cref="DuplicateGoalMinutes"/>.</summary>
+    private static bool SameGoal(MatchEvent a, MatchEvent b) =>
+        IsGoal(a.Type) && IsGoal(b.Type) && a.Side == b.Side
+        && (a.PlayerId ?? a.Player) is { } scorer && scorer == (b.PlayerId ?? b.Player)
+        && Minute(a.Clock) is { } first && Minute(b.Clock) is { } second && Math.Abs(first - second) <= DuplicateGoalMinutes;
 
     private static bool IsGoal(MatchEventType type) => type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal;
 

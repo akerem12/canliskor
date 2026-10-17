@@ -102,6 +102,21 @@ public class EspnSummaryMapperTests
     }
 
     [Fact]
+    public void A_save_in_the_short_commentary_is_the_other_teams_miss()
+    {
+        // Süper Lig's short commentary credits the save to the goalkeeper: here Real Sociedad's, so Valencia missed.
+        var summary = FixtureLoader.LoadSummary("summary-esp1-finished.json");
+        var save = new EspnCommentary(
+            new EspnCommentaryPlay("s1", new EspnKeyEventType("penalty---saved"), new EspnClock("17'", 1000), new EspnCommentaryTeam("Real Sociedad"),
+                [new EspnParticipant(new EspnAthlete("Alex Remiro", "1"))]),
+            "Alex Remiro (Real Sociedad) Penalty - Saved at 17'");
+
+        var missed = EspnSummaryMapper.Map(summary with { Commentary = [save] }, "esp.1")!.Events.Single(e => e.Type == MatchEventType.PenaltyMissed);
+
+        Assert.Equal(new MatchEvent(MatchEventType.PenaltyMissed, "17'", TeamSide.Home, null, null, Id: "s1"), missed);
+    }
+
+    [Fact]
     public void A_penalty_given_comes_from_the_commentary_for_the_team_that_was_fouled()
     {
         // Valencia (home) against Real Sociedad (away).

@@ -305,6 +305,71 @@ public class MatchNotifierTests
     }
 
     [Fact]
+    public async Task A_goal_entered_twice_is_announced_once_and_taken_back_once()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // Fenerbahçe - Alanyaspor: one goal, entered at 17' and again at 19'; the score says 1-0.
+        _provider.Returns(Detail(match with { Score = new Score(1, 0) },
+            Event(MatchEventType.Goal, "17'", TeamSide.Home, "Player A", "a"),
+            Event(MatchEventType.Goal, "19'", TeamSide.Home, "Player A", "b")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // Then both entries are removed (VAR).
+        _provider.Returns(Detail(match));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(
+        [
+            "Kick-off: Home 0 - 0 Away",
+            "⚽ GOAL! Home 1 - 0 Away",
+            "🚫 GOAL DISALLOWED! Home 0 - 0 Away",
+        ], _sender.Sent.Select(s => s.Notification.Title));
+    }
+
+    [Fact]
+    public async Task A_goal_whose_first_entry_is_replaced_by_a_second_is_neither_announced_again_nor_taken_back()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var scored = match with { Score = new Score(1, 0) };
+        _provider.Returns(Detail(scored, Event(MatchEventType.Goal, "17'", TeamSide.Home, "Player A", "a")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(scored, Event(MatchEventType.Goal, "19'", TeamSide.Home, "Player A", "b")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(2, _sender.Sent.Count);
+    }
+
+    [Fact]
+    public async Task A_real_brace_is_two_goals()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match with { Score = new Score(2, 0) },
+            Event(MatchEventType.Goal, "17'", TeamSide.Home, "Player A", "a"),
+            Event(MatchEventType.Goal, "24'", TeamSide.Home, "Player A", "b")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Equal(["⚽ GOAL! Home 1 - 0 Away", "⚽ GOAL! Home 2 - 0 Away"], _sender.Sent.Skip(1).Select(s => s.Notification.Title));
+    }
+
+    [Fact]
     public async Task A_goal_missing_from_events_that_do_not_add_up_to_the_score_is_not_taken_back()
     {
         var match = Playing(InPlay("1'"));

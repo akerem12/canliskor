@@ -52,7 +52,7 @@ internal static partial class EspnSummaryMapper
 
         var events = MergeInOrder(
             (response.KeyEvents ?? []).Select(e => (Event: MapEvent(e, match), e.Clock?.Value)),
-            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match) ?? MapPenaltyAwarded(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
+            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c, match) ?? MapPenaltyAwarded(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
 
         return new MatchDetail(
             match,
@@ -151,6 +151,11 @@ internal static partial class EspnSummaryMapper
             Id: !string.IsNullOrEmpty(line.Play?.Id) ? line.Play.Id : line.Sequence is { } sequence ? $"commentary:{sequence}" : null);
     }
 
+    [GeneratedRegex(@"\) Penalty - Saved at ")]
+    private static partial Regex ShortSaveLinePattern();
+
+    private static readonly Regex ShortSaveLine = ShortSaveLinePattern();
+
     [GeneratedRegex(@"^Penalty conceded by (?<player>.+?) \((?<team>[^)]+)\)")]
     private static partial Regex PenaltyConcededPattern();
 
@@ -184,8 +189,14 @@ internal static partial class EspnSummaryMapper
         .Where(char.IsLetterOrDigit)
         .Select(char.ToLowerInvariant));
 
-    private static MatchEvent? MapMissedPenalty(EspnCommentaryPlay? play, Match match)
+    /// <remarks>
+    /// The full commentary (Premier League, LaLiga, ...) names the taker: "Penalty saved. Enzo Le Fée (Sunderland)
+    /// right footed shot saved ...". The short one of some leagues (Süper Lig) gives the save to the goalkeeper:
+    /// "Paulo Victor (Alanyaspor) Penalty - Saved at 17'", so there the other team missed and the taker is unknown.
+    /// </remarks>
+    private static MatchEvent? MapMissedPenalty(EspnCommentary line, Match match)
     {
+        var play = line.Play;
         if (play?.Type?.Type is not ("penalty---saved" or "penalty---missed" or "penalty---hit-woodwork")
             || string.IsNullOrEmpty(play.Clock?.DisplayValue))
         {
@@ -199,7 +210,13 @@ internal static partial class EspnSummaryMapper
             return null;
         }
 
-        var taker = play.Participants?.ElementAtOrDefault(0)?.Athlete;
+        var savedByGoalkeeper = play.Type.Type == "penalty---saved" && ShortSaveLine.IsMatch(line.Text ?? "");
+        if (savedByGoalkeeper)
+        {
+            side = side == TeamSide.Home ? TeamSide.Away : TeamSide.Home;
+        }
+
+        var taker = savedByGoalkeeper ? null : play.Participants?.ElementAtOrDefault(0)?.Athlete;
         return new MatchEvent(
             MatchEventType.PenaltyMissed,
             play.Clock.DisplayValue,

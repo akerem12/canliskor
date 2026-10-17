@@ -105,10 +105,16 @@ public sealed class LiveMatchLog
     /// <summary>When the match was seen going from play to finished; null if it wasn't (yet).</summary>
     public DateTimeOffset? FullTimeAt { get; set; }
 
-    /// <summary>Goals that were announced, by event key, so one taken back can be announced too.</summary>
+    /// <summary>
+    /// Goals that were announced, by the key of the entry that was announced, so one taken back can be announced
+    /// too. A goal the provider entered more than once is one goal: see <see cref="GoalEntries"/>.
+    /// </summary>
     public Dictionary<string, MatchEvent> AnnouncedGoals { get; } = [];
 
-    /// <summary>Announced goals that were taken back, by event key: the goal and when that was seen.</summary>
+    /// <summary>Every entry of an announced goal, by event key: the key of the entry that was announced.</summary>
+    public Dictionary<string, string> GoalEntries { get; } = [];
+
+    /// <summary>Announced goals that were taken back, by the announced entry's key: the goal and when that was seen.</summary>
     public Dictionary<string, (MatchEvent Goal, DateTimeOffset At)> DisallowedGoals { get; } = [];
 
     /// <summary>When the event was first seen; now, if this is the first time.</summary>
