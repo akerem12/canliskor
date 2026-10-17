@@ -9,7 +9,7 @@ namespace CanliSkor.Core.Services;
 /// <summary>
 /// Team squads, loaded on request and cached in the store. A squad only changes with a transfer or a new shirt
 /// number, so one fetch serves everyone for <see cref="RefreshAfter"/>. Shares <see cref="OnDemandFetchGate"/>
-/// with browsing and match details, so all request-driven provider calls together still run one at a time.
+/// with browsing and match details, so all request-driven provider calls together stay within its limit.
 /// </summary>
 public sealed partial class SquadService(
     IFootballDataProvider provider,

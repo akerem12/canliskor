@@ -9,7 +9,7 @@ namespace CanliSkor.Core.Services;
 /// Loads scoreboards for dates the poller doesn't cover (browsing other days), caching them in the same store.
 /// The only path where a client request can reach the provider, so it is deliberately conservative:
 /// finished days are fetched once, fixture lists at most every <see cref="RefreshAfter"/>,
-/// and only one fetch runs at a time across the whole app (<see cref="OnDemandFetchGate"/>).
+/// and only a few fetches run at a time across the whole app (<see cref="OnDemandFetchGate"/>).
 /// </summary>
 public sealed partial class OnDemandScoreboardLoader(
     IFootballDataProvider provider,
@@ -75,12 +75,15 @@ public sealed partial class OnDemandScoreboardLoader(
 }
 
 /// <summary>
-/// App-wide limit of one on-demand provider call at a time. Browsing traffic waits a little instead of
-/// bursting requests at an unofficial API. Singleton; the loader that uses it is scoped.
+/// App-wide limit of <see cref="MaxConcurrentFetches"/> on-demand provider calls at a time. Enough to load a
+/// day's leagues side by side (one after another took 3-4 seconds), few enough not to burst requests at an
+/// unofficial API. Singleton; the services that use it are scoped.
 /// </summary>
 public sealed class OnDemandFetchGate
 {
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    public const int MaxConcurrentFetches = 6;
+
+    private readonly SemaphoreSlim _semaphore = new(MaxConcurrentFetches, MaxConcurrentFetches);
 
     public async Task<IDisposable> AcquireAsync(CancellationToken cancellationToken)
     {

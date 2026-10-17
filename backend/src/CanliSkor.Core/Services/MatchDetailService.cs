@@ -14,7 +14,7 @@ namespace CanliSkor.Core.Services;
 /// call per interval; longer before kickoff and after full time. A cached detail is also stale as soon as the
 /// poller's scoreboard shows a different score or status for the match, so a pushed goal is followed by a detail
 /// that has the scorer. Shares <see cref="OnDemandFetchGate"/> with
-/// browsing, so all request-driven provider calls together still run one at a time.
+/// browsing, so all request-driven provider calls together stay within its limit.
 /// </summary>
 public sealed partial class MatchDetailService(
     IFootballDataProvider provider,

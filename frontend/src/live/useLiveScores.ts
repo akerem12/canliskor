@@ -3,7 +3,8 @@ import type { HubConnection } from '@microsoft/signalr'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { apiUrl } from '../api/base'
 import { getDay, getLeagues, getLive } from '../api/http'
-import type { Match, MatchDetail, MatchUpdatedMessage } from '../api/types'
+import type { LeagueMatches, Match, MatchDetail, MatchUpdatedMessage } from '../api/types'
+import { MaxDaysAway } from '../components/DateNav'
 import { localizeNames } from '../i18n/names'
 import { useI18n } from '../i18n/useI18n'
 import { onAppActiveChange } from '../native/app'
@@ -42,6 +43,8 @@ interface WatchedMatch {
  *
  * Flow per (re)connect: subscribe to every league first, then load over REST — so no update can be missed
  * in between (updates that arrive during a load are buffered by the reducer). Changing the day only reloads.
+ * Days already seen, and the days either side of the one shown (loaded ahead), are kept: switching to one shows
+ * it at once and refreshes it behind the scenes.
  * The same connection also carries the detail of the one match whose page is open (see {@link WatchMatch}).
  * @param onUpdate Told about every pushed update, whichever day is shown (match alerts hang off this).
  */
@@ -83,6 +86,8 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
     let leagues: string[] = []
     let loadedToday: string | undefined
     let loadSeq = 0
+    // By date. Only for showing a day at once; whatever is shown is loaded again straight after.
+    const dayCache = new Map<string, LeagueMatches[]>()
     const goalTimers = new Set<ReturnType<typeof setTimeout>>()
 
     const connection = new HubConnectionBuilder()
@@ -145,7 +150,8 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
       const offset = dayOffsetRef.current
       const day = addDays(today, offset)
       setDate(day)
-      if (!quiet) dispatch({ type: 'loading' })
+      const cached = dayCache.get(day)
+      if (!quiet) dispatch(cached ? { type: 'loaded', leagues: cached } : { type: 'loading' })
 
       // Today also includes yesterday's games still running past midnight.
       const result = offset === 0
@@ -156,8 +162,19 @@ export function useLiveScores(dayOffset: number, onUpdate?: UpdateListener) {
       // The day was changed while connecting (no reload was triggered then): load the one now selected.
       if (offset !== dayOffsetRef.current) return load(quiet)
       loadedToday = today
+      dayCache.set(day, result)
       dispatch({ type: 'loaded', leagues: result })
       setError(null)
+      loadAhead(today, offset)
+    }
+
+    /** The days either side, so the next click on an arrow shows its day at once. Failures don't matter here. */
+    function loadAhead(today: string, offset: number) {
+      for (const next of [offset - 1, offset + 1]) {
+        const day = addDays(today, next)
+        if (next === 0 || Math.abs(next) > MaxDaysAway || dayCache.has(day)) continue
+        getDay(day).then(d => dayCache.set(day, d.leagues), () => {})
+      }
     }
 
     loadRef.current = load

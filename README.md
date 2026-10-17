@@ -289,7 +289,7 @@ ESPN's public JSON API (no key required), e.g.
 This is an unofficial, non-commercial hobby project. It is not affiliated with or endorsed by ESPN or by any club,
 league or federation; team names and crests belong to their owners and are shown straight from ESPN's servers. The
 API is undocumented and not offered for third-party use, so the app is deliberately gentle with it (everything is
-cached, requests run one at a time) and will be taken down on request.
+cached, at most a few requests run at a time) and will be taken down on request.
 
 | League | Code |
 |---|---|

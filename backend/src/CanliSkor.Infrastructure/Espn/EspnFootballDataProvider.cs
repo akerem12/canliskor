@@ -38,9 +38,11 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
     /// </summary>
     public async Task<LeagueScoreboard> GetScoreboardAsync(string leagueCode, DateOnly date, CancellationToken cancellationToken = default)
     {
-        // Sequential on purpose, like the poller: gentle on an unofficial API.
-        var previousDay = await FetchEspnDayAsync(leagueCode, date.AddDays(-1), date, cancellationToken);
-        var sameDay = await FetchEspnDayAsync(leagueCode, date, date, cancellationToken);
+        // Both at once: two requests either way, and a day being browsed (or a goal being polled) arrives in half the time.
+        var days = await Task.WhenAll(
+            FetchEspnDayAsync(leagueCode, date.AddDays(-1), date, cancellationToken),
+            FetchEspnDayAsync(leagueCode, date, date, cancellationToken));
+        var (previousDay, sameDay) = (days[0], days[1]);
 
         var matches = previousDay.Matches.Concat(sameDay.Matches)
             .Where(m => IstanbulTime.DateOf(m.KickoffUtc) == date)

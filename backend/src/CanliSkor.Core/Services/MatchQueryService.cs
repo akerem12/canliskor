@@ -40,14 +40,10 @@ public sealed class MatchQueryService(
         }
         else
         {
-            snapshots = [];
-            foreach (var leagueCode in footballOptions.CurrentValue.Leagues)
-            {
-                if (await loader.GetAsync(leagueCode, day, today, cancellationToken) is { } snapshot)
-                {
-                    snapshots.Add(snapshot);
-                }
-            }
+            // All leagues at once (the gate keeps it to a few provider calls at a time), in the configured order.
+            var loaded = await Task.WhenAll(footballOptions.CurrentValue.Leagues
+                .Select(leagueCode => loader.GetAsync(leagueCode, day, today, cancellationToken)));
+            snapshots = [.. loaded.OfType<ScoreboardSnapshot>()];
         }
 
         return snapshots.Where(s => s.Scoreboard.Matches.Count > 0).ToList();
