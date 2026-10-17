@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { ReactNode } from 'react'
+import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { getCompetitions, getMatchDetail, getStandings, getTeam } from '../api/http'
 import type { Match, TeamProfile } from '../api/types'
 import { isInPlay } from '../api/types'
@@ -9,6 +9,7 @@ import type { Dictionary } from '../i18n/en'
 import { useI18n } from '../i18n/useI18n'
 import type { Route } from '../route'
 import { formGuide, isFriendly, resultFor } from '../teamForm'
+import { seasonTimeline, timelinePoints } from '../teamTimeline'
 import { formatMatchDate, formatTime } from '../time'
 import { tabFromUrl, writeTabToUrl } from '../urlTab'
 import { EmptyState, Skeleton, TeamLogo } from './common'
@@ -23,9 +24,6 @@ interface Props {
   onNavigate: (route: Route) => void
   onBack: () => void
 }
-
-/** How many results show before "Show all". */
-const CollapsedCount = 5
 
 const tabs = ['overview', 'fixtures', 'standings', 'squad'] as const
 type Tab = typeof tabs[number]
@@ -53,7 +51,7 @@ function middleText(match: Match, t: Dictionary): string {
 }
 
 /**
- * One team: who they are and their form up top, then recent matches, every match still to come, the table
+ * One team: who they are and their form up top, then the next match, the whole season's matches, the table
  * around them and the squad, each on a tab of its own.
  */
 export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }: Props) {
@@ -109,7 +107,7 @@ export function TeamPage({ leagueCode, teamId, leagueName, onNavigate, onBack }:
           </nav>
 
           {panel('overview', <Overview profile={team.data} competitions={competitions} onNavigate={onNavigate} />)}
-          {panel('fixtures', <Fixtures profile={team.data} competitions={competitions} onNavigate={onNavigate} />)}
+          {panel('fixtures', <Fixtures profile={team.data} competitions={competitions} active={tab === 'fixtures'} onNavigate={onNavigate} />)}
           {panel('standings', (
             <section className="panel" aria-label={t.leagues.standings}>
               <h3 className="panel__title">{t.team.standingsOf(league)}</h3>
@@ -196,40 +194,24 @@ function Hero({ profile, league, competitions }: { profile: TeamProfile; league:
   )
 }
 
-/** The next match, then what has been played, friendlies included. */
+/** The next match, large; the season's other matches are on the Fixtures tab. */
 function Overview({ profile, competitions, onNavigate }: { profile: TeamProfile; competitions: Competitions; onNavigate: (route: Route) => void }) {
   const { t } = useI18n()
   const next = profile.upcomingMatches.at(0)
-  const anyFriendly = profile.recentMatches.some(match => isFriendlyIn(competitions, match))
+  // With nothing left to play (the season is over), the last match takes its place.
+  const last = next ? undefined : profile.recentMatches.at(0)
+  const shown = next ?? last
+  const title = next ? t.team.nextMatch : t.team.lastMatch
 
-  return (
-    <>
-      {next && (
-        <section className="panel" aria-label={t.team.nextMatch}>
-          <h3 className="panel__title">{t.team.nextMatch}</h3>
-          <NextMatch match={next} competitions={competitions} onNavigate={onNavigate} />
-        </section>
-      )}
-
-      <section className="panel" aria-label={t.team.recentMatches}>
-        <h3 className="panel__title">{t.team.recentMatches}</h3>
-        {profile.recentMatches.length === 0 ? (
-          <EmptyState icon="⚽" title={t.team.nothingPlayed} hint={t.team.nothingPlayedHint} />
-        ) : (
-          <>
-            {/* Newest first here: the list is read top down, the form chips left to right. */}
-            <MatchList
-              matches={profile.recentMatches}
-              collapsedCount={CollapsedCount}
-              teamId={profile.team.id}
-              competitions={competitions}
-              onNavigate={onNavigate}
-            />
-            {anyFriendly && <p className="panel__note">{t.team.friendlyNote}</p>}
-          </>
-        )}
-      </section>
-    </>
+  return shown ? (
+    <section className="panel" aria-label={title}>
+      <h3 className="panel__title">{title}</h3>
+      <NextMatch match={shown} competitions={competitions} onNavigate={onNavigate} />
+    </section>
+  ) : (
+    <section className="panel">
+      <EmptyState icon="📅" title={t.team.noFixtures} hint={t.team.noFixturesHint} />
+    </section>
   )
 }
 
@@ -284,66 +266,85 @@ function NextMatchOdds({ match }: { match: Match }) {
   return odds ? <OddsStrip odds={odds} /> : null
 }
 
-/** Every match still to come, all competitions together or one at a time. */
-function Fixtures({ profile, competitions, onNavigate }: { profile: TeamProfile; competitions: Competitions; onNavigate: (route: Route) => void }) {
-  const { t } = useI18n()
-  const [filter, setFilter] = useState<string | null>(null)
-  const matches = profile.upcomingMatches
-  const codes = [...new Set(matches.map(match => match.leagueCode))]
-  const shown = filter ? matches.filter(match => match.leagueCode === filter) : matches
-
-  return (
-    <section className="panel" aria-label={t.team.fixtures}>
-      <h3 className="panel__title">{t.team.fixturesTitle(shown.length)}</h3>
-      {matches.length === 0 ? (
-        <EmptyState icon="📅" title={t.team.noFixtures} hint={t.team.noFixturesHint} />
-      ) : (
-        <>
-          {codes.length > 1 && (
-            <div className="quickbar team__filter" role="group" aria-label={t.team.filterByCompetition}>
-              <button className={filter === null ? 'chip chip--active' : 'chip'} aria-pressed={filter === null} onClick={() => setFilter(null)}>
-                {t.team.allCompetitions}
-              </button>
-              {codes.map(code => (
-                <button key={code} className={filter === code ? 'chip chip--active' : 'chip'} aria-pressed={filter === code} onClick={() => setFilter(code)}>
-                  {competitionName(competitions, code)}
-                </button>
-              ))}
-            </div>
-          )}
-          <MatchList matches={shown} showVenue teamId={profile.team.id} competitions={competitions} onNavigate={onNavigate} />
-        </>
-      )}
-    </section>
-  )
-}
-
-/** @param collapsedCount Shows only this many until "Show all" is pressed; all of them if left out. */
-function MatchList({ matches, collapsedCount, showVenue = false, teamId, competitions, onNavigate }: {
-  matches: Match[]
-  collapsedCount?: number
-  showVenue?: boolean
-  teamId: string
+/**
+ * The whole season in one list, oldest at the top: results (friendlies included), the match in play, then every
+ * match still to come; all competitions together or one at a time. Showing the tab puts the match in play or the
+ * latest result at the top of the screen with what comes next below it; earlier results are a scroll up.
+ * @param active The tab is the one shown: the list is only measured and scrolled to then.
+ */
+function Fixtures({ profile, competitions, active, onNavigate }: {
+  profile: TeamProfile
   competitions: Competitions
+  active: boolean
   onNavigate: (route: Route) => void
 }) {
   const { t } = useI18n()
-  const [showAll, setShowAll] = useState(false)
-  const collapsible = collapsedCount !== undefined && matches.length > collapsedCount
-  const shown = collapsible && !showAll ? matches.slice(0, collapsedCount) : matches
+  const [filter, setFilter] = useState<string | null>(null)
+  const season = useMemo(() => seasonTimeline(profile.recentMatches, profile.upcomingMatches), [profile])
+  const codes = [...new Set(season.map(match => match.leagueCode))]
+  const shown = filter ? season.filter(match => match.leagueCode === filter) : season
+  const { anchor, upcomingFrom } = timelinePoints(shown)
+  const anchorId = anchor === null ? null : shown[anchor].id
+  const played = shown.filter(match => match.status === 'Finished').length
+  const anyFriendly = shown.some(match => isFriendlyIn(competitions, match))
+
+  const anchorRef = useRef<HTMLLIElement>(null)
+  const roomRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const row = anchorRef.current
+    const room = roomRef.current
+    if (!active || !room) return
+    room.style.height = '0px'
+    if (!row) return
+
+    // Below the header that stays at the top of the screen.
+    const header = document.querySelector('.appbar')?.getBoundingClientRect().height ?? 0
+    const top = row.getBoundingClientRect().top + window.scrollY - header - 8
+    // With few matches to come the page may end too soon for the row to reach the top: make room below.
+    const short = top + window.innerHeight - document.documentElement.scrollHeight
+    if (short > 0) room.style.height = `${short}px`
+    window.scrollTo({ top, behavior: 'instant' })
+  }, [active, anchorId, filter])
 
   return (
     <>
-      <ul className="fixtures">
-        {shown.map(match => (
-          <FixtureRow key={match.id} match={match} showVenue={showVenue} teamId={teamId} competitions={competitions} onNavigate={onNavigate} />
-        ))}
-      </ul>
-      {collapsible && (
-        <button className="more" onClick={() => setShowAll(!showAll)} aria-expanded={showAll}>
-          {showAll ? t.team.showFewer : t.team.showAllResults(matches.length)}
-        </button>
-      )}
+      <section className="panel" aria-label={t.team.fixtures}>
+        <h3 className="panel__title">{t.team.fixturesTitle(played, shown.length - played)}</h3>
+        {season.length === 0 ? (
+          <EmptyState icon="📅" title={t.team.noFixtures} hint={t.team.noFixturesHint} />
+        ) : (
+          <>
+            {codes.length > 1 && (
+              <div className="quickbar team__filter" role="group" aria-label={t.team.filterByCompetition}>
+                <button className={filter === null ? 'chip chip--active' : 'chip'} aria-pressed={filter === null} onClick={() => setFilter(null)}>
+                  {t.team.allCompetitions}
+                </button>
+                {codes.map(code => (
+                  <button key={code} className={filter === code ? 'chip chip--active' : 'chip'} aria-pressed={filter === code} onClick={() => setFilter(code)}>
+                    {competitionName(competitions, code)}
+                  </button>
+                ))}
+              </div>
+            )}
+            <ul className="fixtures">
+              {shown.map((match, i) => (
+                <Fragment key={match.id}>
+                  {i === upcomingFrom && <li className="fixtures__divider">{t.team.upcomingDivider}</li>}
+                  <FixtureRow
+                    match={match}
+                    teamId={profile.team.id}
+                    competitions={competitions}
+                    rowRef={i === anchor ? anchorRef : undefined}
+                    onNavigate={onNavigate}
+                  />
+                </Fragment>
+              ))}
+            </ul>
+            {anyFriendly && <p className="panel__note">{t.team.friendlyNote}</p>}
+          </>
+        )}
+      </section>
+      <div ref={roomRef} aria-hidden />
     </>
   )
 }
@@ -359,11 +360,11 @@ function CompetitionLabel({ match, competitions }: { match: Match; competitions:
 }
 
 /** One result or fixture of the team's. Leads to the match if its competition is one the site follows. */
-function FixtureRow({ match, showVenue, teamId, competitions, onNavigate }: {
+function FixtureRow({ match, teamId, competitions, rowRef, onNavigate }: {
   match: Match
-  showVenue: boolean
   teamId: string
   competitions: Competitions
+  rowRef?: Ref<HTMLLIElement>
   onNavigate: (route: Route) => void
 }) {
   const { t } = useI18n()
@@ -374,7 +375,9 @@ function FixtureRow({ match, showVenue, teamId, competitions, onNavigate }: {
   const content = (
     <>
       <span className="fixture__when">
-        <span className="fixture__date">{formatMatchDate(match.kickoff, t)}</span>
+        {isInPlay(match.status)
+          ? <span className="fixture__date fixture__date--live">● {match.status === 'HalfTime' ? t.status.halfTimeShort : match.clock}</span>
+          : <span className="fixture__date">{formatMatchDate(match.kickoff, t)}</span>}
         <span className="fixture__league"><CompetitionLabel match={match} competitions={competitions} /></span>
       </span>
       <span className={match.homeTeam.id === teamId ? 'fixture__team fixture__team--home fixture__team--own' : 'fixture__team fixture__team--home'}>
@@ -394,13 +397,13 @@ function FixtureRow({ match, showVenue, teamId, competitions, onNavigate }: {
           {t.team.resultLetter[result]}
         </span>
       ) : <span className="fixture__spacer" aria-hidden />}
-      {showVenue && match.venue && <span className="fixture__venue">📍 {match.venue}</span>}
+      {match.venue && !result && <span className="fixture__venue">📍 {match.venue}</span>}
     </>
   )
   const className = isInPlay(match.status) ? 'fixture fixture--live' : 'fixture'
 
   return (
-    <li>
+    <li ref={rowRef}>
       {canOpen ? (
         <button className={className} onClick={() => onNavigate({ view: 'match', leagueCode: match.leagueCode, matchId: match.id })}>
           {content}

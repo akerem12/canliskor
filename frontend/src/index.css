@@ -578,6 +578,14 @@ h1, h2 { margin: 0; }
   font-weight: 700; font-variant-numeric: tabular-nums; background: var(--surface-alt);
 }
 .fixture--live .fixture__score { color: var(--live); }
+.fixture__date--live { font-weight: 700; color: var(--live); }
+/* Between the latest result (or the match in play) and what is to come. */
+.fixtures__divider {
+  display: flex; align-items: center; gap: 10px; padding: 10px 4px 6px;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent);
+}
+.fixtures__divider::before, .fixtures__divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.fixtures__divider + li .fixture { border-top: none; }
 
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
