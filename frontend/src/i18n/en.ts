@@ -239,6 +239,10 @@ export const en = {
     noTable: 'This competition has no table.',
     noTableHintLeague: "Friendlies aren't ranked. Their matches are on the Matches page.",
     noTableHintTeam: "Friendlies and knockout rounds aren't ranked.",
+    sections: 'League sections',
+    tabs: { standings: 'Standings', fixtures: 'Fixtures' },
+    seasonUnavailable: "The fixtures aren't available right now.",
+    noSeasonMatches: 'No matches found for this season.',
   },
   table: {
     team: 'Team',

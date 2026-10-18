@@ -237,6 +237,14 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     }
 
     [Fact]
+    public async Task Get_league_season_returns_played_matches_too()
+    {
+        using var json = await GetJson("/api/leagues/tur.1/season");
+
+        Assert.Equal(["80", "81"], json.RootElement.GetProperty("matches").EnumerateArray().Select(m => m.GetProperty("id").GetString()));
+    }
+
+    [Fact]
     public async Task Get_team_returns_profile_results_and_fixtures()
     {
         using var json = await GetJson("/api/leagues/tur.1/teams/432");
@@ -261,6 +269,7 @@ public class MatchEndpointsTests : IClassFixture<MatchEndpointsTests.Factory>
     [InlineData("/api/leagues/ger.1/standings")]   // league not followed
     [InlineData("/api/leagues/eng.1/standings")]   // unknown to the provider
     [InlineData("/api/leagues/ger.1/fixtures")]    // league not followed
+    [InlineData("/api/leagues/ger.1/season")]      // league not followed
     [InlineData("/api/leagues/tur.1/teams/404")]   // unknown team
     [InlineData("/api/leagues/tur.1/teams/abc")]   // not an ESPN id
     public async Task Get_standings_and_team_return_404_when_unknown(string url)
@@ -437,6 +446,9 @@ internal sealed class StubFootballDataProvider : IFootballDataProvider
     public Task<LeagueTeams?> GetLeagueTeamsAsync(string leagueCode, CancellationToken cancellationToken = default) =>
         Task.FromResult(leagueCode != "tur.1" ? null : new LeagueTeams(leagueCode,
             [Galatasaray, new Team("1895", "Beşiktaş", "Beşiktaş", null)]));
+
+    public Task<LeagueFixtures?> GetLeagueSeasonAsync(string leagueCode, DateOnly today, CancellationToken cancellationToken = default) =>
+        GetLeagueFixturesAsync(leagueCode, today, cancellationToken);
 
     public Task<LeagueFixtures?> GetLeagueFixturesAsync(string leagueCode, DateOnly from, CancellationToken cancellationToken = default) =>
         Task.FromResult(leagueCode != "tur.1" ? null : new LeagueFixtures(leagueCode, "Turkish Super Lig",

@@ -119,6 +119,40 @@ public sealed partial class LeagueInfoService(
         return entry with { Value = entry.Value with { Matches = upcoming } };
     }
 
+    /// <summary>
+    /// The league's whole season, played and to come, in kickoff order. The list itself is reloaded now and then;
+    /// yesterday's and today's matches are taken from the live scoreboards, so a match in play shows its score.
+    /// </summary>
+    /// <returns>Null if the league isn't followed or the provider doesn't know it.</returns>
+    /// <exception cref="FootballDataProviderException">Loading failed and nothing is cached.</exception>
+    public async Task<Timestamped<LeagueFixtures>?> GetSeasonAsync(string leagueCode, CancellationToken cancellationToken = default)
+    {
+        var today = IstanbulTime.Today(timeProvider);
+        var entry = await GetAsync(
+            $"season:{leagueCode}",
+            leagueCode,
+            FixturesRefreshAfter,
+            ct => provider.GetLeagueSeasonAsync(leagueCode, today, ct),
+            cancellationToken);
+        if (entry is null)
+        {
+            return null;
+        }
+
+        var live = new Dictionary<string, Match>();
+        foreach (var day in new[] { today.AddDays(-1), today })
+        {
+            foreach (var match in (await store.GetAsync(leagueCode, day, cancellationToken))?.Scoreboard.Matches ?? [])
+            {
+                live[match.Id] = match;
+            }
+        }
+
+        return live.Count == 0
+            ? entry
+            : entry with { Value = entry.Value with { Matches = [.. entry.Value.Matches.Select(m => live.GetValueOrDefault(m.Id) ?? m)] } };
+    }
+
     /// <returns>Null if the league isn't followed or the provider doesn't know the team in it.</returns>
     /// <exception cref="FootballDataProviderException">Loading failed and nothing is cached.</exception>
     public Task<Timestamped<TeamProfile>?> GetTeamAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default) =>

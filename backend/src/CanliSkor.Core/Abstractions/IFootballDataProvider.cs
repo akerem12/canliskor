@@ -32,6 +32,11 @@ public interface IFootballDataProvider
     /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
     Task<LeagueFixtures?> GetLeagueFixturesAsync(string leagueCode, DateOnly from, CancellationToken cancellationToken = default);
 
+    /// <summary>Every match of the league's current season (the one <paramref name="today"/> is in), played or not.</summary>
+    /// <returns>Null if the provider doesn't know this league.</returns>
+    /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
+    Task<LeagueFixtures?> GetLeagueSeasonAsync(string leagueCode, DateOnly today, CancellationToken cancellationToken = default);
+
     /// <returns>Null if the provider doesn't know a team with this id in this league.</returns>
     /// <exception cref="FootballDataProviderException">The provider could not deliver data.</exception>
     Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default);

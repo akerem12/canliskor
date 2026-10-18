@@ -159,6 +159,34 @@ public class EspnFootballDataProviderTests
     }
 
     [Fact]
+    public async Task Requests_both_years_of_a_season_across_the_new_year_and_keeps_only_its_matches()
+    {
+        static string Event(string id, string date, int season) => $$$"""
+            {"id":"{{{id}}}","date":"{{{date}}}","season":{"year":{{{season}}}},"status":{"type":{"name":"STATUS_SCHEDULED","state":"pre"}},
+             "competitions":[{"competitors":[
+               {"homeAway":"home","team":{"id":"1","displayName":"Home","shortDisplayName":"Home"}},
+               {"homeAway":"away","team":{"id":"2","displayName":"Away","shortDisplayName":"Away"}}]}]}
+            """;
+        static string Year(params string[] events) => $$$"""
+            {"leagues":[{"name":"Turkish Super Lig","abbreviation":"Super Lig",
+              "season":{"year":2026,"startDate":"2026-07-01T04:00Z","endDate":"2027-07-01T03:59Z"}}],
+             "events":[{{{string.Join(",", events)}}}]}
+            """;
+        var handler = new StubHandler(request => Json(request.RequestUri!.Query.Contains("dates=2026&")
+            // 2026 holds the end of last season and the start of this one.
+            ? Year(Event("old", "2026-05-20T17:00Z", 2025), Event("aug", "2026-08-14T18:30Z", 2026), Event("oct", "2026-10-18T16:00Z", 2026))
+            : Year(Event("may", "2027-05-23T18:00Z", 2026))));
+
+        var season = await CreateProvider(handler).GetLeagueSeasonAsync("tur.1", new DateOnly(2026, 10, 18));
+
+        Assert.Equal(
+            ["https://espn.test/soccer/tur.1/scoreboard?dates=2026&limit=1000", "https://espn.test/soccer/tur.1/scoreboard?dates=2027&limit=1000"],
+            handler.RequestUris.Select(u => u.ToString()));
+        Assert.Equal(["aug", "oct", "may"], season?.Matches.Select(m => m.Id));
+        Assert.Equal("Super Lig", season?.LeagueName);
+    }
+
+    [Fact]
     public async Task Requests_the_teams_of_a_league()
     {
         const string body = """

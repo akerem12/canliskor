@@ -34,6 +34,9 @@ export const getTeam = (leagueCode: string, teamId: string) =>
 /** A competition's matches still to be played, this month and next. */
 export const getLeagueFixtures = (leagueCode: string) =>
   getJson<LeagueFixtures>(`/api/leagues/${encodeURIComponent(leagueCode)}/fixtures`)
+/** A competition's whole season: results, matches in play and fixtures, in kickoff order. */
+export const getLeagueSeason = (leagueCode: string) =>
+  getJson<LeagueFixtures>(`/api/leagues/${encodeURIComponent(leagueCode)}/season`)
 /** Teams of the followed leagues whose name contains the query (at least two characters). */
 export const searchTeams = (query: string) => getJson<TeamSearchResult[]>(`/api/teams/search?q=${encodeURIComponent(query)}`)
 /** A player: who they are and their season in every competition. The league is the one they were found in. */

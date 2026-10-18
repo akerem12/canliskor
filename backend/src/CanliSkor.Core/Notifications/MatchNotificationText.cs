@@ -5,7 +5,8 @@ namespace CanliSkor.Core.Notifications;
 /// <summary>
 /// The words of the notifications, in the subscriber's language: short, the match in the title, the minute and
 /// the player in the body. The score is in the title only for a goal, a goal taken back, half-time, the second
-/// half's start and full-time. A goal is the bare score over "⚽ minute scorer", with the scoring team's crest. They are written here and not in the browser because they are shown while the site is
+/// half's start and full-time. A goal is the bare score, the scorers' side in brackets ("Home [1] - 0 Away"), over
+/// "⚽ minute scorer", with the scoring team's crest. A goal taken back is the plain score over "❌ Gol İptal". They are written here and not in the browser because they are shown while the site is
 /// closed. Team names are the provider's (English) spelling.
 /// </summary>
 public static class MatchNotificationText
@@ -78,7 +79,7 @@ public static class MatchNotificationText
     {
         var tr = language == "tr";
         var team = matchEvent.Side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
-        var scoreline = Scoreline(match, score);
+        var scoreline = Scoreline(match, score, matchEvent.Side);
         var teams = Teams(match);
 
         (string Title, string Body)? text = matchEvent.Type switch
@@ -99,7 +100,7 @@ public static class MatchNotificationText
             : null;
     }
 
-    /// <summary>A goal that was announced and then taken back (VAR, offside): the score without it, and whose goal it was.</summary>
+    /// <summary>A goal that was announced and then taken back (VAR, offside): the plain score without it, and whose goal it was.</summary>
     /// <param name="side">The team the goal counted for.</param>
     /// <param name="goal">The goal as it was announced; null if it was announced without its scorer.</param>
     /// <param name="score">The score now, without it.</param>
@@ -107,11 +108,10 @@ public static class MatchNotificationText
     {
         var tr = language == "tr";
         var team = side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
-        var scorerTeam = goal?.Type == MatchEventType.OwnGoal ? (side == TeamSide.Home ? match.AwayTeam : match.HomeTeam) : team;
-        var title = tr ? $"🚫 GOL İPTAL! {Scoreline(match, score)}" : $"🚫 GOAL DISALLOWED! {Scoreline(match, score)}";
-        var body = goal is null ? team.ShortName : Who(goal, scorerTeam);
+        var disallowed = tr ? "❌ Gol İptal" : "❌ Goal disallowed";
+        var body = goal?.Player is null ? disallowed : $"{disallowed} · {Minute(goal)}{goal.Player}";
 
-        return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:disallowed:{key}", LiveTimeToLive, team.LogoUrl);
+        return new PushNotification(Scoreline(match, score), body, MatchUrl(match), $"{match.Id}:disallowed:{key}", LiveTimeToLive, team.LogoUrl);
     }
 
     /// <summary>A goal the score shows but the provider hasn't said who scored.</summary>
@@ -120,7 +120,7 @@ public static class MatchNotificationText
         var team = side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
         var body = language == "tr" ? "⚽ Gol" : "⚽ Goal";
 
-        return new PushNotification(Scoreline(match, score), body, MatchUrl(match), $"{match.Id}:event:{key}", LiveTimeToLive, team.LogoUrl);
+        return new PushNotification(Scoreline(match, score, side), body, MatchUrl(match), $"{match.Id}:event:{key}", LiveTimeToLive, team.LogoUrl);
     }
 
     /// <summary>"⚽ 34' Victor Osimhen (P)": no team, the crest says that. "⚽ 34'" or "⚽ Gol" while the scorer isn't known.</summary>
@@ -138,8 +138,13 @@ public static class MatchNotificationText
 
     private static string Teams(Match match) => $"{match.HomeTeam.ShortName} - {match.AwayTeam.ShortName}";
 
-    private static string Scoreline(Match match, Score score) =>
-        $"{match.HomeTeam.ShortName} {score.Home} - {score.Away} {match.AwayTeam.ShortName}";
+    /// <param name="scored">The side that just scored: its goals are put in brackets, "Home [1] - 0 Away".</param>
+    private static string Scoreline(Match match, Score score, TeamSide? scored = null)
+    {
+        var home = scored == TeamSide.Home ? $"[{score.Home}]" : $"{score.Home}";
+        var away = scored == TeamSide.Away ? $"[{score.Away}]" : $"{score.Away}";
+        return $"{match.HomeTeam.ShortName} {home} - {away} {match.AwayTeam.ShortName}";
+    }
 
     // The same address the site itself gives a match page (frontend/src/route.ts).
     private static string MatchUrl(Match match) =>

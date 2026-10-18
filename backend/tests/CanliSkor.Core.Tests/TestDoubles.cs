@@ -176,6 +176,14 @@ internal sealed class FakeFootballDataProvider : IFootballDataProvider
             : Task.FromResult(_fixtures.GetValueOrDefault(leagueCode));
     }
 
+    public Task<LeagueFixtures?> GetLeagueSeasonAsync(string leagueCode, DateOnly today, CancellationToken cancellationToken = default)
+    {
+        InfoRequests.Add($"season:{leagueCode}:{today:yyyy-MM-dd}");
+        return FailInfo
+            ? throw new FootballDataProviderException($"Season of {leagueCode} unavailable")
+            : Task.FromResult(_fixtures.GetValueOrDefault(leagueCode));
+    }
+
     public Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
     {
         InfoRequests.Add($"team:{leagueCode}:{teamId}");

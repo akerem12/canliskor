@@ -195,6 +195,26 @@ public class LeagueInfoServiceTests
     }
 
     [Fact]
+    public async Task Season_keeps_played_matches_and_shows_todays_as_the_live_scoreboard_has_them()
+    {
+        var team = new Team("2", "Other", "Other", null);
+        var today = IstanbulTime.Today(_time);
+        Match At(string id, int hoursFromNow, MatchStatus status, Score? score = null) =>
+            new(id, "tur.1", Now.AddHours(hoursFromNow), status, null, Besiktas, team, score);
+        _provider.Returns(new LeagueFixtures("tur.1", "Turkish Super Lig",
+            [At("played", -48, MatchStatus.Finished, new Score(2, 1)), At("now", -1, MatchStatus.Scheduled), At("next", 26, MatchStatus.Scheduled)]));
+        await _store.SetAsync(new ScoreboardSnapshot(
+            new LeagueScoreboard(new League("tur.1", "Turkish Super Lig"), today, [At("now", -1, MatchStatus.Live, new Score(1, 0)) with { Clock = "52'" }]), Now));
+
+        var season = await CreateService().GetSeasonAsync("tur.1");
+
+        Assert.Equal(["played", "now", "next"], season?.Value.Matches.Select(m => m.Id));
+        var now = season!.Value.Matches[1];
+        Assert.Equal((MatchStatus.Live, new Score(1, 0), "52'"), (now.Status, now.Score, now.Clock));
+        Assert.Equal(["season:tur.1:2026-10-09"], _provider.InfoRequests);
+    }
+
+    [Fact]
     public async Task Search_loads_each_leagues_teams_once_and_then_answers_from_the_cache()
     {
         _provider.Returns(new LeagueTeams("tur.1", [Besiktas, new Team("432", "Galatasaray", "Galatasaray", null)]));

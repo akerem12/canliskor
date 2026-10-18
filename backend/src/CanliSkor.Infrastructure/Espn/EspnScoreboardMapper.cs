@@ -12,8 +12,7 @@ internal static class EspnScoreboardMapper
 {
     public static LeagueScoreboard Map(EspnScoreboardResponse response, string leagueCode, DateOnly date)
     {
-        var espnLeague = response.Leagues?.FirstOrDefault();
-        var league = new League(leagueCode, espnLeague?.Abbreviation ?? espnLeague?.Name ?? leagueCode);
+        var league = MapLeague(response, leagueCode);
 
         var matches = (response.Events ?? [])
             .Select(e => MapEvent(e, leagueCode))
@@ -22,6 +21,12 @@ internal static class EspnScoreboardMapper
             .ToList();
 
         return new LeagueScoreboard(league, date, matches);
+    }
+
+    internal static League MapLeague(EspnScoreboardResponse response, string leagueCode)
+    {
+        var espnLeague = response.Leagues?.FirstOrDefault();
+        return new League(leagueCode, espnLeague?.Abbreviation ?? espnLeague?.Name ?? leagueCode);
     }
 
     internal static Match? MapEvent(EspnEvent e, string leagueCode)
@@ -93,7 +98,7 @@ internal static class EspnScoreboardMapper
             : null;
 
     // ESPN sends "2026-09-20T14:00Z" (no seconds), so we parse explicitly instead of relying on the JSON serializer.
-    private static bool TryParseKickoff(string? value, out DateTimeOffset kickoff) =>
+    internal static bool TryParseKickoff(string? value, out DateTimeOffset kickoff) =>
         DateTimeOffset.TryParse(
             value,
             CultureInfo.InvariantCulture,

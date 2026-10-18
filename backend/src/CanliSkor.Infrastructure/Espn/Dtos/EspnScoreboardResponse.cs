@@ -7,13 +7,23 @@ internal sealed record EspnScoreboardResponse(
     IReadOnlyList<EspnLeague>? Leagues,
     IReadOnlyList<EspnEvent>? Events);
 
-internal sealed record EspnLeague(string? Name, string? Abbreviation, string? Slug);
+/// <param name="Season">The league's current season.</param>
+internal sealed record EspnLeague(string? Name, string? Abbreviation, string? Slug, EspnLeagueSeason? Season = null);
 
+/// <param name="Year">The year the season starts in: 2026 for 2026-27.</param>
+/// <param name="StartDate">E.g. "2026-07-01T04:00Z".</param>
+/// <param name="EndDate">E.g. "2027-07-01T03:59Z".</param>
+internal sealed record EspnLeagueSeason(int? Year, string? StartDate, string? EndDate);
+
+/// <param name="Season">The season the match belongs to.</param>
 internal sealed record EspnEvent(
     string? Id,
     string? Date,
     EspnStatus? Status,
-    IReadOnlyList<EspnCompetition>? Competitions);
+    IReadOnlyList<EspnCompetition>? Competitions,
+    EspnEventSeason? Season = null);
+
+internal sealed record EspnEventSeason(int? Year);
 
 internal sealed record EspnStatus(string? DisplayClock, EspnStatusType? Type);
 

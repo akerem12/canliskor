@@ -238,6 +238,10 @@ export const tr: Dictionary = {
     noTable: 'Bu turnuvanın puan durumu yok.',
     noTableHintLeague: 'Hazırlık maçlarında sıralama olmaz. Maçları Maçlar sayfasındadır.',
     noTableHintTeam: 'Hazırlık maçlarında ve eleme turlarında sıralama olmaz.',
+    sections: 'Lig bölümleri',
+    tabs: { standings: 'Puan durumu', fixtures: 'Fikstür' },
+    seasonUnavailable: 'Fikstür şu anda alınamıyor.',
+    noSeasonMatches: 'Bu sezon için maç bulunamadı.',
   },
   table: {
     team: 'Takım',

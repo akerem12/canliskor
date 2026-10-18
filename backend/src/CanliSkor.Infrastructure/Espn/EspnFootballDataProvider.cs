@@ -28,6 +28,9 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
     /// <summary>More than any league plays in a month; ESPN's default would cut a busy month short.</summary>
     private const int MonthLimit = 300;
 
+    /// <summary>More than any competition plays in a calendar year (Brazil's Serie A: about 380).</summary>
+    private const int YearLimit = 1000;
+
     /// <summary>More than any competition has teams (international friendlies: about 200).</summary>
     private const int TeamsLimit = 500;
 
@@ -116,6 +119,56 @@ internal sealed class EspnFootballDataProvider(HttpClient httpClient) : IFootbal
 
         return new LeagueFixtures(leagueCode, leagueName ?? leagueCode, matches.DistinctBy(m => m.Id).OrderBy(m => m.KickoffUtc).ToList());
     }
+
+    public async Task<LeagueFixtures?> GetLeagueSeasonAsync(string leagueCode, DateOnly today, CancellationToken cancellationToken = default)
+    {
+        // ESPN takes a whole calendar year ("2026") and says which season is the current one. A season across the
+        // new year (August to May) takes both years, each holding the end of one season and the start of another:
+        // only the current season's matches are kept.
+        var thisYear = await GetYearAsync(leagueCode, today.Year, cancellationToken);
+        if (thisYear is null)
+        {
+            return null;
+        }
+
+        var season = thisYear.Leagues?.FirstOrDefault()?.Season;
+        var responses = new List<EspnScoreboardResponse> { thisYear };
+        foreach (var year in SeasonYears(season).Where(year => year != today.Year))
+        {
+            if (await GetYearAsync(leagueCode, year, cancellationToken) is not { } other)
+            {
+                return null;
+            }
+
+            responses.Add(other);
+        }
+
+        var matches = responses
+            .SelectMany(response => response.Events ?? [])
+            // A match ESPN doesn't place in a season is kept rather than lost.
+            .Where(e => season?.Year is not { } current || e.Season?.Year is not { } its || its == current)
+            .Select(e => EspnScoreboardMapper.MapEvent(e, leagueCode))
+            .OfType<Match>()
+            .DistinctBy(m => m.Id)
+            .OrderBy(m => m.KickoffUtc)
+            .ToList();
+
+        return new LeagueFixtures(leagueCode, EspnScoreboardMapper.MapLeague(thisYear, leagueCode).Name, matches);
+    }
+
+    private Task<EspnScoreboardResponse?> GetYearAsync(string leagueCode, int year, CancellationToken cancellationToken) =>
+        GetOrNullAsync<EspnScoreboardResponse>(
+            $"{Uri.EscapeDataString(leagueCode)}/scoreboard?dates={year.ToString(CultureInfo.InvariantCulture)}&limit={YearLimit}",
+            $"season of '{leagueCode}' in {year}",
+            cancellationToken);
+
+    /// <summary>The calendar years a season runs through: one (Brazil, January to December) or two (August to May).</summary>
+    private static IEnumerable<int> SeasonYears(EspnLeagueSeason? season) =>
+        EspnScoreboardMapper.TryParseKickoff(season?.StartDate, out var start)
+        && EspnScoreboardMapper.TryParseKickoff(season?.EndDate, out var end)
+        && end >= start && end.Year - start.Year <= 1
+            ? Enumerable.Range(start.Year, end.Year - start.Year + 1)
+            : [];
 
     public async Task<TeamProfile?> GetTeamProfileAsync(string leagueCode, string teamId, CancellationToken cancellationToken = default)
     {

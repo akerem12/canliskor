@@ -94,6 +94,23 @@ public static class LeagueEndpoints
         })
             .WithTags("Leagues");
 
+        // The league's whole season: results, matches in play and fixtures, in kickoff order.
+        app.MapGet("/api/leagues/{code}/season", async Task<Results<Ok<LeagueFixturesResponse>, NotFound, ProblemHttpResult>> (
+            string code, LeagueInfoService leagues, CancellationToken ct) =>
+        {
+            try
+            {
+                return await leagues.GetSeasonAsync(code, ct) is { } season
+                    ? TypedResults.Ok(season.ToResponse())
+                    : TypedResults.NotFound();
+            }
+            catch (FootballDataProviderException)
+            {
+                return TypedResults.Problem("The season's matches are temporarily unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        })
+            .WithTags("Leagues");
+
         // A team: its results and every coming fixture, in all competitions it plays in.
         app.MapGet("/api/leagues/{code}/teams/{teamId:regex(^[0-9]{{1,15}}$)}", async Task<Results<Ok<TeamProfileResponse>, NotFound, ProblemHttpResult>> (
             string code, string teamId, LeagueInfoService leagues, CancellationToken ct) =>
