@@ -320,10 +320,12 @@ public sealed partial class MatchNotifier(
 
     /// <summary>
     /// What tells an event apart: the provider's id, which survives corrections (another scorer, another minute),
-    /// else what the event is. A missed penalty goes by team and clock instead: the provider may enter it twice
-    /// under two ids (the taker's miss, the goalkeeper's save), and one team takes one penalty at a time.
+    /// else what the event is. A penalty given or missed goes by team and clock instead: both come from the
+    /// commentary, whose ids don't hold (a missed one is entered twice, as the taker's miss and the goalkeeper's
+    /// save; a fresh line comes without its play's id and gets it a little later), and a team is given one
+    /// penalty at a time.
     /// </summary>
-    internal static string EventKey(MatchEvent matchEvent) => matchEvent.Type == MatchEventType.PenaltyMissed
+    internal static string EventKey(MatchEvent matchEvent) => matchEvent.Type is MatchEventType.PenaltyMissed or MatchEventType.PenaltyAwarded
         ? $"{matchEvent.Type}:{matchEvent.Side}:{matchEvent.Clock}"
         : matchEvent.Id ?? $"{matchEvent.Type}:{matchEvent.Side}:{matchEvent.PlayerId ?? matchEvent.Player}:{matchEvent.Clock}";
 

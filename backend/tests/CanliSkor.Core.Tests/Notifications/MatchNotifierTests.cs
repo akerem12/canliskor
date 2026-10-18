@@ -278,6 +278,26 @@ public class MatchNotifierTests
     }
 
     [Fact]
+    public async Task A_penalty_given_is_one_notification_when_its_line_gets_an_id_later()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // A fresh commentary line comes without its play's id (Real Madrid - Sevilla, 18 Oct 2026)...
+        _provider.Returns(Detail(match, new MatchEvent(MatchEventType.PenaltyAwarded, "61'", TeamSide.Home, null, "Castrín", Id: "commentary:64")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        // ...and gets it a little later.
+        _provider.Returns(Detail(match, new MatchEvent(MatchEventType.PenaltyAwarded, "61'", TeamSide.Home, null, "Castrín", Id: "53936840")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Single(_sender.Sent, s => s.Notification.Title.StartsWith("⚠️"));
+    }
+
+    [Fact]
     public async Task A_goal_taken_back_is_announced_with_the_score_change()
     {
         var match = Playing(InPlay("1'"));
