@@ -5,7 +5,7 @@ namespace CanliSkor.Core.Notifications;
 /// <summary>
 /// The words of the notifications, in the subscriber's language: short, the match in the title, the minute and
 /// the player in the body. The score is in the title only for a goal, a goal taken back, half-time, the second
-/// half's start and full-time. They are written here and not in the browser because they are shown while the site is
+/// half's start and full-time. A goal is the bare score over "⚽ minute scorer", with the scoring team's crest. They are written here and not in the browser because they are shown while the site is
 /// closed. Team names are the provider's (English) spelling.
 /// </summary>
 public static class MatchNotificationText
@@ -78,16 +78,15 @@ public static class MatchNotificationText
     {
         var tr = language == "tr";
         var team = matchEvent.Side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
-        var opponent = matchEvent.Side == TeamSide.Home ? match.AwayTeam : match.HomeTeam;
         var scoreline = Scoreline(match, score);
         var teams = Teams(match);
 
         (string Title, string Body)? text = matchEvent.Type switch
         {
-            MatchEventType.Goal => (Goal(tr, scoreline), Who(matchEvent, team)),
-            MatchEventType.PenaltyGoal => (Goal(tr, scoreline), $"{Who(matchEvent, team)} {(tr ? "(P)" : "(pen)")}"),
-            // Counted for the team it helps, but scored by a player of the other one.
-            MatchEventType.OwnGoal => (Goal(tr, scoreline), $"{Who(matchEvent, opponent)} {(tr ? "(K.K.)" : "(OG)")}"),
+            MatchEventType.Goal => (scoreline, Scorer(matchEvent, "", tr)),
+            MatchEventType.PenaltyGoal => (scoreline, Scorer(matchEvent, tr ? " (P)" : " (pen)", tr)),
+            // Counted for the team it helps (its crest is shown), but scored by a player of the other one.
+            MatchEventType.OwnGoal => (scoreline, Scorer(matchEvent, tr ? " (K.K.)" : " (OG)", tr)),
             MatchEventType.PenaltyMissed => (tr ? $"❌ Penaltı Kaçtı! {teams}" : $"❌ Penalty missed! {teams}", Who(matchEvent, team)),
             MatchEventType.RedCard => (tr ? $"🟥 Kırmızı Kart! {teams}" : $"🟥 Red card! {teams}", Who(matchEvent, team)),
             MatchEventType.PenaltyAwarded => (tr ? $"⚠️ Penaltı! {teams}" : $"⚠️ Penalty! {teams}",
@@ -119,12 +118,16 @@ public static class MatchNotificationText
     public static PushNotification GoalWithoutScorer(Match match, TeamSide side, Score score, string key, string language)
     {
         var team = side == TeamSide.Home ? match.HomeTeam : match.AwayTeam;
-        var title = Goal(language == "tr", Scoreline(match, score));
+        var body = language == "tr" ? "⚽ Gol" : "⚽ Goal";
 
-        return new PushNotification(title, team.ShortName, MatchUrl(match), $"{match.Id}:event:{key}", LiveTimeToLive, team.LogoUrl);
+        return new PushNotification(Scoreline(match, score), body, MatchUrl(match), $"{match.Id}:event:{key}", LiveTimeToLive, team.LogoUrl);
     }
 
-    private static string Goal(bool tr, string scoreline) => tr ? $"⚽ GOL! {scoreline}" : $"⚽ GOAL! {scoreline}";
+    /// <summary>"⚽ 34' Victor Osimhen (P)": no team, the crest says that. "⚽ 34'" or "⚽ Gol" while the scorer isn't known.</summary>
+    private static string Scorer(MatchEvent goal, string suffix, bool tr) =>
+        goal.Player is not null ? $"⚽ {Minute(goal)}{goal.Player}{suffix}"
+        : string.IsNullOrEmpty(goal.Clock) ? (tr ? "⚽ Gol" : "⚽ Goal")
+        : $"⚽ {goal.Clock}";
 
     /// <summary>"57' Mauro Icardi (Galatasaray)"; just the team if the player isn't known.</summary>
     private static string Who(MatchEvent matchEvent, Team team) =>

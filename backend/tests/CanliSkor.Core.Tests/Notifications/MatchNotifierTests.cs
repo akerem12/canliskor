@@ -224,8 +224,8 @@ public class MatchNotifierTests
 
         Assert.Equal(2, _sender.Sent.Count);
         var goal = _sender.Sent[1].Notification;
-        Assert.Equal("⚽ GOAL! Home 1 - 0 Away", goal.Title);
-        Assert.Equal("12' Player A (Home)", goal.Body);
+        Assert.Equal("Home 1 - 0 Away", goal.Title);
+        Assert.Equal("⚽ 12' Player A", goal.Body);
         Assert.Equal(HomeCrest, goal.Icon);
         Assert.Equal($"/?league=tur.1&match={match.Id}", goal.Url);
     }
@@ -250,8 +250,8 @@ public class MatchNotifierTests
         Assert.Equal(
         [
             ("Maç Başladı: Home - Away", "Karşılaşmada ilk düdük çaldı."),
-            ("⚽ GOL! Home 1 - 0 Away", "10' P1 (Home) (P)"),
-            ("⚽ GOL! Home 1 - 1 Away", "20' P2 (Home) (K.K.)"),
+            ("Home 1 - 0 Away", "⚽ 10' P1 (P)"),
+            ("Home 1 - 1 Away", "⚽ 20' P2 (K.K.)"),
             ("❌ Penaltı Kaçtı! Home - Away", "45'+2' P3 (Home)"),
             ("🟥 Kırmızı Kart! Home - Away", "50' P4 (Away)"),
         ], _sender.Sent.Select(s => (s.Notification.Title, s.Notification.Body)));
@@ -327,7 +327,7 @@ public class MatchNotifierTests
         Assert.Equal(
         [
             "Kick-off: Home - Away",
-            "⚽ GOAL! Home 1 - 0 Away",
+            "Home 1 - 0 Away",
             "🚫 GOAL DISALLOWED! Home 0 - 0 Away",
         ], _sender.Sent.Select(s => s.Notification.Title));
     }
@@ -366,7 +366,7 @@ public class MatchNotifierTests
         _time.Advance(TimeSpan.FromMinutes(1));
         await _notifier.RunAsync(CancellationToken.None);
 
-        Assert.Equal(["⚽ GOAL! Home 1 - 0 Away", "⚽ GOAL! Home 2 - 0 Away"], _sender.Sent.Skip(1).Select(s => s.Notification.Title));
+        Assert.Equal(["Home 1 - 0 Away", "Home 2 - 0 Away"], _sender.Sent.Skip(1).Select(s => s.Notification.Title));
     }
 
     [Fact]
@@ -385,8 +385,8 @@ public class MatchNotifierTests
         _time.Advance(MatchNotifier.NameWait);
         await _notifier.RunAsync(CancellationToken.None);
         var goal = _sender.Sent[^1].Notification;
-        Assert.Equal("⚽ GOAL! Home 0 - 1 Away", goal.Title);
-        Assert.Equal("Away", goal.Body);
+        Assert.Equal("Home 0 - 1 Away", goal.Title);
+        Assert.Equal("⚽ Goal", goal.Body);
         Assert.Equal(AwayCrest, goal.Icon);
 
         // The entry comes after all: no second notification for the same goal.
@@ -415,7 +415,7 @@ public class MatchNotifierTests
         Playing(match with { Score = new Score(1, 0) });
         _provider.Returns(Scored(match, Event(MatchEventType.Goal, "12'", TeamSide.Home, "Player A", "g1")));
         await _notifier.RunAsync(CancellationToken.None);
-        Assert.Equal("12' Player A (Home)", _sender.Sent[^1].Notification.Body);
+        Assert.Equal("⚽ 12' Player A", _sender.Sent[^1].Notification.Body);
     }
 
     [Fact]
@@ -577,7 +577,7 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
 
         var late = _sender.Sent.Where(s => s.Subscriber.Endpoint.EndsWith("late")).Select(s => s.Notification.Title);
-        Assert.Equal(["⚽ GOAL! Home 1 - 1 Away"], late);
+        Assert.Equal(["Home 1 - 1 Away"], late);
     }
 
     [Fact]
@@ -592,7 +592,7 @@ public class MatchNotifierTests
         _provider.Returns(Detail(finished, Event(MatchEventType.Goal, "90'+3'", TeamSide.Home, "Player A", "g1")));
         _time.Advance(TimeSpan.FromMinutes(1));
         await _notifier.RunAsync(CancellationToken.None);
-        Assert.Equal("⚽ GOAL! Home 1 - 0 Away", _sender.Sent[^2].Notification.Title);
+        Assert.Equal("Home 1 - 0 Away", _sender.Sent[^2].Notification.Title);
 
         Assert.Equal("Full-time: Home 1 - 0 Away", _sender.Sent[^1].Notification.Title);
 
@@ -660,6 +660,22 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
 
         Assert.Empty(_provider.DetailRequests);
+    }
+
+    [Theory]
+    [InlineData("tr", "34'", "⚽ 34'")]
+    [InlineData("tr", "", "⚽ Gol")]
+    [InlineData("en", "", "⚽ Goal")]
+    public void A_goal_whose_scorer_is_not_named_yet_shows_no_name(string language, string clock, string body)
+    {
+        var match = InPlay("35'", new Score(1, 0));
+        var goal = new MatchEvent(MatchEventType.Goal, clock, TeamSide.Home, null, null);
+
+        var notification = MatchNotificationText.Event(match, goal, new Score(1, 0), "k", language)!;
+
+        Assert.Equal("Home 1 - 0 Away", notification.Title);
+        Assert.Equal(body, notification.Body);
+        Assert.Equal(HomeCrest, notification.Icon);
     }
 
     private const string HomeCrest = "https://a.espncdn.com/i/teamlogos/soccer/500/1.png";
