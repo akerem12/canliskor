@@ -1,5 +1,6 @@
 using CanliSkor.Core.Domain;
 using CanliSkor.Infrastructure.Espn;
+using CanliSkor.Infrastructure.Espn.Dtos;
 
 namespace CanliSkor.Infrastructure.Tests.Espn;
 
@@ -45,19 +46,48 @@ public class EspnLineupMapperTests
         ], Names(away));
     }
 
-    [Fact]
-    public void Line_up_sent_without_positions_or_formation_still_has_a_goalkeeper_and_three_lines()
+    /// <summary>The fixture as ESPN may send it around kick-off: starters with their formation places only.</summary>
+    private static MatchLineups MapWithoutPositions(bool withFormation)
     {
         var summary = FixtureLoader.LoadSummary("summary-tur1-lineups.json");
         var rosters = summary.Rosters!
-            .Select(r => r with { Formation = null, Roster = [.. r.Roster!.Select(e => e with { Position = null })] })
+            .Select(r => r with
+            {
+                Formation = withFormation ? r.Formation : null,
+                Roster = [.. r.Roster!.Select(e => e with { Position = null })],
+            })
             .ToList();
 
-        var home = EspnSummaryMapper.Map(summary with { Rosters = rosters }, "tur.1")!.Lineups!.Home;
+        return EspnSummaryMapper.Map(summary with { Rosters = rosters }, "tur.1")!.Lineups!;
+    }
 
-        Assert.Equal("4-3-3", home.Formation);
-        Assert.Equal(["Alban Lafont"], Names(home)[0]);
-        Assert.Equal([1, 4, 3, 3], home.Rows.Select(r => r.Count));
+    [Fact]
+    public void Line_up_sent_without_positions_is_laid_out_by_formation_place()
+    {
+        var finished = MapFinished();
+        var lineups = MapWithoutPositions(withFormation: true);
+
+        Assert.Equal(Names(finished.Home), Names(lineups.Home));
+        Assert.Equal(Names(finished.Away), Names(lineups.Away));
+        Assert.Equal(
+            finished.Home.Rows.Select(row => row.Select(p => p.Position)),
+            lineups.Home.Rows.Select(row => row.Select(p => p.Position)));
+    }
+
+    [Fact]
+    public void Line_up_sent_without_positions_or_formation_is_laid_out_as_a_4_2_3_1()
+    {
+        var lineups = MapWithoutPositions(withFormation: false);
+
+        // Amed played a 4-2-3-1 anyway.
+        Assert.Equal(Names(MapFinished().Home), Names(lineups.Home));
+
+        // Besiktas played a 4-1-4-1: the keeper, the back four and the striker are still right.
+        var away = lineups.Away;
+        Assert.Equal("4-2-3-1", away.Formation);
+        Assert.Equal(["Alexander Nübel"], Names(away)[0]);
+        Assert.Equal(["Ridvan Yilmaz", "Tiago Djaló", "Emmanuel Agbadou", "Amir Murillo"], Names(away)[1]);
+        Assert.Equal(["Dusan Vlahovic"], Names(away)[^1]);
     }
 
     [Fact]
@@ -153,6 +183,8 @@ public class EspnLineupMapperTests
     [InlineData("4-4-2", "CD-L CD-R LB RB LM RM CM-L CM-R CF-L CF-R", "LB CD-L CD-R RB|LM CM-L CM-R RM|CF-L CF-R")]
     [InlineData("4-3-3", "LB CD-L CD-R RB CM-L CM CM-R LF F RF", "LB CD-L CD-R RB|CM-L CM CM-R|LF F RF")]
     [InlineData("5-3-2", "LB CD-L CD CD-R RB CM-L CM CM-R CF-L CF-R", "LB CD-L CD CD-R RB|CM-L CM CM-R|CF-L CF-R")]
+    // ESPN calls the player behind the striker "RCF".
+    [InlineData("4-4-1-1", "RB LB CM-R CD-R CD-L RM CM-L F RCF LM", "LB CD-L CD-R RB|LM CM-L CM-R RM|RCF|F")]
     public void Arranges_positions_into_formation_rows(string formation, string positions, string expectedRows)
     {
         var rows = EspnLineupMapper.Arrange(positions.Split(' '), p => p, EspnLineupMapper.ParseFormation(formation));
@@ -208,6 +240,23 @@ public class EspnLineupMapperTests
         var rows = EspnLineupMapper.Arrange(positions, p => p, EspnLineupMapper.ParseFormation(formation));
 
         Assert.Equal([4, 3, 3], rows.Select(r => r.Count));
+    }
+
+    [Theory]
+    [InlineData("4-2-3-1", "3", "LB")]
+    [InlineData("3-4-2-1", "3", "LM")]
+    [InlineData("3-4-2-1", "4", "CD-L")]
+    // A formation without a known order of places, or none at all: the commonest one.
+    [InlineData("4-2-4", "5", "CD-R")]
+    [InlineData(null, "9", "F")]
+    [InlineData(null, "1", "G")]
+    [InlineData("4-2-3-1", "0", null)]
+    [InlineData("4-2-3-1", null, null)]
+    public void Starter_without_a_position_takes_the_one_of_their_formation_place(string? formation, string? place, string? expected)
+    {
+        var starter = new EspnRosterEntry(true, "9", new EspnAthlete("A", "1"), null, false, false, null, null, null, place);
+
+        Assert.Equal(expected, EspnLineupMapper.StarterPosition(starter, formation));
     }
 
     [Theory]

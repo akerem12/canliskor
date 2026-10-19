@@ -8,7 +8,8 @@ namespace CanliSkor.Infrastructure.Espn;
 /// Pure translation of ESPN's rosters to <see cref="MatchLineups"/>. ESPN gives each starter a position
 /// ("CD-L", "AM-R", ...) and the team a formation ("4-2-3-1") but not who stands where, so the rows are
 /// worked out here: starters are ordered from defence to attack, cut into rows of the formation's sizes,
-/// and each row is ordered left to right.
+/// and each row is ordered left to right. Around kick-off ESPN may send the starters without their positions;
+/// their formation places then give them (see <see cref="PlacePositions"/>).
 /// </summary>
 internal static class EspnLineupMapper
 {
@@ -22,12 +23,45 @@ internal static class EspnLineupMapper
         ["DM"] = 2,
         ["CM"] = 3, ["CM-L"] = 3, ["CM-R"] = 3, ["LM"] = 3, ["RM"] = 3,
         ["AM"] = 4, ["AM-L"] = 4, ["AM-R"] = 4,
-        ["CF-L"] = 4.5, ["CF-R"] = 4.5, ["LF"] = 4.5, ["RF"] = 4.5,
+        ["CF-L"] = 4.5, ["CF-R"] = 4.5, ["LCF"] = 4.5, ["RCF"] = 4.5, ["LF"] = 4.5, ["RF"] = 4.5,
         ["F"] = 5, ["CF"] = 5,
     };
 
     // A position ESPN adds later lands in midfield, in the centre, rather than breaking the line-up.
     private const double UnknownDepth = 3;
+
+    /// <summary>
+    /// The position ESPN gives each formation place ("1" to "11", in that order) in each formation. Learnt from 230
+    /// team line-ups across 15 competitions in October 2026: within a formation a place had the same position every
+    /// time but once (the two holding midfielders of one 4-2-3-1 the other way round).
+    /// </summary>
+    private static readonly Dictionary<string, string[]> PlacePositions = new()
+    {
+        ["4-2-3-1"] = ["G", "RB", "LB", "LM", "CD-R", "CD-L", "AM-R", "RM", "F", "AM", "AM-L"],
+        ["4-3-3"] = ["G", "RB", "LB", "CM", "CD-R", "CD-L", "RM", "LM", "F", "RF", "LF"],
+        ["4-4-2"] = ["G", "RB", "LB", "CM-R", "CD-R", "CD-L", "RM", "CM-L", "CF-L", "CF-R", "LM"],
+        ["4-1-4-1"] = ["G", "RB", "LB", "DM", "CD-R", "CD-L", "RM", "CM-R", "F", "CM-L", "LM"],
+        ["4-5-1"] = ["G", "RB", "LB", "CM-R", "CD-R", "CD-L", "RM", "CM-L", "F", "AM", "LM"],
+        ["4-4-1-1"] = ["G", "RB", "LB", "CM-R", "CD-R", "CD-L", "RM", "CM-L", "F", "RCF", "LM"],
+        ["4-3-2-1"] = ["G", "RB", "LB", "CM", "CD-R", "CD-L", "CM-L", "CM-R", "F", "CF-R", "CF-L"],
+        ["4-1-2-1-2"] = ["G", "RB", "LB", "DM", "CD-R", "CD-L", "RM", "AM", "CF-L", "CF-R", "LM"],
+        ["4-3-1-2"] = ["G", "RB", "LB", "CM", "CD-R", "CD-L", "RM", "AM", "CF-R", "M", "LM"],
+        ["4-1-3-2"] = ["G", "RB", "LB", "SW", "CD-R", "CD-L", "RM", "CM", "CF-R", "CF-L", "LM"],
+        ["4-2-2-2"] = ["G", "RB", "LB", "CM-R", "CD-R", "CD-L", "AM-R", "CM-L", "CF-L", "CF-R", "AM-L"],
+        ["3-4-2-1"] = ["G", "RM", "LM", "CD-L", "CD", "CD-R", "CM-R", "CM-L", "F", "CF-R", "CF-L"],
+        ["3-4-3"] = ["G", "RM", "LM", "CD-L", "CD", "CD-R", "CM-R", "CM-L", "F", "CF-R", "CF-L"],
+        ["3-5-2"] = ["G", "RM", "LM", "CD-L", "CD", "CD-R", "CM-R", "CM-L", "CF-L", "CF-R", "AM"],
+        ["3-4-1-2"] = ["G", "RM", "LM", "CD-L", "CD", "CD-R", "CM-R", "CM-L", "AM", "CF-R", "CF-L"],
+        ["3-1-4-2"] = ["G", "RM", "LM", "CD", "CD-R", "CD-L", "CM-R", "SW", "CF-R", "CF-L", "CM-L"],
+        ["5-3-2"] = ["G", "RB", "LB", "CD-L", "CD", "CD-R", "CM-R", "CM", "CF-L", "CF-R", "CM-L"],
+        ["5-4-1"] = ["G", "RB", "LB", "CD-L", "CD", "CD-R", "RM", "CM-R", "F", "CM-L", "LM"],
+    };
+
+    /// <summary>
+    /// For places in a formation that isn't known, or isn't given: the most common one. Places 2, 3, 5 and 6 are the
+    /// back four in every four-at-the-back formation, so a team that plays one is at least right at the back.
+    /// </summary>
+    private const string CommonestFormation = "4-2-3-1";
 
     /// <returns>Null unless both teams have a starting eleven.</returns>
     public static MatchLineups? Map(IReadOnlyList<EspnRoster>? rosters)
@@ -49,18 +83,17 @@ internal static class EspnLineupMapper
             return null;
         }
 
-        var positions = ResolvePositions(entries);
+        var starterPositions = starters
+            .GroupBy(e => e.Athlete!.Id!)
+            .ToDictionary(g => g.Key, g => StarterPosition(g.First(), roster!.Formation));
+        string? AbbreviationOf(EspnRosterEntry e) => starterPositions[e.Athlete!.Id!];
+
+        var positions = ResolvePositions(entries, starterPositions);
         LineupPlayer ToPlayer(EspnRosterEntry e) => MapPlayer(e, positions.GetValueOrDefault(e.Athlete!.Id!));
 
-        var keepers = starters.Where(e => e.Position?.Abbreviation == Goalkeeper).ToList();
-        if (keepers.Count == 0)
-        {
-            // Positions not given (yet): the goalkeeper is still the one in formation place 1.
-            keepers = starters.Where(e => e.FormationPlace == "1").Take(1).ToList();
-        }
-
+        var keepers = starters.Where(e => AbbreviationOf(e) == Goalkeeper).Take(1).ToList();
         var outfield = starters.Except(keepers).ToList();
-        var outfieldRows = Arrange(outfield, e => e.Position?.Abbreviation, ParseFormation(roster!.Formation));
+        var outfieldRows = Arrange(outfield, AbbreviationOf, ParseFormation(roster!.Formation));
 
         IEnumerable<IReadOnlyList<EspnRosterEntry>> rows = keepers.Count > 0 ? [keepers, .. outfieldRows] : outfieldRows;
 
@@ -98,6 +131,26 @@ internal static class EspnLineupMapper
         return rows
             .Select(row => (IReadOnlyList<T>)row.OrderBy(p => Lateral(position(p))).ToList())
             .ToList();
+    }
+
+    /// <summary>ESPN's position for a starter, or else the one that goes with their formation place.</summary>
+    /// <returns>Null if neither is given.</returns>
+    internal static string? StarterPosition(EspnRosterEntry starter, string? formation)
+    {
+        if (!string.IsNullOrEmpty(starter.Position?.Abbreviation))
+        {
+            return starter.Position.Abbreviation;
+        }
+
+        if (!int.TryParse(starter.FormationPlace, NumberStyles.None, CultureInfo.InvariantCulture, out var place) || place is < 1 or > 11)
+        {
+            return null;
+        }
+
+        var byPlace = formation is not null && PlacePositions.TryGetValue(formation, out var known)
+            ? known
+            : PlacePositions[CommonestFormation];
+        return byPlace[place - 1];
     }
 
     /// <returns>Null if the text isn't a formation such as "4-2-3-1".</returns>
@@ -152,6 +205,8 @@ internal static class EspnLineupMapper
     private static int Lateral(string? position) => position switch
     {
         "LB" or "LM" or "LF" => 0,
+        "LCF" => 1,
+        "RCF" => 3,
         _ when position?.EndsWith("-L", StringComparison.Ordinal) == true => 1,
         _ when position?.EndsWith("-R", StringComparison.Ordinal) == true => 3,
         "RB" or "RM" or "RF" => 4,
@@ -171,12 +226,10 @@ internal static class EspnLineupMapper
     /// Position per athlete id. Starters have their own; ESPN lists every substitute as "SUB", so one who
     /// came on takes the position of the player they replaced (who may be a substitute too).
     /// </summary>
-    private static Dictionary<string, PlayerPosition> ResolvePositions(List<EspnRosterEntry> entries)
+    private static Dictionary<string, PlayerPosition> ResolvePositions(
+        List<EspnRosterEntry> entries, Dictionary<string, string?> starterPositions)
     {
-        var positions = entries
-            .Where(e => e.Starter)
-            .GroupBy(e => e.Athlete!.Id!)
-            .ToDictionary(g => g.Key, g => PositionOf(g.First().Position?.Abbreviation));
+        var positions = starterPositions.ToDictionary(p => p.Key, p => PositionOf(p.Value));
 
         var pending = entries.Where(e => !e.Starter && e.SubbedInFor?.Athlete?.Id is not null).ToList();
         bool resolvedAny;
