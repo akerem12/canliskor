@@ -14,6 +14,29 @@ export const pushSupported = () =>
 /** The token the server last heard of from this phone, so it can be taken back when alerts are switched off. */
 const TokenStorageKey = 'canliskor.pushToken.v1'
 
+/**
+ * The same for a browser: the push address the server last heard of. When the browser gets a new one, the server
+ * forgets the old one; while both stayed known, the phone could be sent everything twice.
+ */
+const EndpointStorageKey = 'canliskor.pushEndpoint.v1'
+
+function readStored(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeStored(key: string, value: string | null) {
+  try {
+    if (value === null) window.localStorage.removeItem(key)
+    else window.localStorage.setItem(key, value)
+  } catch {
+    // Private mode and the like: the browser's own subscription still says who it is.
+  }
+}
+
 const unsubscribe = (endpoint: string) =>
   fetch(apiUrl(`/api/push/subscription?endpoint=${encodeURIComponent(endpoint)}`), { method: 'DELETE' })
 
@@ -64,6 +87,9 @@ async function sync(wishes: PushWishes | null) {
     const registration = await navigator.serviceWorker.getRegistration()
     const subscription = await registration?.pushManager.getSubscription()
     if (subscription) await unsubscribe(subscription.endpoint)
+    const known = readStored(EndpointStorageKey)
+    if (known && known !== subscription?.endpoint) await unsubscribe(known).catch(() => {})
+    writeStored(EndpointStorageKey, null)
     return
   }
 
@@ -84,6 +110,9 @@ async function sync(wishes: PushWishes | null) {
   subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromBase64Url(publicKey) })
 
   await register(subscription.toJSON(), wishes)
+  const known = readStored(EndpointStorageKey)
+  if (known && known !== subscription.endpoint) await unsubscribe(known).catch(() => {})
+  writeStored(EndpointStorageKey, subscription.endpoint)
 }
 
 let queue: Promise<void> = Promise.resolve()

@@ -186,6 +186,29 @@ public class MatchNotifierTests
     }
 
     [Fact]
+    public async Task A_notification_whose_delivery_went_unanswered_is_not_sent_again()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"]);
+        await _notifier.RunAsync(CancellationToken.None);
+        var before = _sender.Sent.Count;
+
+        // Apple's push service took the goal but its answer never came (Fenerbahçe - Alanyaspor, 17 Oct 2026):
+        // sending it again showed it twice.
+        var scored = match with { Score = new Score(1, 0) };
+        _provider.Returns(Detail(scored, Event(MatchEventType.Goal, "87'", TeamSide.Home, "Vedat Muriqi", "g1")));
+        _sender.Outcome = PushOutcome.Unconfirmed;
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        _sender.Outcome = PushOutcome.Sent;
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Single(_sender.Sent.Skip(before), s => s.Notification.Body.Contains("Vedat Muriqi"));
+    }
+
+    [Fact]
     public async Task A_provider_failure_while_looking_for_lineups_does_not_stop_the_reminder_of_another_match()
     {
         Playing(
@@ -295,6 +318,28 @@ public class MatchNotifierTests
         await _notifier.RunAsync(CancellationToken.None);
 
         Assert.Single(_sender.Sent, s => s.Notification.Title.StartsWith("⚠️"));
+    }
+
+    [Fact]
+    public async Task Announces_a_penalty_taken_back_by_var_once()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["1"], language: "tr");
+        await _notifier.RunAsync(CancellationToken.None);
+
+        _provider.Returns(Detail(match, new MatchEvent(MatchEventType.PenaltyCancelled, "63'", TeamSide.Home, null, null, Id: "commentary:60")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+        // The commentary line gets its play's id a little later: still the same penalty.
+        _provider.Returns(Detail(match, new MatchEvent(MatchEventType.PenaltyCancelled, "63'", TeamSide.Home, null, null, Id: "53801410")));
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        var cancelled = Assert.Single(_sender.Sent, s => s.Notification.Title.StartsWith("🚫"));
+        Assert.Equal("🚫 Penaltı İptal! Home - Away", cancelled.Notification.Title);
+        Assert.Equal("63' VAR, Home lehine verilen penaltıyı iptal etti", cancelled.Notification.Body);
+        Assert.Equal(HomeCrest, cancelled.Notification.Icon);
     }
 
     [Fact]

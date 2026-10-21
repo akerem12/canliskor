@@ -92,4 +92,10 @@ public enum PushOutcome
 
     /// <summary>Didn't get through this time; worth another try.</summary>
     Failed,
+
+    /// <summary>
+    /// Handed over, but the push service's answer never came (a timeout, a dropped connection). It has most likely
+    /// arrived, so it isn't tried again: a second try would show it twice on a phone that has it already.
+    /// </summary>
+    Unconfirmed,
 }

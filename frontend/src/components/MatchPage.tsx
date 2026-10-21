@@ -205,7 +205,7 @@ function TeamBadge({ team, onOpen }: { team: Team; onOpen: (teamId: string) => v
 
 function Events({ events: all, match }: { events: MatchEvent[]; match: Match }) {
   const { t } = useI18n()
-  const events = all.filter(e => e.type !== 'PenaltyAwarded')
+  const events = all.filter(e => e.type !== 'PenaltyAwarded' && e.type !== 'PenaltyCancelled')
 
   if (events.length === 0) {
     return (

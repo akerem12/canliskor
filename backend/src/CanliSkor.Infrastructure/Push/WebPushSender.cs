@@ -57,12 +57,36 @@ internal sealed partial class WebPushSender : IPushSender
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            // Bad keys from the client, a push service that is down or slow, a timeout.
+            if (MayHaveArrived(ex))
+            {
+                LogUnconfirmed(ex, new Uri(subscriber.Endpoint).Host);
+                return PushOutcome.Unconfirmed;
+            }
+
+            // Bad keys from the client, a push service that answers with an error or can't be reached.
             LogSendFailed(ex, new Uri(subscriber.Endpoint).Host);
             return PushOutcome.Failed;
         }
     }
 
+    /// <summary>
+    /// True if the message may have reached the push service although no answer came back: the request timed out,
+    /// or the connection broke after it was made. Then the phone has it more often than not (one goal arrived twice
+    /// when this was retried). Not when the service answered with an error, or was never reached at all.
+    /// </summary>
+    internal static bool MayHaveArrived(Exception exception) => exception switch
+    {
+        PushServiceClientException => false,
+        // HttpClient's own timeout; the caller's cancellation is let through before this is asked.
+        OperationCanceledException => true,
+        HttpRequestException { HttpRequestError: HttpRequestError.NameResolutionError or HttpRequestError.ConnectionError or HttpRequestError.SecureConnectionError } => false,
+        HttpRequestException => true,
+        _ => false,
+    };
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "Sending a notification through {PushHost} failed")]
     private partial void LogSendFailed(Exception exception, string pushHost);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No answer from {PushHost} for a notification; taken as delivered, not sent again")]
+    private partial void LogUnconfirmed(Exception exception, string pushHost);
 }

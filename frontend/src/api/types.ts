@@ -56,9 +56,11 @@ export interface MatchDay {
 
 /**
  * PenaltyMissed: saved, wide or off the woodwork; its side is the team that took it. PenaltyAwarded: a penalty
- * given, for the server's notifications; the timeline leaves it out (the penalty itself follows).
+ * given, for the server's notifications; the timeline leaves it out (the penalty itself follows). PenaltyCancelled: a
+ * penalty VAR took back, also for the notifications only; its side is the team it was for.
  */
-export type MatchEventType = 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'RedCard' | 'Substitution' | 'PenaltyMissed' | 'PenaltyAwarded'
+export type MatchEventType =
+  | 'Goal' | 'PenaltyGoal' | 'OwnGoal' | 'YellowCard' | 'RedCard' | 'Substitution' | 'PenaltyMissed' | 'PenaltyAwarded' | 'PenaltyCancelled'
 
 export interface MatchEvent {
   type: MatchEventType

@@ -60,7 +60,7 @@ internal static partial class EspnSummaryMapper
 
         var events = MergeInOrder(
             (response.KeyEvents ?? []).Select(e => (Event: MapEvent(e, match), e.Clock?.Value)),
-            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match, IsGoalkeeper) ?? MapPenaltyAwarded(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
+            (response.Commentary ?? []).Select(c => (Event: MapMissedPenalty(c.Play, match, IsGoalkeeper) ?? MapPenaltyAwarded(c, match) ?? MapPenaltyCancelled(c, match), c.Play?.Clock?.Value ?? c.Time?.Value)));
         events = OnePerMissedPenalty(events);
 
         return new MatchDetail(
@@ -113,7 +113,7 @@ internal static partial class EspnSummaryMapper
     private static string? Text(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     /// <summary>
-    /// The key events in ESPN's order, with the penalties given and missed (only found in the commentary) slotted
+    /// The key events in ESPN's order, with the penalties given, missed and taken back (only found in the commentary) slotted
     /// in by the clock: after every key event of the same second or earlier.
     /// </summary>
     private static List<MatchEvent> MergeInOrder(
@@ -191,6 +191,40 @@ internal static partial class EspnSummaryMapper
     private static partial Regex PenaltyConcededPattern();
 
     private static readonly Regex PenaltyConceded = PenaltyConcededPattern();
+
+    /// <summary>
+    /// "VAR Decision: No Penalty Elche.", as a play of type "var---referee-decision-cancelled": the referee had given
+    /// Elche a penalty and VAR took it back. The team is the one the penalty was for. Only in the full commentary
+    /// (not the Süper Lig's short one). "VAR Decision: Penalty X." is the other way round, a penalty VAR gives, and
+    /// comes with a "Penalty conceded by" line of its own; the same text as a "confirmed" play is a penalty never given.
+    /// </summary>
+    private static MatchEvent? MapPenaltyCancelled(EspnCommentary line, Match match)
+    {
+        var text = NoPenalty.Match(line.Text ?? "");
+        if (!text.Success || line.Play?.Type?.Type != "var---referee-decision-cancelled" || string.IsNullOrEmpty(line.Time?.DisplayValue))
+        {
+            return null;
+        }
+
+        var side = SideOf(line.Play.Team?.DisplayName, match) ?? LooseSideOf(text.Groups["team"].Value, match);
+        if (side is null)
+        {
+            return null;
+        }
+
+        return new MatchEvent(
+            MatchEventType.PenaltyCancelled,
+            line.Time.DisplayValue,
+            side.Value,
+            Player: null,
+            RelatedPlayer: null,
+            Id: !string.IsNullOrEmpty(line.Play.Id) ? line.Play.Id : line.Sequence is { } sequence ? $"commentary:{sequence}" : null);
+    }
+
+    [GeneratedRegex(@"^VAR Decision: No Penalty (?<team>.+?)\.?$")]
+    private static partial Regex NoPenaltyPattern();
+
+    private static readonly Regex NoPenalty = NoPenaltyPattern();
 
     private static TeamSide? SideOf(string? teamName, Match match) => teamName switch
     {

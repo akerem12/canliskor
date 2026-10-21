@@ -71,7 +71,7 @@ public static class MatchNotificationText
         return new PushNotification(title, body, MatchUrl(match), $"{match.Id}:full-time", LiveTimeToLive, icon);
     }
 
-    /// <summary>A goal, a penalty given or missed, or a red card, with the crest of the team it is about.</summary>
+    /// <summary>A goal, a penalty given, missed or taken back, or a red card, with the crest of the team it is about.</summary>
     /// <param name="score">The score right after the event; shown for goals only.</param>
     /// <param name="key">Tells the event apart from the others of the match (see <see cref="MatchNotifier"/>).</param>
     /// <returns>Null for events that aren't notified (yellow cards, substitutions).</returns>
@@ -92,6 +92,8 @@ public static class MatchNotificationText
             MatchEventType.RedCard => (tr ? $"🟥 Kırmızı Kart! {teams}" : $"🟥 Red card! {teams}", Who(matchEvent, team)),
             MatchEventType.PenaltyAwarded => (tr ? $"⚠️ Penaltı! {teams}" : $"⚠️ Penalty! {teams}",
                 tr ? $"{Minute(matchEvent)}{team.ShortName} penaltı kazandı" : $"{Minute(matchEvent)}Penalty to {team.ShortName}"),
+            MatchEventType.PenaltyCancelled => (tr ? $"🚫 Penaltı İptal! {teams}" : $"🚫 Penalty cancelled! {teams}",
+                tr ? $"{Minute(matchEvent)}VAR, {team.ShortName} lehine verilen penaltıyı iptal etti" : $"{Minute(matchEvent)}VAR takes back {team.ShortName}'s penalty"),
             _ => null,
         };
 

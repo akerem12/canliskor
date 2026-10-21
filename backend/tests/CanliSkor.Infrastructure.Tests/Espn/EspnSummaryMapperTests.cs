@@ -184,6 +184,39 @@ public class EspnSummaryMapperTests
     }
 
     [Fact]
+    public void A_penalty_var_takes_back_comes_from_the_commentary_for_the_team_it_was_for()
+    {
+        // Valencia (home) against Real Sociedad (away).
+        var summary = FixtureLoader.LoadSummary("summary-esp1-finished.json");
+        EspnCommentary Var(string type, string text, string? team, int sequence, string clock, double seconds) =>
+            new(new EspnCommentaryPlay($"v{sequence}", new EspnKeyEventType(type), new EspnClock(clock, seconds), team is null ? null : new EspnCommentaryTeam(team), null),
+                text, sequence, new EspnClock(clock, seconds));
+        var commentary = new List<EspnCommentary>
+        {
+            // As in Villarreal - Elche, 17 Oct 2026.
+            Var("var---referee-decision-cancelled", "VAR Decision: No Penalty Real Sociedad.", "Real Sociedad", 30, "41'", 2460),
+            // Without the play's team, the text's spelling of it is enough.
+            Var("var---referee-decision-cancelled", "VAR Decision: No Penalty Valencia.", null, 60, "63'", 3739),
+            // A penalty VAR gives: not taken back (its "Penalty conceded by" line announces it).
+            Var("var---referee-decision-cancelled", "VAR Decision: Penalty Valencia.", "Valencia", 70, "70'", 4150),
+            // The referee's "no penalty" upheld: there never was one.
+            Var("var---referee-decision-confirmed", "VAR Decision: No Penalty Valencia.", "Valencia", 75, "75'", 4500),
+            // Another VAR decision.
+            Var("var---referee-decision-cancelled", "VAR Decision: No Goal Valencia.", "Valencia", 80, "80'", 4800),
+        };
+
+        var cancelled = EspnSummaryMapper.Map(summary with { Commentary = commentary }, "esp.1")!.Events
+            .Where(e => e.Type == MatchEventType.PenaltyCancelled)
+            .ToList();
+
+        Assert.Equal(
+        [
+            new MatchEvent(MatchEventType.PenaltyCancelled, "41'", TeamSide.Away, null, null, Id: "v30"),
+            new MatchEvent(MatchEventType.PenaltyCancelled, "63'", TeamSide.Home, null, null, Id: "v60"),
+        ], cancelled);
+    }
+
+    [Fact]
     public void Substitutions_list_the_player_coming_on_first()
     {
         var sub = EventsOf(MapFinished()).First(e => e.Type == MatchEventType.Substitution);

@@ -12,7 +12,7 @@ namespace CanliSkor.Core.Notifications;
 /// One round of match notifications. For every match about to kick off that a subscriber follows: the reminder
 /// half an hour before kickoff, and "line-ups are out" as soon as the provider has both starting elevens. For
 /// every followed match in play: the kickoff, then each goal, missed penalty and red card as it appears in the
-/// match's events, a penalty given, a goal taken back (VAR), half time, the second half and full time. Works from the scoreboards the poller keeps in the store, so a kickoff that was moved moves its
+/// match's events, a penalty given or taken back (VAR), a goal taken back (VAR), half time, the second half and full time. Works from the scoreboards the poller keeps in the store, so a kickoff that was moved moves its
 /// reminder, and a match postponed or cancelled gets none. Kept separate from the hosted service so it can be
 /// unit-tested.
 /// </summary>
@@ -316,16 +316,16 @@ public sealed partial class MatchNotifier(
     private static bool IsGoal(MatchEventType type) => type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal;
 
     private static bool IsNotified(MatchEventType type) => IsGoal(type)
-        || type is MatchEventType.PenaltyMissed or MatchEventType.RedCard or MatchEventType.PenaltyAwarded;
+        || type is MatchEventType.PenaltyMissed or MatchEventType.RedCard or MatchEventType.PenaltyAwarded or MatchEventType.PenaltyCancelled;
 
     /// <summary>
     /// What tells an event apart: the provider's id, which survives corrections (another scorer, another minute),
-    /// else what the event is. A penalty given or missed goes by team and clock instead: both come from the
+    /// else what the event is. A penalty given, missed or taken back goes by team and clock instead: all come from the
     /// commentary, whose ids don't hold (a missed one is entered twice, as the taker's miss and the goalkeeper's
     /// save; a fresh line comes without its play's id and gets it a little later), and a team is given one
     /// penalty at a time.
     /// </summary>
-    internal static string EventKey(MatchEvent matchEvent) => matchEvent.Type is MatchEventType.PenaltyMissed or MatchEventType.PenaltyAwarded
+    internal static string EventKey(MatchEvent matchEvent) => matchEvent.Type is MatchEventType.PenaltyMissed or MatchEventType.PenaltyAwarded or MatchEventType.PenaltyCancelled
         ? $"{matchEvent.Type}:{matchEvent.Side}:{matchEvent.Clock}"
         : matchEvent.Id ?? $"{matchEvent.Type}:{matchEvent.Side}:{matchEvent.PlayerId ?? matchEvent.Player}:{matchEvent.Clock}";
 
@@ -455,7 +455,7 @@ public sealed partial class MatchNotifier(
                 await subscribers.RemoveAsync(subscriber.Endpoint, cancellationToken);
             }
 
-            // A failed one stays open and is tried again on the next round.
+            // A failed one stays open and is tried again on the next round; an unconfirmed one is taken as sent.
             if (outcome != PushOutcome.Failed)
             {
                 log.MarkSent(notification, subscriber.Endpoint, now);
