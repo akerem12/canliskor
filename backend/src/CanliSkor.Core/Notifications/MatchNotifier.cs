@@ -84,7 +84,7 @@ public sealed partial class MatchNotifier(
             }
 
             var lineups = $"lineups:{match.Id}";
-            var waiting = followers.Where(s => s.LineupAlerts && !log.WasSent(lineups, s.Endpoint)).ToList();
+            var waiting = followers.Where(s => s.LineupAlerts && !log.WasSent(lineups, s.Recipient)).ToList();
             if (waiting.Count > 0 && await LineupsAnnouncedAsync(match, now, cancellationToken))
             {
                 await SendAsync(lineups, waiting,
@@ -444,7 +444,7 @@ public sealed partial class MatchNotifier(
     {
         foreach (var subscriber in recipients)
         {
-            if (log.WasSent(notification, subscriber.Endpoint))
+            if (log.WasSent(notification, subscriber.Recipient))
             {
                 continue;
             }
@@ -458,7 +458,7 @@ public sealed partial class MatchNotifier(
             // A failed one stays open and is tried again on the next round; an unconfirmed one is taken as sent.
             if (outcome != PushOutcome.Failed)
             {
-                log.MarkSent(notification, subscriber.Endpoint, now);
+                log.MarkSent(notification, subscriber.Recipient, now);
             }
         }
     }

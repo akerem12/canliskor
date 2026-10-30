@@ -705,6 +705,27 @@ public class MatchNotifierTests
     }
 
     [Fact]
+    public async Task A_phone_that_subscribes_anew_during_half_time_is_not_told_it_again()
+    {
+        var match = Playing(InPlay("1'"));
+        _provider.Returns(Detail(match));
+        Subscribe(teamIds: ["2"], language: "tr", endpoint: "https://web.push.apple.com/first", deviceId: "phone-0001");
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Playing(match with { Status = MatchStatus.HalfTime, Clock = "45'+2'", Score = new Score(0, 2) });
+        _time.Advance(TimeSpan.FromMinutes(1));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        // Opened from the notification, the site subscribed again at a new address (Konyaspor - Galatasaray, 30 Oct 2026).
+        Subscribe(teamIds: ["2"], language: "tr", endpoint: "https://web.push.apple.com/second", deviceId: "phone-0001");
+        _time.Advance(TimeSpan.FromSeconds(15));
+        await _notifier.RunAsync(CancellationToken.None);
+
+        Assert.Single(_sender.Sent, s => s.Notification.Title.StartsWith("Devre Arası"));
+        Assert.Equal("https://web.push.apple.com/second", Assert.Single(_subscribers.All()).Endpoint);
+    }
+
+    [Fact]
     public async Task A_server_started_during_half_time_does_not_announce_it()
     {
         var match = Playing(InPlay("45'+2'", new Score(0, 0)) with { Status = MatchStatus.HalfTime });
@@ -785,10 +806,12 @@ public class MatchNotifierTests
         string language = "en",
         string endpoint = "https://fcm.googleapis.com/fcm/send/abc",
         bool kickoffReminder = true,
-        bool lineupAlerts = true) =>
+        bool lineupAlerts = true,
+        string? deviceId = null) =>
         // The fake store answers at once, so there is nothing to wait for.
         _subscribers.RegisterAsync(new PushSubscriber(endpoint, "p256dh", "auth", language,
-            new HashSet<string>(teamIds ?? []), new HashSet<string>(matchIds ?? []), kickoffReminder, lineupAlerts)).GetAwaiter().GetResult();
+            new HashSet<string>(teamIds ?? []), new HashSet<string>(matchIds ?? []), kickoffReminder, lineupAlerts,
+            DeviceId: deviceId)).GetAwaiter().GetResult();
 
     private static MatchDetail Detail(Match match, bool withLineups)
     {

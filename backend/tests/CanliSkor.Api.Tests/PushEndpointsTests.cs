@@ -95,9 +95,35 @@ public class PushEndpointsTests(MatchEndpointsTests.Factory factory) : IClassFix
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    private static object Registration(string endpoint = Endpoint, string[]? teamIds = null, string language = "en") => new
+    [Fact]
+    public async Task A_device_that_subscribes_at_a_new_address_is_kept_once()
+    {
+        const string first = "https://web.push.apple.com/device-first";
+        const string second = "https://web.push.apple.com/device-second";
+        var device = Guid.NewGuid().ToString();
+
+        await _client.PutAsJsonAsync("/api/push/subscription", Registration(endpoint: first, deviceId: device));
+        await _client.PutAsJsonAsync("/api/push/subscription", Registration(endpoint: second, deviceId: device));
+
+        var subscriber = Assert.Single(_registry.All(), s => s.DeviceId == device);
+        Assert.Equal(second, subscriber.Endpoint);
+    }
+
+    [Fact]
+    public async Task A_device_id_that_is_no_id_is_left_out()
+    {
+        const string endpoint = "https://web.push.apple.com/odd-device-id";
+
+        var response = await _client.PutAsJsonAsync("/api/push/subscription", Registration(endpoint: endpoint, deviceId: "<script>"));
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Null(Assert.Single(_registry.All(), s => s.Endpoint == endpoint).DeviceId);
+    }
+
+    private static object Registration(string endpoint = Endpoint, string[]? teamIds = null, string language = "en", string? deviceId = null) => new
     {
         endpoint,
+        deviceId,
         keys = new { p256dh = "BPublicKey", auth = "secret" },
         language,
         teamIds = teamIds ?? [],

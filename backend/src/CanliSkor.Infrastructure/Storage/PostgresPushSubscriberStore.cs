@@ -30,6 +30,9 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
     // For a table made before the Android app existed.
     private const string AddChannel = "alter table push_subscribers add column if not exists channel text not null default 'Web'";
 
+    // For a table made before devices sent their id.
+    private const string AddDeviceId = "alter table push_subscribers add column if not exists device_id text";
+
     private readonly SemaphoreSlim _tableLock = new(1, 1);
     private bool _tableExists;
 
@@ -39,7 +42,7 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
         {
             await EnsureTableAsync(cancellationToken);
             await using var command = dataSource.CreateCommand(
-                "select endpoint, p256dh, auth, language, team_ids, match_ids, kickoff_reminder, lineup_alerts, channel from push_subscribers");
+                "select endpoint, p256dh, auth, language, team_ids, match_ids, kickoff_reminder, lineup_alerts, channel, device_id from push_subscribers");
             await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
             var subscribers = new List<PushSubscriber>();
@@ -60,7 +63,8 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
                     new HashSet<string>(reader.GetFieldValue<string[]>(5)),
                     reader.GetBoolean(6),
                     reader.GetBoolean(7),
-                    channel));
+                    channel,
+                    reader.IsDBNull(9) ? null : reader.GetString(9)));
             }
 
             return subscribers;
@@ -78,13 +82,13 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
         {
             await EnsureTableAsync(cancellationToken);
             await using var command = dataSource.CreateCommand("""
-                insert into push_subscribers (endpoint, p256dh, auth, language, team_ids, match_ids, kickoff_reminder, lineup_alerts, channel)
-                values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                insert into push_subscribers (endpoint, p256dh, auth, language, team_ids, match_ids, kickoff_reminder, lineup_alerts, channel, device_id)
+                values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 on conflict (endpoint) do update set
                     p256dh = excluded.p256dh, auth = excluded.auth, language = excluded.language,
                     team_ids = excluded.team_ids, match_ids = excluded.match_ids,
                     kickoff_reminder = excluded.kickoff_reminder, lineup_alerts = excluded.lineup_alerts,
-                    channel = excluded.channel, updated_at = now()
+                    channel = excluded.channel, device_id = excluded.device_id, updated_at = now()
                 """);
             command.Parameters.Add(new() { Value = subscriber.Endpoint });
             command.Parameters.Add(new() { Value = subscriber.P256dh });
@@ -95,6 +99,7 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
             command.Parameters.Add(new() { Value = subscriber.KickoffReminder });
             command.Parameters.Add(new() { Value = subscriber.LineupAlerts });
             command.Parameters.Add(new() { Value = subscriber.Channel.ToString() });
+            command.Parameters.Add(new() { Value = (object?)subscriber.DeviceId ?? DBNull.Value, NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Text });
             await command.ExecuteNonQueryAsync(cancellationToken);
             return true;
         }
@@ -134,7 +139,7 @@ internal sealed partial class PostgresPushSubscriberStore(NpgsqlDataSource dataS
         {
             if (!_tableExists)
             {
-                foreach (var statement in new[] { CreateTable, AddChannel })
+                foreach (var statement in new[] { CreateTable, AddChannel, AddDeviceId })
                 {
                     await using var command = dataSource.CreateCommand(statement);
                     await command.ExecuteNonQueryAsync(cancellationToken);

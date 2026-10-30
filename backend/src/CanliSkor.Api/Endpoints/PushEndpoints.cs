@@ -13,6 +13,7 @@ namespace CanliSkor.Api.Endpoints;
 /// <param name="Language">"tr" or "en"; anything else gets English.</param>
 /// <param name="TeamIds">Favourite teams, if alerts for them are on.</param>
 /// <param name="MatchIds">Matches picked with the bell.</param>
+/// <param name="DeviceId">The browser's or app's own lasting id; one that doesn't look like one is left out.</param>
 public sealed record PushRegistrationRequest(
     string? Endpoint,
     PushKeysRequest? Keys,
@@ -21,7 +22,8 @@ public sealed record PushRegistrationRequest(
     IReadOnlyList<string>? MatchIds,
     bool KickoffReminder,
     bool LineupAlerts,
-    string? Token = null);
+    string? Token = null,
+    string? DeviceId = null);
 
 public sealed record PushKeysRequest(string? P256dh, string? Auth);
 
@@ -77,7 +79,9 @@ public static class PushEndpoints
                 matchIds,
                 request.KickoffReminder,
                 request.LineupAlerts,
-                fromApp ? PushChannel.Fcm : PushChannel.Web);
+                fromApp ? PushChannel.Fcm : PushChannel.Web,
+                // Without a usable id the subscriber still gets everything, known by its address alone.
+                PushSubscriber.IsDeviceId(request.DeviceId) ? request.DeviceId : null);
 
             return await registry.RegisterAsync(subscriber, cancellationToken)
                 ? TypedResults.NoContent()

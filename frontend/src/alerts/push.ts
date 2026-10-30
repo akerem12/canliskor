@@ -37,6 +37,23 @@ function writeStored(key: string, value: string | null) {
   }
 }
 
+/**
+ * This browser's (or app's) own id, made up once and kept. Its push address can change, this can't: the server
+ * counts what it has sent per device, so a phone that subscribes anew mid-match isn't told its half time twice.
+ */
+const DeviceIdStorageKey = 'canliskor.deviceId.v1'
+
+export function deviceId(): string {
+  const known = readStored(DeviceIdStorageKey)
+  if (known) return known
+
+  const made = typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')
+  writeStored(DeviceIdStorageKey, made)
+  return made
+}
+
 const unsubscribe = (endpoint: string) =>
   fetch(apiUrl(`/api/push/subscription?endpoint=${encodeURIComponent(endpoint)}`), { method: 'DELETE' })
 
@@ -44,7 +61,7 @@ async function register(subscriber: object, wishes: PushWishes) {
   const response = await fetch(apiUrl('/api/push/subscription'), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...subscriber, ...wishes }),
+    body: JSON.stringify({ ...subscriber, ...wishes, deviceId: deviceId() }),
   })
   if (!response.ok) throw new Error(`PUT /api/push/subscription failed with ${response.status}`)
 }

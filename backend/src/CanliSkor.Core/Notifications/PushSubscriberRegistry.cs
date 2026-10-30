@@ -14,7 +14,10 @@ public sealed class PushSubscriberRegistry(IPushSubscriberStore store)
 
     private readonly ConcurrentDictionary<string, Entry> _subscribers = new();
 
-    /// <summary>Adds the subscriber, or replaces what was known about it.</summary>
+    /// <summary>
+    /// Adds the subscriber, or replaces what was known about it. The same device at another address (it subscribed
+    /// anew) replaces its old self, so it isn't told everything twice.
+    /// </summary>
     /// <returns>False if the registry is full and the subscriber is new.</returns>
     public async Task<bool> RegisterAsync(PushSubscriber subscriber, CancellationToken cancellationToken = default)
     {
@@ -22,6 +25,14 @@ public sealed class PushSubscriberRegistry(IPushSubscriberStore store)
         if (known is null && _subscribers.Count >= MaxSubscribers)
         {
             return false;
+        }
+
+        var oldSelves = _subscribers.Values
+            .Where(e => subscriber.DeviceId is not null && e.Subscriber.DeviceId == subscriber.DeviceId && e.Subscriber.Endpoint != subscriber.Endpoint)
+            .ToList();
+        foreach (var old in oldSelves)
+        {
+            await RemoveAsync(old.Subscriber.Endpoint, cancellationToken);
         }
 
         // Browsers repeat themselves every few minutes; only a real change is worth a write.

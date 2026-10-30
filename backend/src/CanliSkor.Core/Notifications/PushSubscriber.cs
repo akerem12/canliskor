@@ -15,6 +15,11 @@ namespace CanliSkor.Core.Notifications;
 /// <param name="Language">"tr" or "en": the language of the notifications' text.</param>
 /// <param name="TeamIds">Favourite teams: every match of theirs counts.</param>
 /// <param name="MatchIds">Single matches picked with the bell, whoever plays.</param>
+/// <param name="DeviceId">
+/// A random id the browser or app made up for itself and keeps. Its push address can change (a new subscription),
+/// the device id doesn't: one device is one subscriber, told everything once. Null for one registered before
+/// devices sent it.
+/// </param>
 public sealed record PushSubscriber(
     string Endpoint,
     string P256dh,
@@ -24,7 +29,8 @@ public sealed record PushSubscriber(
     IReadOnlySet<string> MatchIds,
     bool KickoffReminder,
     bool LineupAlerts,
-    PushChannel Channel = PushChannel.Web)
+    PushChannel Channel = PushChannel.Web,
+    string? DeviceId = null)
 {
     // Chrome and its relatives, Firefox, Edge, Safari. Nothing else is ever sent a request by us.
     private static readonly string[] PushHosts =
@@ -32,9 +38,16 @@ public sealed record PushSubscriber(
         "fcm.googleapis.com", "android.googleapis.com", ".push.services.mozilla.com", ".notify.windows.com", ".push.apple.com",
     ];
 
+    /// <summary>
+    /// Who a notification is sent to, to send it only once: the device, so a phone that subscribed anew in the middle
+    /// of a match isn't told its half time again at its new address.
+    /// </summary>
+    public string Recipient => DeviceId ?? Endpoint;
+
     /// <summary>The same in every field. The record's own equality compares the two sets by reference.</summary>
     public bool SameAs(PushSubscriber other) =>
         Endpoint == other.Endpoint
+        && DeviceId == other.DeviceId
         && Channel == other.Channel
         && P256dh == other.P256dh
         && Auth == other.Auth
@@ -51,6 +64,10 @@ public sealed record PushSubscriber(
     /// True for what a Firebase registration token looks like: a long run of letters, digits and "-_:". It is
     /// only ever sent to Firebase as data, so the shape is all that is checked.
     /// </summary>
+    /// <summary>What a device id looks like: a UUID, or anything else of 8 to 64 letters, digits and dashes.</summary>
+    public static bool IsDeviceId(string? id) =>
+        id is { Length: >= 8 and <= 64 } && id.All(c => char.IsAsciiLetterOrDigit(c) || c == '-');
+
     public static bool IsFcmToken(string? token) =>
         token is { Length: >= 32 and <= 4096 } && token.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or ':');
 

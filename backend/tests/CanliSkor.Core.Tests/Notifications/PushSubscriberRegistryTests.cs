@@ -75,6 +75,29 @@ public class PushSubscriberRegistryTests
     }
 
     [Fact]
+    public async Task The_same_device_at_a_new_address_replaces_its_old_self()
+    {
+        const string renewed = "https://fcm.googleapis.com/fcm/send/renewed";
+        await _registry.RegisterAsync(Subscriber(deviceId: "phone-0001"));
+        await _registry.RegisterAsync(Subscriber(endpoint: "https://fcm.googleapis.com/fcm/send/someone-else", deviceId: "phone-0002"));
+
+        await _registry.RegisterAsync(Subscriber(endpoint: renewed, deviceId: "phone-0001"));
+
+        Assert.Equal([renewed, "https://fcm.googleapis.com/fcm/send/someone-else"], _registry.All().Select(s => s.Endpoint).Order());
+        Assert.False(_store.Stored.ContainsKey(Endpoint));
+        Assert.Equal("phone-0001", _store.Stored[renewed].DeviceId);
+    }
+
+    [Fact]
+    public async Task Subscribers_without_a_device_id_are_told_apart_by_address()
+    {
+        await _registry.RegisterAsync(Subscriber());
+        await _registry.RegisterAsync(Subscriber(endpoint: "https://fcm.googleapis.com/fcm/send/other"));
+
+        Assert.Equal(2, _registry.All().Count);
+    }
+
+    [Fact]
     public async Task Loading_from_a_store_that_is_down_says_so()
     {
         _store.Down = true;
@@ -82,6 +105,6 @@ public class PushSubscriberRegistryTests
         Assert.Null(await _registry.LoadAsync());
     }
 
-    private static PushSubscriber Subscriber(string endpoint = Endpoint, string[]? teamIds = null, string language = "en") =>
-        new(endpoint, "p256dh", "auth", language, new HashSet<string>(teamIds ?? []), new HashSet<string>(), true, true);
+    private static PushSubscriber Subscriber(string endpoint = Endpoint, string[]? teamIds = null, string language = "en", string? deviceId = null) =>
+        new(endpoint, "p256dh", "auth", language, new HashSet<string>(teamIds ?? []), new HashSet<string>(), true, true, DeviceId: deviceId);
 }

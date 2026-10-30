@@ -14,13 +14,14 @@ public sealed class NotificationLog
     /// <summary>Entries older than this are about matches long over.</summary>
     private static readonly TimeSpan ForgetAfter = TimeSpan.FromHours(24);
 
-    private readonly ConcurrentDictionary<(string Notification, string Endpoint), DateTimeOffset> _sent = new();
+    private readonly ConcurrentDictionary<(string Notification, string Recipient), DateTimeOffset> _sent = new();
     private readonly ConcurrentDictionary<string, LineupCheck> _lineupChecks = new();
     private readonly ConcurrentDictionary<string, LiveMatchLog> _liveMatches = new();
 
-    public bool WasSent(string notification, string endpoint) => _sent.ContainsKey((notification, endpoint));
+    /// <param name="recipient">The subscriber's <see cref="PushSubscriber.Recipient"/>: its device, else its address.</param>
+    public bool WasSent(string notification, string recipient) => _sent.ContainsKey((notification, recipient));
 
-    public void MarkSent(string notification, string endpoint, DateTimeOffset now) => _sent[(notification, endpoint)] = now;
+    public void MarkSent(string notification, string recipient, DateTimeOffset now) => _sent[(notification, recipient)] = now;
 
     /// <summary>The last look at a match's line-ups; null if nobody has looked yet.</summary>
     public LineupCheck? LastLineupCheck(string matchId) => _lineupChecks.GetValueOrDefault(matchId);
